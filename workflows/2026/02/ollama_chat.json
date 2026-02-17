@@ -1,0 +1,105 @@
+{
+  "updatedAt": "2026-02-17T10:34:03.143Z",
+  "createdAt": "2026-02-17T10:18:32.248Z",
+  "id": "FS2utZtPOdLKLGC3",
+  "name": "ollama chat",
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "91ad2708-e64f-488b-b520-5606eb850ff2",
+      "name": "When chat message received",
+      "webhookId": "e5934745-fb70-4cc6-a355-fa0ebc521247"
+    },
+    {
+      "parameters": {
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        208,
+        0
+      ],
+      "id": "de99d1c3-d2dd-4768-a403-eee639feb5f0",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "minicpm-v:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        544,
+        -32
+      ],
+      "id": "a2c396fd-54a2-4f97-84d5-cf57ea2dc783",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "lhvQJmJDNIJ4CYLu",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "37fb8cb8-a649-4431-a1f8-513b84b898e1",
+  "activeVersionId": null,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-17T10:18:32.248Z",
+      "createdAt": "2026-02-17T10:18:32.248Z",
+      "role": "workflow:owner",
+      "workflowId": "FS2utZtPOdLKLGC3",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
