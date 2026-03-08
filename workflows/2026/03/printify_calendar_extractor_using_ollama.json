@@ -1,0 +1,208 @@
+{
+  "updatedAt": "2026-03-07T19:07:49.535Z",
+  "createdAt": "2026-03-07T19:00:13.044Z",
+  "id": "B5YWVGNjnBdanrnv",
+  "name": "Printify Calendar Extractor using Ollama",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "5dc39e65-936d-4e0c-892a-c5deabb87b07",
+      "name": "When clicking ‘Execute Workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://printify.com/guide/ecommerce-calendar/",
+        "options": {}
+      },
+      "id": "27d075a1-dabf-42a6-a94c-fa63a6eda37c",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        224,
+        0
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "content",
+              "cssSelector": "body"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "59005d6f-0f06-471b-ad91-8be65cebfd04",
+      "name": "HTML",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        448,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "minicpm-v:latest",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "03166ed2-f387-44dd-8bc8-b8f0fb91476b",
+      "name": "Ollama Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "position": [
+        744,
+        224
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "ollamaApi": {
+          "id": "lhvQJmJDNIJ4CYLu",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "events",
+        "options": {}
+      },
+      "id": "d313fbc4-26dd-414b-90a8-bb1e870582fa",
+      "name": "Item Lists",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        0,
+        328
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "name"
+        }
+      },
+      "id": "3567d7f7-b3ed-42ae-aadc-18a6bb86fd73",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        224,
+        328
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "b56e7fc5-616d-43ae-aeb2-dd8218717949",
+      "name": "Information Extractor"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute Workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "7f9810e7-7ab8-4b8c-972b-8884bee0bf62",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-07T19:00:13.044Z",
+      "createdAt": "2026-03-07T19:00:13.044Z",
+      "role": "workflow:owner",
+      "workflowId": "B5YWVGNjnBdanrnv",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
