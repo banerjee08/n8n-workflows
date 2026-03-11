@@ -1,0 +1,1103 @@
+{
+  "updatedAt": "2026-03-11T10:24:56.266Z",
+  "createdAt": "2026-03-10T10:26:02.257Z",
+  "id": "dHNPVX27fOc8qv3z",
+  "name": "n8n_content_generation",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c3622354-8a3f-4729-a8d4-ab26d95c5f4d",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        -2880
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 183016108,
+          "mode": "list",
+          "cachedResultName": "Imp Dates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=183016108"
+        },
+        "options": {}
+      },
+      "id": "ea05528f-b848-474c-aef2-274005161d58",
+      "name": "Google Sheets: Read main sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1088,
+        -4784
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Confirmation }}",
+              "value2": "go_ahead"
+            }
+          ]
+        }
+      },
+      "id": "217082ff-daef-401c-9398-bc1965b69614",
+      "name": "Filter: go_ahead",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        -4784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  const row = item.json;\n  const keys = Object.keys(row);\n  for (const key of keys) {\n    if (row[key] && row[key].toString().toLowerCase() === 'yes') {\n      const brandName = key;\n      const monthValue = row['month'] || row['Month'] || '';\n      const eventValue = row['event/celebration'] || row['Event/Celebration'] || '';\n      \n      let productRec = '';\n      const allProductRecs = row['mid_tier_product_recommendations'] || row['Mid_tier_product_recommendations'] || '';\n      if (allProductRecs) {\n        const parts = allProductRecs.toString().split(';');\n        for (const part of parts) {\n          if (part.trim().toLowerCase().startsWith(brandName.toLowerCase() + ':')) {\n            productRec = part.trim().substring(brandName.length + 1).trim();\n            break;\n          }\n        }\n      }\n\n      newItems.push({\n        json: {\n          ...row,\n          month: monthValue,\n          brand: brandName,\n          event: eventValue,\n          mid_tier_product_recommendation: productRec\n        }\n      });\n    }\n  }\n}\nreturn newItems;"
+      },
+      "id": "aeb0be03-787e-460b-a92e-6d1630f5441e",
+      "name": "Item Lists: Extract F-L columns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        -4784
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4fddaff8-4cc2-40a1-976c-064002a53e09",
+      "name": "If Empty",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -4784
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9d606246-d1a1-4e64-b054-8feac41bf61e",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1984,
+        -4784
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Product Recommendations",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "month",
+              "lookupValue": "={{ $('Split In Batches').item.json.month }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4eb9e0f6-c621-4b37-b1b0-0783b050d88d",
+      "name": "Google Sheets Lookup #2",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2432,
+        -4896
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "YOUR_DRIVE_FILE_ID_HERE",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "09a141e2-f90c-46f3-aabd-00a863085d92",
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        2656,
+        -4896
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fELtnghRXhwnZz3b",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  for (let i = 0; i < 3; i++) {\n    newItems.push({\n      json: {\n        ...item.json,\n        loop_iteration: i + 1\n      }\n    });\n  }\n}\nreturn newItems;"
+      },
+      "id": "618bcc92-07d6-4a05-bd72-d505385886a4",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        -4896
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ 'You are ' + $('Split In Batches').item.json.brand + ' POD expert. Generate 10 DETAILED graphic design prompts for Midjourney/Flux.\\n\\nContext:\\n- Event: ' + $('Split In Batches').item.json.event + ' (' + $('Split In Batches').item.json.month + ')\\n- Products: ' + $('Split In Batches').item.json.mid_tier_product_recommendation + ' + ' + $('Google Sheets Lookup #2').item.json.product_recommendations + '\\n- Brand Guidelines: ' + ($json.text || 'See attached') + '\\n- Learn from past: Improve common failures (avoid busy designs)\\n\\nEach prompt MUST include:\\n1. Product type (hoodie/t-shirt/mug)\\n2. ' + $('Split In Batches').item.json.brand + ' style: vibrant mid-tier, Instagram-ready\\n3. Event theme (' + $('Split In Batches').item.json.event + ')\\n4. 4K, highly detailed, commercial POD mockup\\n\\nJSON array only: [{\\n  \"design_prompt\": \"' + $('Split In Batches').item.json.brand + ' style hoodie, vibrant... --ar 1:1 --v 6\"\\n}]' }}",
+        "options": {}
+      },
+      "id": "17567d80-17cf-4694-948e-2ec3e36e7626",
+      "name": "AI Agent (LangChain)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        3104,
+        -4896
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {
+          "temperature": 0.3,
+          "numPredict": 4000
+        }
+      },
+      "id": "65a6d30e-f106-4e16-837f-e503b4ba61bf",
+      "name": "Ollama Model: llama3.2:3b",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        -4672
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "lhvQJmJDNIJ4CYLu",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "6db5cdb8-d965-4f3c-8251-6b7824d26ecb",
+      "name": "Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        3248,
+        -4672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  try {\n    let outputText = item.json.output || item.json.text || '';\n    if (outputText.includes('```json')) {\n      outputText = outputText.split('```json')[1].split('```')[0];\n    }\n    const prompts = JSON.parse(outputText.trim());\n    for (const p of prompts) {\n      newItems.push({\n        json: {\n          ...item.json,\n          design_prompt: p.design_prompt\n        }\n      });\n    }\n  } catch(e) {\n    newItems.push({ json: { ...item.json, error: 'Failed to process AI array', raw_output: item.json }});\n  }\n}\nreturn newItems;"
+      },
+      "id": "a5f41c02-5396-43b3-9c7f-613025730968",
+      "name": "Item Lists: Split prompt array to items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        -4896
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "month",
+              "value": "={{ $('Split In Batches').item.json.month }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $('Split In Batches').item.json.date }}"
+            },
+            {
+              "name": "event",
+              "value": "={{ $('Split In Batches').item.json.event }}"
+            },
+            {
+              "name": "Brand",
+              "value": "={{ $('Split In Batches').item.json.brand }}"
+            },
+            {
+              "name": "Design Prompt",
+              "value": "={{ $json.design_prompt }}"
+            },
+            {
+              "name": "confirmation",
+              "value": "ready_for_review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b618cb84-0279-4e33-9e40-ec6717d3b3a9",
+      "name": "Set: Format output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        -4896
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prompt Generation",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "64902f6a-bbc6-49df-8255-3de3ea585f38",
+      "name": "Google Sheets: Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        3904,
+        -4784
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 183016108,
+          "mode": "list",
+          "cachedResultName": "Imp Dates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=183016108"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "row_id",
+              "lookupValue": "={{ $('Split In Batches').item.json.row_number || $('Split In Batches').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f328eca4-4185-4563-a6e2-518e0287dfba",
+      "name": "Google Sheets Lookup #1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2208,
+        -4896
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "options": {}
+      },
+      "id": "eb2fdd50-8285-4b0a-8cd0-3ea90845be6d",
+      "name": "Google Drive Search",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        4448,
+        -2992
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fELtnghRXhwnZz3b",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read"
+      },
+      "id": "90556430-2628-4a3c-ac82-af0869aa9fe0",
+      "name": "Google Docs Read",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 183016108,
+          "mode": "list",
+          "cachedResultName": "Imp Dates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=183016108"
+        },
+        "options": {}
+      },
+      "id": "e8c92296-6396-434b-9dd4-b370fee8d570",
+      "name": "Google Sheets: Read main sheet1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        3104,
+        -2992
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Confirmation }}",
+              "value2": "go_ahead"
+            }
+          ]
+        }
+      },
+      "id": "120d7c49-a451-4d6f-9172-3b6cc1ffbab0",
+      "name": "Filter: go_ahead1",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        3328,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  const row = item.json;\n  const keys = Object.keys(row);\n  for (const key of keys) {\n    if (row[key] && row[key].toString().toLowerCase() === 'yes') {\n      const brandName = key;\n      const monthValue = row['month'] || row['Month'] || '';\n      const eventValue = row['event/celebration'] || row['Event/Celebration'] || '';\n      \n      let productRec = '';\n      const allProductRecs = row['mid_tier_product_recommendations'] || row['Mid_tier_product_recommendations'] || '';\n      if (allProductRecs) {\n        const parts = allProductRecs.toString().split(';');\n        for (const part of parts) {\n          if (part.trim().toLowerCase().startsWith(brandName.toLowerCase() + ':')) {\n            productRec = part.trim().substring(brandName.length + 1).trim();\n            break;\n          }\n        }\n      }\n\n      newItems.push({\n        json: {\n          ...row,\n          month: monthValue,\n          brand: brandName,\n          event: eventValue,\n          mid_tier_product_recommendation: productRec\n        }\n      });\n    }\n  }\n}\nreturn newItems;"
+      },
+      "id": "84e1f40b-f636-48c3-b8c7-52186d87c489",
+      "name": "Item Lists: Extract F-L columns1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3552,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a284847e-d7f1-464e-89ab-7310158c731b",
+      "name": "If Empty1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1036655276,
+          "mode": "list",
+          "cachedResultName": "Product Recommendations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=1036655276"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "month",
+              "lookupValue": "={{ $json.month }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "507bb008-5c54-49ca-976e-42a73feed487",
+      "name": "Google Sheets Lookup #",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4224,
+        -2992
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  for (let i = 0; i < 3; i++) {\n    newItems.push({\n      json: {\n        ...item.json,\n        loop_iteration: i + 1\n      }\n    });\n  }\n}\nreturn newItems;"
+      },
+      "id": "d42fc8ce-57fa-49bc-9f77-9e67976d7f5c",
+      "name": "Loop Over Items1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4896,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ 'You are ' + $('If Empty1').item.json.brand + ' POD expert. Generate 10 DETAILED graphic design prompts for Midjourney/Flux.\\n\\nContext:\\n- Event: ' + $('If Empty1').item.json.event + ' (' + $('If Empty1').item.json.month + ')\\n- Products: ' + $('If Empty1').item.json.mid_tier_product_recommendation + ' + ' + $('Google Sheets Lookup #').item.json.product_recommendations + '\\n- Brand Guidelines: ' + ($json.text || 'See attached') + '\\n- Learn from past: Improve common failures (avoid busy designs)\\n\\nEach prompt MUST include:\\n1. Product type (hoodie/t-shirt/mug)\\n2. ' + $('If Empty1').item.json.brand + ' style: vibrant mid-tier, Instagram-ready\\n3. Event theme (' + $('If Empty1').item.json.event + ')\\n4. 4K, highly detailed, commercial POD mockup\\n\\nJSON array only: [{\\n  \"design_prompt\": \"' + $('If Empty1').item.json.brand + ' style hoodie, vibrant... --ar 1:1 --v 6\"\\n}]' }}",
+        "options": {}
+      },
+      "id": "f09a7345-c0fb-4fc9-ab35-85c89ef79ee8",
+      "name": "AI Agent (LangChain)1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        5120,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {
+          "temperature": 0.3,
+          "numPredict": 4000
+        }
+      },
+      "id": "c7121c74-60c4-4f90-8e23-33afa29c9e48",
+      "name": "Ollama Model: llama3.2:3b1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        5128,
+        -2768
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "lhvQJmJDNIJ4CYLu",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "baf85b54-f36c-4922-aa9f-7031931750bf",
+      "name": "Buffer Memory1",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        5256,
+        -2768
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const newItems = [];\nfor (const item of $input.all()) {\n  try {\n    let outputText = item.json.output || item.json.text || '';\n    if (outputText.includes('```json')) {\n      outputText = outputText.split('```json')[1].split('```')[0];\n    }\n    const prompts = JSON.parse(outputText.trim());\n    for (const p of prompts) {\n      newItems.push({\n        json: {\n          ...item.json,\n          design_prompt: p.design_prompt\n        }\n      });\n    }\n  } catch(e) {\n    newItems.push({ json: { ...item.json, error: 'Failed to process AI array', raw_output: item.json }});\n  }\n}\nreturn newItems;"
+      },
+      "id": "ba110251-7ae0-4339-b71a-825d6464fcef",
+      "name": "Item Lists: Split prompt array to items1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5472,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "month",
+              "value": "={{ $('If Empty1').item.json.month }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $('If Empty1').item.json.date }}"
+            },
+            {
+              "name": "event",
+              "value": "={{ $('If Empty1').item.json.event }}"
+            },
+            {
+              "name": "Brand",
+              "value": "={{ $('If Empty1').item.json.brand }}"
+            },
+            {
+              "name": "Design Prompt",
+              "value": "={{ $json.design_prompt }}"
+            },
+            {
+              "name": "confirmation",
+              "value": "ready_for_review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f113508-04a7-4e72-81a8-e0618bbc6e28",
+      "name": "Set: Format output1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        5696,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prompt Generation",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "5a136346-75f4-4818-8a6d-27a3713bd0e3",
+      "name": "Google Sheets: Append1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        5920,
+        -2992
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 183016108,
+          "mode": "list",
+          "cachedResultName": "Imp Dates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=183016108"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "date",
+              "lookupValue": "={{ $('If Empty1').item.json.row_number || $('If Empty1').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dbb43dcf-338c-4053-8285-10763ede7710",
+      "name": "Google Sheets Lookup #3",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4000,
+        -2992
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Read main sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Read main sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter: go_ahead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: go_ahead": {
+      "main": [
+        [
+          {
+            "node": "Item Lists: Extract F-L columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists: Extract F-L columns": {
+      "main": [
+        [
+          {
+            "node": "If Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Empty": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Lookup #1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Sheets Lookup #2": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (LangChain)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (LangChain)": {
+      "main": [
+        [
+          {
+            "node": "Item Lists: Split prompt array to items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model: llama3.2:3b": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (LangChain)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (LangChain)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists: Split prompt array to items": {
+      "main": [
+        [
+          {
+            "node": "Set: Format output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Format output": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Append": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Lookup #1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Lookup #2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Search": {
+      "main": [
+        [
+          {
+            "node": "Google Docs Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs Read": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Read main sheet1": {
+      "main": [
+        [
+          {
+            "node": "Filter: go_ahead1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: go_ahead1": {
+      "main": [
+        [
+          {
+            "node": "Item Lists: Extract F-L columns1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists: Extract F-L columns1": {
+      "main": [
+        [
+          {
+            "node": "If Empty1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Empty1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Google Sheets Lookup #3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Lookup #": {
+      "main": [
+        [
+          {
+            "node": "Google Drive Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (LangChain)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (LangChain)1": {
+      "main": [
+        [
+          {
+            "node": "Item Lists: Split prompt array to items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model: llama3.2:3b1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (LangChain)1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (LangChain)1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists: Split prompt array to items1": {
+      "main": [
+        [
+          {
+            "node": "Set: Format output1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Format output1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Lookup #3": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Lookup #",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "51516951-99c2-411e-8fdc-1ae7ac88e3cf",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-10T10:26:02.257Z",
+      "createdAt": "2026-03-10T10:26:02.257Z",
+      "role": "workflow:owner",
+      "workflowId": "dHNPVX27fOc8qv3z",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
