@@ -1,0 +1,369 @@
+{
+  "updatedAt": "2026-04-10T14:12:50.274Z",
+  "createdAt": "2026-04-10T09:48:33.697Z",
+  "id": "wqLFOlsPKCz6Vnxw",
+  "name": "vibebloom_slogan_revision",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "9a96bed9-e085-40a4-b347-17d4aab33943",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        }
+      },
+      "id": "3c03e4b7-036c-41f9-9331-abbb341e01e3",
+      "name": "Read Slogan Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -448,
+        32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Needs Revision"
+            }
+          ]
+        }
+      },
+      "id": "77633b16-87a0-4b47-a09a-bd6de250ce99",
+      "name": "Filter Setup",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "d92e5f82-ea12-4ca4-bb83-f9eca99441d0",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "e7dc237c-9ff8-4ed2-b89c-3a904e9737d7",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "webhookId": "9fe49408-c4c8-4499-b7ef-fd9555fe3d6c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fb = $input.first().json.feedback;\nlet promptInstruction = '';\nif (!fb || fb.trim() === '') {\n    promptInstruction = 'You are an expert copywriter. The previous slogan \"' + $input.first().json.slogan + '\" lacked sufficient distinction or quality. Provide a totally distinct, creative alternative that differs greatly in style and tone without explicit feedback.';\n} else {\n    promptInstruction = 'You are an expert copywriter. The previous slogan \"' + $input.first().json.slogan + '\" received the following QA feedback: \"' + fb + '\". Please revise and fix the slogan based on this feedback strictly.';\n}\nreturn [{ json: { ...$input.first().json, llmPrompt: promptInstruction } }];"
+      },
+      "id": "b9a9f21a-49af-48ee-a323-363f31a8380b",
+      "name": "Feedback Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: $json.llmPrompt + ' Return ONLY the slogan text without quotes or explanations.' } ] } }}",
+        "options": {}
+      },
+      "id": "11562f2d-b673-4dc0-bb1f-8394e9446b6c",
+      "name": "Ollama Slogan Revise",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Slogan Ideas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Ready for Review",
+            "slogan": "={{ $('Format Lesson').item.json.newSlogan }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c35fd9ac-6269-4da1-a5ef-ae30a2ea8340",
+      "name": "Update Slogan Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        1552,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fb = $('Feedback Logic').item.json.feedback || 'General Slogan Quality Revision';\nconst oldSlogan = $('Feedback Logic').item.json.slogan;\nconst newSlogan = $json.message ? $json.message.content : $json.choices[0].message.content;\nconst lesson = `Slogan Mistake Rule: Do not generate: ${oldSlogan}. QA Reason: ${fb}. Preferred Output: ${newSlogan}`;\nreturn [{ json: { lesson, newSlogan: newSlogan } }];\n"
+      },
+      "id": "9bb34e13-7875-4826-a361-f6c7f576c186",
+      "name": "Format Lesson",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'nomic-embed-text', prompt: $json.lesson } }}",
+        "options": {}
+      },
+      "id": "adcc20af-09a7-4414-9614-54a9aa738900",
+      "name": "Embed Lesson",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1104,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibebloom-memory-ylyt9n0.svc.aped-4627-b74a.pinecone.io/vectors/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_rXwch_QMDeiE8MofUJtXqeLHZXHmTwzWF7G1d3EkEoHdNeyg1hLion7v6d19yzD8DZLZq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vectors: [ { id: 'slogan-' + Date.now(), values: $json.embedding, metadata: { lesson: $('Format Lesson').item.json.lesson } } ] } }}",
+        "options": {}
+      },
+      "id": "a173c7ce-4dbf-4c3d-af64-fbf9145e243f",
+      "name": "Pinecone Upsert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1328,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Slogan Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Slogan Ideas": {
+      "main": [
+        [
+          {
+            "node": "Filter Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Setup": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Feedback Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Logic": {
+      "main": [
+        [
+          {
+            "node": "Ollama Slogan Revise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Slogan Revise": {
+      "main": [
+        [
+          {
+            "node": "Format Lesson",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Slogan Ideas": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Lesson": {
+      "main": [
+        [
+          {
+            "node": "Embed Lesson",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Lesson": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Upsert": {
+      "main": [
+        [
+          {
+            "node": "Update Slogan Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "e6ccafb4-5de1-4d2d-9eb1-8c6a98ec0991",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:48:33.697Z",
+      "createdAt": "2026-04-10T09:48:33.697Z",
+      "role": "workflow:owner",
+      "workflowId": "wqLFOlsPKCz6Vnxw",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
