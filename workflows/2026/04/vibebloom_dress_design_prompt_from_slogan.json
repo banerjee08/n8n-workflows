@@ -1,0 +1,417 @@
+{
+  "updatedAt": "2026-04-10T14:12:43.852Z",
+  "createdAt": "2026-04-10T09:48:13.517Z",
+  "id": "eRHce6d7LRJSiK0f",
+  "name": "vibebloom_dress_design_prompt_from_slogan",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "7a2cdd32-b06a-469d-a5c2-23b80730284b",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        }
+      },
+      "id": "b97844fb-2ca1-4503-a245-ba2e15537c78",
+      "name": "Read LGTM Slogans",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -432,
+        72
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "LGTM"
+            }
+          ]
+        }
+      },
+      "id": "4c6b752f-db4a-4294-8b17-f97c7fc20b00",
+      "name": "Filter LGTM",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "168db32d-1b2d-4d9a-b896-9922f5944a31",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        16,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "5b472dee-e70b-451b-b127-968b931b2f55",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "13de3789-8edd-49ff-abd9-124071ee0744"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: $json.model || 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: 'You are a senior POD image prompt strategist for the US market.\\n\\nYour job is to generate ONE high-quality, production-ready image prompt for a commercial print-on-demand design that is:\\n- original\\n- highly sellable\\n- visually distinctive\\n- copyright-safe\\n- trademark-safe\\n- suitable for US Gen Z / Millennials\\n- optimized for casual/streetwear apparel and accessories\\n- easy to upscale for print\\n\\nBRAND CONTEXT\\n- Brand name: VibeBloom\\n- Positioning: mid-tier POD lifestyle brand ($25–55)\\n- Brand personality & Voice: fun, casual, energetic\\n- Colors To Consider: washed black, white, electric lime, bubblegum pink, sunny mustard\\n\\nINPUTS YOU WILL RECEIVE\\n- Event: ' + ($json.event || '') + '\\n- Slogan: ' + ($json.slogan || '') + '\\n- Target Product: Dresses/Skirts\\n\\nYOUR TASK\\nGenerate a SINGLE prompt for an image model that creates a graphic design concept for POD.\\n\\nPROMPT REQUIREMENTS\\n- Create an original concept, not a copy of any existing design, logo, franchise, meme template, celebrity, brand, or artist style.\\n- Do NOT reference any copyrighted character, trademark, slogan, TV show, movie, sports team, game, comic, anime, music artist, luxury brand, fashion label, or famous logo.\\n- Do NOT mention \"in the style of\" any artist, designer, brand, or studio.\\n- Do NOT include parody of real brands.\\n- Do NOT use existing internet memes or exact viral layouts.\\n- Do NOT generate fan art, lookalikes, or derivative works.\\n- The design must be commercially safe and original.\\n- The design must be visually strong enough to sell as streetwear or lifestyle merchandise in the US market.\\n- The slogan must be the only text if text is used.\\n- No extra words, subtext, labels, watermarks, mockup text, signatures, borders, or UI elements.\\n- Transparent background if appropriate for a graphic.\\n- Composition should leave balanced negative space.\\n- Keep the main subject away from the margins.\\n- The graphic should be readable from a distance.\\n- The prompt should aim for a clean, premium, marketable design with strong silhouette and clear focal point.\\n- Use brand colors sparingly, about 20–30%, with the rest driven by theme-appropriate colors.\\n- Use bold contrast, clean shape language, and strong visual hierarchy.\\n- Make the prompt concrete enough for image generation, not vague.\\n- Mention print-ready quality and high detail.\\n- Mention square composition unless the product requires another ratio.\\n\\nSTYLE DIRECTION\\nPrefer designs that feel:\\n- modern\\n- playful but not childish\\n- slightly edgy but broadly wearable\\n- trendy without chasing a specific meme\\n- premium enough for $25–55 apparel\\n- flexible across t-shirts, hoodies, totes, skirts, dresses, stickers, and phone cases\\n\\nOUTPUT FORMAT\\nReturn ONLY the final image-generation prompt.\\nNo explanation.\\nNo bullet points.\\nNo quotes.\\nNo intro.\\nNo outro.\\n\\nQUALITY CHECK BEFORE OUTPUT\\nBefore returning the prompt, verify it includes:\\n- subject\\n- mood\\n- composition\\n- color direction\\n- print/production constraints\\n- originality / no-IP safety\\n- text usage rules\\n- apparel suitability' } ] } }}",
+        "options": {}
+      },
+      "id": "3c6e468c-9851-4fb7-8246-db99b120fb6f",
+      "name": "Ollama Generate Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Slogan Ideas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Prompt Generated"
+          }
+        },
+        "options": {}
+      },
+      "id": "f544680e-7d6f-4bcf-a518-fc853f04b9a0",
+      "name": "Mark Slogan Generated",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        1584,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Design Prompts",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "month": "={{ $('Split In Batches').item.json.month }}",
+            "date": "={{ $('Split In Batches').item.json.date }}",
+            "event": "={{ $('Split In Batches').item.json.event }}",
+            "brand": "VibeBloom",
+            "product": "Dresses/Skirts",
+            "slogan": "={{ $('Split In Batches').item.json.slogan }}",
+            "design_prompt": "={{ $('Ollama Generate Prompt').item.json.message.content }}",
+            "status": "Ready for Review",
+            "model": "={{ $('Split In Batches').item.json.model || 'qwen3:1.7b' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c45deede-1a1e-4524-95da-025f257650c6",
+      "name": "Append to Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        1808,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = 'Event: ' + $('Split In Batches').item.json.event + ' on ' + $('Split In Batches').item.json.month + ' ' + $('Split In Batches').item.json.date;\nreturn [{json: {query}}];"
+      },
+      "id": "78227382-72c8-47d5-be8f-6bbadb0bcc77",
+      "name": "Format Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'nomic-embed-text', prompt: $json.query } }}",
+        "options": {}
+      },
+      "id": "71844ab5-78be-4526-a599-bb08fc2cb279",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        688,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibebloom-memory-ylyt9n0.svc.aped-4627-b74a.pinecone.io/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_rXwch_QMDeiE8MofUJtXqeLHZXHmTwzWF7G1d3EkEoHdNeyg1hLion7v6d19yzD8DZLZq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vector: $json.embedding, topK: 3, includeMetadata: true } }}",
+        "options": {}
+      },
+      "id": "5872e0c8-68bd-4d07-9d43-776c68c1f3a7",
+      "name": "Pinecone Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        912,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet pastLessons = \"\";\nif ($json.matches && $json.matches.length > 0) {\n  pastLessons = \"\\n\\n=== PAST LEARNINGS TO STRICTLY AVOID ===\\n\";\n  for(const match of $json.matches) {\n     pastLessons += \"- \" + match.metadata.lesson + \"\\n\";\n  }\n}\nconst bPrompt = $('Ollama Generate Prompt').item.jsonBody || $('Ollama Generate Prompt').item.parameters.jsonBody;\nreturn [{json: { pastLessons }}];\n"
+      },
+      "id": "2c20f1cc-57ad-47fd-bfa4-60788ee4c9ff",
+      "name": "Format Memory",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read LGTM Slogans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read LGTM Slogans": {
+      "main": [
+        [
+          {
+            "node": "Filter LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter LGTM": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Format Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Generate Prompt": {
+      "main": [
+        [
+          {
+            "node": "Mark Slogan Generated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Slogan Generated": {
+      "main": [
+        [
+          {
+            "node": "Append to Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query": {
+      "main": [
+        [
+          {
+            "node": "Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Query": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Search": {
+      "main": [
+        [
+          {
+            "node": "Format Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Memory": {
+      "main": [
+        [
+          {
+            "node": "Ollama Generate Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "e0f2ca9a-cc9e-4f82-9e1e-0453e9078f87",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:48:13.517Z",
+      "createdAt": "2026-04-10T09:48:13.517Z",
+      "role": "workflow:owner",
+      "workflowId": "eRHce6d7LRJSiK0f",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
