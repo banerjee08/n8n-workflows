@@ -1,0 +1,278 @@
+{
+  "updatedAt": "2026-04-10T14:12:55.887Z",
+  "createdAt": "2026-04-10T09:48:44.726Z",
+  "id": "h4weypJ9MSVdq5Bz",
+  "name": "vibebloom_slogan_check",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "3c8fc49a-e911-42aa-806e-d94a93268d91",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        }
+      },
+      "id": "4cefb5f8-4af6-44fc-aeaa-eb096c2fed69",
+      "name": "Read Slogan Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -432,
+        72
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Ready for Review"
+            }
+          ]
+        }
+      },
+      "id": "9ad73962-76f5-4179-bac7-85d9473836e8",
+      "name": "Filter Setup",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "93766a07-29c3-40cb-8b87-92f13b264b40",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        16,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "c6dc58c8-13b4-4824-8fe4-7f4fcf30de9a",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "2132cea1-7240-4f67-8f1f-b47659d615ea"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: 'You are a QA legal agent checking POD slogans for issues. Review this slogan for copyright/trademark infringement risk and readability: \"' + $json.slogan + '\". If it is completely safe and fine, reply with EXACTLY: \"LGTM\". If there are issues, reply with a short explanation of the problems.' } ] } }}",
+        "options": {}
+      },
+      "id": "735d48e7-73f9-434e-be05-e48c8d5980d0",
+      "name": "Ollama QA Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json.message.content.trim();\nlet status = 'Needs Revision';\nlet feedback = '';\nif (response === 'LGTM') {\n  status = 'LGTM';\n} else {\n  feedback = response;\n}\nreturn [{ json: { ...$('Split In Batches').item.json, newStatus: status, newFeedback: feedback, rowNumber: $('Split In Batches').item.json.row_number } }];"
+      },
+      "id": "d025b1d1-3f41-4c01-8268-19d75333c31b",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Slogan Ideas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.newStatus }}",
+            "feedback": "={{ $json.newFeedback }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "58f58f7c-c9b6-4af8-a748-c09f48d2a523",
+      "name": "Update Slogan Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        912,
+        72
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Slogan Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Slogan Ideas": {
+      "main": [
+        [
+          {
+            "node": "Filter Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Setup": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Ollama QA Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama QA Review": {
+      "main": [
+        [
+          {
+            "node": "Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {
+            "node": "Update Slogan Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Slogan Ideas": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "380aaaab-a803-4a51-9665-25f10afb5bb4",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:48:44.726Z",
+      "createdAt": "2026-04-10T09:48:44.726Z",
+      "role": "workflow:owner",
+      "workflowId": "h4weypJ9MSVdq5Bz",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
