@@ -1,0 +1,481 @@
+{
+  "updatedAt": "2026-04-10T18:49:49.088Z",
+  "createdAt": "2026-04-10T09:46:17.331Z",
+  "id": "FO7SfgVE6ZItdsdI",
+  "name": "vibebloom_dress_design_prompt_no_slogan",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "c76e8470-72d5-4895-ae2a-7d95953f8ea2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1472,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1906258028,
+          "mode": "list",
+          "cachedResultName": "Design Prompts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=1906258028"
+        },
+        "options": {}
+      },
+      "id": "a7a28d69-79ca-41d2-ab2e-1cd9334db4af",
+      "name": "Read Imp Dates",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -1248,
+        -216
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Confirmation }}",
+              "value2": "go_ahead"
+            },
+            {
+              "value1": "={{ $json.VibeBloom }}",
+              "value2": "yes"
+            }
+          ]
+        }
+      },
+      "id": "d43f26fd-6b22-489e-9f18-b26a6941547c",
+      "name": "Filter Setup",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "0a40bf37-fe6e-4196-8d70-9102a19b7724",
+      "name": "Count LGTM rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -800,
+        -216
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $('Filter Setup').item.json['event/celebration'];\nlet lgtmCount = 0;\nfor (const row of $input.all()) {\n  if (row.json.event === event && row.json.status === 'LGTM' && (!row.json.slogan || row.json.slogan === '')) {\n    lgtmCount++;\n  }\n}\nreturn [{ json: { lgtmCount, event, month: $('Filter Setup').item.json.month, date: $('Filter Setup').item.json.date } }];"
+      },
+      "id": "c7f10cd3-9b86-4d6d-b755-54c41451a469",
+      "name": "Calculate Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.lgtmCount }}",
+              "value2": 30
+            }
+          ]
+        }
+      },
+      "id": "063f2737-9e70-4527-9df1-3dbbe5d592e5",
+      "name": "If Count < 30",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "01c2bec2-bd93-45e2-a4a7-8bca846d3700",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "db587b02-7c50-44a3-8b1e-f8690c7990eb",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        96,
+        -288
+      ],
+      "webhookId": "65d903a4-ab79-43eb-9d89-ea2c384b389c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ollama.sbanerjee.cloud/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: 'You are a senior POD image prompt strategist for the US market.\\n\\nYour job is to generate ONE high-quality, production-ready image prompt for a commercial print-on-demand design that is:\\n- original\\n- highly sellable\\n- visually distinctive\\n- copyright-safe\\n- trademark-safe\\n- suitable for US Gen Z / Millennials\\n- optimized for casual/streetwear apparel and accessories\\n- easy to upscale for print\\n\\nBRAND CONTEXT\\n- Brand name: VibeBloom\\n- Positioning: mid-tier POD lifestyle brand ($25–55)\\n- Brand personality & Voice: fun, casual, energetic\\n- Colors To Consider: washed black, white, electric lime, bubblegum pink, sunny mustard\\n\\nINPUTS YOU WILL RECEIVE\\n- Event: ' + $json.event + '\\n- Date: ' + $json.month + ' ' + $json.date + '\\n- Target Product: Dresses/Skirts\\n\\nYOUR TASK\\nGenerate a SINGLE prompt for an image model that creates a graphic design concept for POD.\\n\\nCRITICAL REQUIREMENT\\n- THIS DESIGN MUST HAVE ABSOLUTELY NO TEXT, NO SLOGAN, NO TYPOGRAPHY, AND NO WORDS WHATSOEVER. It must be a pure illustration/graphic.\\n\\nPROMPT REQUIREMENTS\\n- Create an original concept, not a copy of any existing design, logo, franchise, meme template, celebrity, brand, or artist style.\\n- Do NOT reference any copyrighted character, trademark, TV show, movie, sports team, anime, music artist.\\n- The design must be commercially safe and original.\\n- No extra words, subtext, labels, watermarks, mockup text, signatures, borders, or UI elements.\\n- Transparent background if appropriate for a graphic.\\n- Composition should leave balanced negative space.\\n- The prompt should aim for a clean, premium, marketable design with strong silhouette.\\n- Use brand colors sparingly, about 20–30%, with the rest driven by theme-appropriate colors.\\n\\nOUTPUT FORMAT\\nReturn ONLY the final image-generation prompt.\\nNo explanation.' } ] } }}",
+        "options": {}
+      },
+      "id": "5df300df-2866-4996-a58d-bab68b87902d",
+      "name": "Ollama Generate Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1216,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Design Prompts",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "month": "={{ $('Calculate Count').item.json.month }}",
+            "date": "={{ $('Calculate Count').item.json.date }}",
+            "event": "={{ $('Calculate Count').item.json.event }}",
+            "brand": "VibeBloom",
+            "product": "Dresses/Skirts",
+            "slogan": "",
+            "design_prompt": "={{ $json.message.content }}",
+            "status": "Ready for Review",
+            "model": "qwen3:1.7b"
+          }
+        },
+        "options": {}
+      },
+      "id": "976baed3-134c-4d69-92f9-ad2339076fd0",
+      "name": "Append to Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        1440,
+        -216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = 'Event: ' + $('Split In Batches').item.json.event + ' on ' + $('Split In Batches').item.json.month + ' ' + $('Split In Batches').item.json.date;\nreturn [{json: {query}}];"
+      },
+      "id": "09a0594c-108a-4168-bd0a-36f1f6babff6",
+      "name": "Format Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ollama.sbanerjee.cloud/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'nomic-embed-text', prompt: $json.query } }}",
+        "options": {}
+      },
+      "id": "7d752df1-c2a8-4f7c-89be-8c6c5dd7899a",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        544,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibebloom-memory-ylyt9n0.svc.aped-4627-b74a.pinecone.io/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_rXwch_QMDeiE8MofUJtXqeLHZXHmTwzWF7G1d3EkEoHdNeyg1hLion7v6d19yzD8DZLZq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vector: $json.embedding, topK: 3, includeMetadata: true } }}",
+        "options": {}
+      },
+      "id": "626cd1b3-e6ed-4727-b6ae-61ab590c8872",
+      "name": "Pinecone Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        768,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet pastLessons = \"\";\nif ($json.matches && $json.matches.length > 0) {\n  pastLessons = \"\\n\\n=== PAST LEARNINGS TO STRICTLY AVOID ===\\n\";\n  for(const match of $json.matches) {\n     pastLessons += \"- \" + match.metadata.lesson + \"\\n\";\n  }\n}\nreturn [{json: { pastLessons }}];\n"
+      },
+      "id": "1b7e57a5-788e-441c-b747-bdd0951f664e",
+      "name": "Format Memory",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        -288
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Imp Dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Imp Dates": {
+      "main": [
+        [
+          {
+            "node": "Filter Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Setup": {
+      "main": [
+        [
+          {
+            "node": "Count LGTM rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count LGTM rows": {
+      "main": [
+        [
+          {
+            "node": "Calculate Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Count": {
+      "main": [
+        [
+          {
+            "node": "If Count < 30",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Count < 30": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Format Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Generate Prompt": {
+      "main": [
+        [
+          {
+            "node": "Append to Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query": {
+      "main": [
+        [
+          {
+            "node": "Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Query": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Search": {
+      "main": [
+        [
+          {
+            "node": "Format Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Memory": {
+      "main": [
+        [
+          {
+            "node": "Ollama Generate Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "51cdb001-f1ac-4631-94c6-a1260454bed3",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:46:17.331Z",
+      "createdAt": "2026-04-10T09:46:17.331Z",
+      "role": "workflow:owner",
+      "workflowId": "FO7SfgVE6ZItdsdI",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
