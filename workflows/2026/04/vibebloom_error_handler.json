@@ -1,0 +1,81 @@
+{
+  "updatedAt": "2026-04-10T14:13:07.608Z",
+  "createdAt": "2026-04-10T09:49:01.850Z",
+  "id": "7Z2lthbRAqeseWng",
+  "name": "vibebloom_error_handler",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "54b07046-6dce-484e-9ed8-020783933e51",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "5365295465",
+        "text": "={{ '⚠️ *n8n Workflow Error Alert*\\n\\n*Workflow ID:* ' + $json.execution.workflowId + '\\n*Workflow Name:* ' + $json.execution.workflowName + '\\n*Failing Node:* ' + $json.execution.lastNodeExecuted + '\\n*Error Message:* ' + $json.execution.error.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "36e54c14-3195-4b45-b998-f23d8de1e014",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "84ff70ba-278b-4429-9fd0-9795eedb08f1",
+      "credentials": {
+        "telegramApi": {
+          "id": "hSKJwW04LuOkUxQn",
+          "name": "Telegram-POD"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f056f02a-2d22-413f-ad0c-8acb7b0796ef",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:49:01.850Z",
+      "createdAt": "2026-04-10T09:49:01.850Z",
+      "role": "workflow:owner",
+      "workflowId": "7Z2lthbRAqeseWng",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
