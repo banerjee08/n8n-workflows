@@ -1,0 +1,278 @@
+{
+  "updatedAt": "2026-04-10T14:13:29.771Z",
+  "createdAt": "2026-04-10T09:43:51.928Z",
+  "id": "jXY93WxkAAIXm6PP",
+  "name": "vibebloom_design_prompt_check",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "67249757-c56c-4bd5-b5d0-133f3b7cacfb",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        }
+      },
+      "id": "d298fb79-576c-45c7-ac8c-2fcad2e68235",
+      "name": "Read Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        -432,
+        72
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Ready for Review"
+            }
+          ]
+        }
+      },
+      "id": "fd66d51f-cda8-4d86-a7b8-b8b8dac40940",
+      "name": "Filter Setup",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "99b2e399-e554-4cd3-b3a7-96925f220334",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        16,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "ac9f87e8-f081-4222-96d5-3fa143c56226",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "d975619d-e1b5-4a8b-b1be-e35024569367"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: 'You are a QA legal and quality agent checking POD design AI prompts for issues. Review this prompt for copyright/trademark infringement risk and POD formatting completeness: \"' + $json.design_prompt + '\".\\nIf it includes banned IPs, brands, or is formatted poorly, reply with a short explanation of the problems.\\nIf it is completely safe and fine, reply with EXACTLY: \"LGTM\".' } ] } }}",
+        "options": {}
+      },
+      "id": "1d03b142-6482-4226-8113-2875e5bb0ef7",
+      "name": "Ollama QA Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json.message.content.trim();\nlet status = 'Needs Revision';\nlet feedback = '';\nif (response === 'LGTM') {\n  status = 'LGTM';\n} else {\n  feedback = response;\n}\nreturn [{ json: { ...$('Split In Batches').item.json, newStatus: status, newFeedback: feedback, rowNumber: $('Split In Batches').item.json.row_number } }];"
+      },
+      "id": "9853ae89-f913-4aee-84d6-48034f49774f",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Design Prompts",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.newStatus }}",
+            "feedback": "={{ $json.newFeedback }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "a80ef5a7-1b3a-48a6-9f92-b4719983248b",
+      "name": "Update Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        912,
+        72
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Filter Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Setup": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Ollama QA Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama QA Review": {
+      "main": [
+        [
+          {
+            "node": "Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {
+            "node": "Update Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "fd7c4026-7640-4f84-acbe-db144905e860",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:43:51.928Z",
+      "createdAt": "2026-04-10T09:43:51.928Z",
+      "role": "workflow:owner",
+      "workflowId": "jXY93WxkAAIXm6PP",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
