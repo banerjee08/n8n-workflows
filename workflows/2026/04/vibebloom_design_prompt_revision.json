@@ -1,0 +1,405 @@
+{
+  "updatedAt": "2026-04-10T14:12:32.292Z",
+  "createdAt": "2026-04-10T09:43:02.260Z",
+  "id": "1duhWQJbZ6Ou1gb6",
+  "name": "vibebloom_design_prompt_revision",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "77e0b22a-7114-4658-86e9-34cb73890cb8",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        }
+      },
+      "id": "cd234e97-0e79-4bc2-b19f-e526784e6dd5",
+      "name": "Read Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        48,
+        120
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Needs Revision"
+            },
+            {
+              "value1": "={{ $json.brand }}",
+              "value2": "VibeBloom"
+            }
+          ]
+        }
+      },
+      "id": "58c1d890-965c-4eef-a58a-f83ea035903e",
+      "name": "Filter Status & Brand",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        272,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.product }}",
+              "operation": "contains",
+              "value2": "Dresses"
+            }
+          ]
+        }
+      },
+      "id": "b3af01b6-58dc-4110-8a64-c9dd09b49225",
+      "name": "Filter Product",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        496,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "ccd6b644-d7fa-42f3-b337-f86b303f2466",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        720,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "244ec922-381a-421e-ba01-3a37d0d191e6",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        944,
+        48
+      ],
+      "webhookId": "06d9b952-9f72-4c43-b46e-ef730a642ec7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fb = $input.first().json.feedback;\nlet promptInstruction = '';\nif (!fb || fb.trim() === '') {\n    promptInstruction = 'You are a senior POD prompt strategist. The previous image prompt \"' + $input.first().json.design_prompt + '\" was rejected by QA without specific feedback. Provide a totally distinct, creative alternative that differs greatly in compositional focus or aesthetic approach without violating base requirements.';\n} else {\n    promptInstruction = 'You are a senior POD prompt strategist. The previous image prompt \"' + $input.first().json.design_prompt + '\" received the following QA feedback: \"' + fb + '\". Please revise and fix the image prompt based on this feedback strictly.';\n}\nreturn [{ json: { ...$input.first().json, llmPrompt: promptInstruction } }];"
+      },
+      "id": "43509dd7-1386-47c1-9c85-d07cee102e74",
+      "name": "Feedback Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: $json.model || 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: $json.llmPrompt + ' Return ONLY the prompt text formatting.' } ] } }}",
+        "options": {}
+      },
+      "id": "4e0a49cc-6c84-4fcb-98e9-b8b546b0a763",
+      "name": "Ollama Prompt Revise",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1392,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Design Prompts",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Ready for Review",
+            "design_prompt": "={{ $('Format Lesson').item.json.newPrompt }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "15afa24e-12f1-43c4-99ec-635d9a73982b",
+      "name": "Update Design Prompts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        2288,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fb = $('Feedback Logic').item.json.feedback || 'General Quality Revision';\nconst oldP = $('Feedback Logic').item.json.design_prompt;\nconst newP = $json.message ? $json.message.content : $json.choices[0].message.content;\nconst lesson = `Mistake Avoidance Rule: Do not generate prompts like: ${oldP}. Reason/QA Feedback: ${fb}. Preferred Output Structure: ${newP}`;\nreturn [{ json: { lesson, newPrompt: newP } }];\n"
+      },
+      "id": "b25e736a-870d-4ab1-adbd-97b30e6bf39d",
+      "name": "Format Lesson",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'nomic-embed-text', prompt: $json.lesson } }}",
+        "options": {}
+      },
+      "id": "473ba5ae-51e7-474c-b3d2-cfaf71dbc330",
+      "name": "Embed Lesson",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1840,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibebloom-memory-ylyt9n0.svc.aped-4627-b74a.pinecone.io/vectors/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_rXwch_QMDeiE8MofUJtXqeLHZXHmTwzWF7G1d3EkEoHdNeyg1hLion7v6d19yzD8DZLZq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vectors: [ { id: 'memory-' + Date.now(), values: $json.embedding, metadata: { lesson: $('Format Lesson').item.json.lesson } } ] } }}",
+        "options": {}
+      },
+      "id": "c6021d52-e7f5-49af-ae27-0fd65075e933",
+      "name": "Pinecone Upsert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2064,
+        48
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Filter Status & Brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Status & Brand": {
+      "main": [
+        [
+          {
+            "node": "Filter Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Product": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Feedback Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Logic": {
+      "main": [
+        [
+          {
+            "node": "Ollama Prompt Revise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Prompt Revise": {
+      "main": [
+        [
+          {
+            "node": "Format Lesson",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Design Prompts": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Lesson": {
+      "main": [
+        [
+          {
+            "node": "Embed Lesson",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Lesson": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Upsert": {
+      "main": [
+        [
+          {
+            "node": "Update Design Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "11f5d99a-3729-43ad-a05f-974c6bb010f8",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:43:02.260Z",
+      "createdAt": "2026-04-10T09:43:02.260Z",
+      "role": "workflow:owner",
+      "workflowId": "1duhWQJbZ6Ou1gb6",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
