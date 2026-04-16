@@ -1,0 +1,487 @@
+{
+  "updatedAt": "2026-04-10T19:11:14.195Z",
+  "createdAt": "2026-04-10T09:48:53.822Z",
+  "id": "NouNcI4UltqUATSu",
+  "name": "vibebloom_slogan_generation",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "6da1437a-a2bc-4788-b9ab-43c7b5bd5772",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        4064,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Imp Dates",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "45dc81a9-dcde-48b3-b1f9-ffc36c54503b",
+      "name": "Read Imp Dates",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        4288,
+        856
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Confirmation }}",
+              "value2": "go_ahead"
+            },
+            {
+              "value1": "={{ $json.VibeBloom }}",
+              "value2": "yes"
+            }
+          ]
+        }
+      },
+      "id": "db12e40e-9b34-4865-8534-ea43c375a735",
+      "name": "Filter Setup",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4512,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1906258028,
+          "mode": "list",
+          "cachedResultName": "Design Prompts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=1906258028"
+        },
+        "options": {}
+      },
+      "id": "4b09145a-72df-4cb5-a706-f4148afa89e2",
+      "name": "Count LGTM rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        4736,
+        856
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $('Filter Setup').item.json['event/celebration'];\nlet lgtmCount = 0;\nfor (const row of $input.all()) {\n  if (row.json.event === event && row.json.status === 'LGTM') {\n    lgtmCount++;\n  }\n}\nreturn [{ json: { lgtmCount, event, month: $('Filter Setup').item.json.month, date: $('Filter Setup').item.json.date } }];"
+      },
+      "id": "bfa839e3-dd26-4924-9697-0b408487da85",
+      "name": "Calculate Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4960,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.lgtmCount }}",
+              "value2": 30
+            }
+          ]
+        }
+      },
+      "id": "decf75e8-2cf9-40a9-9610-78134107af6e",
+      "name": "If Count < 30",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        5184,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "07fb6c9e-b10f-4436-8fdd-c48aeffa4eb0",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        5408,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "c7bdd011-51bf-4a04-b526-c6c17134f96c",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        5632,
+        784
+      ],
+      "webhookId": "0b306f60-3dfb-4ddd-b828-75d2b1a2ed33"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ollama.sbanerjee.cloud/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'qwen3:1.7b', stream: false, messages: [ { role: 'user', content: 'You are an expert copywriter. Generate a catchy, short, and engaging slogan for a streetwear brand called VibeBloom (Dresses/Skirts) to celebrate: ' + $json.event + ' on ' + $json.month + ' ' + $json.date + '. Return ONLY the slogan text without quotes or explanations.' } ] } }}",
+        "options": {}
+      },
+      "id": "0b65241f-9c23-4a18-b14a-17a750bd2f47",
+      "name": "Ollama Slogan Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        6752,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Slogan Ideas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "month": "={{ $('Calculate Count').item.json.month }}",
+            "date": "={{ $('Calculate Count').item.json.date }}",
+            "event": "={{ $('Calculate Count').item.json.event }}",
+            "brand": "VibeBloom",
+            "product": "Dresses/Skirts",
+            "slogan": "={{ $json.message.content }}",
+            "status": "Ready for Review",
+            "model": "qwen3:1.7b"
+          }
+        },
+        "options": {}
+      },
+      "id": "7022afca-acae-4568-9547-45f8c02075f2",
+      "name": "Append to Slogan Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        6976,
+        856
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = 'Event Slogan: ' + $('Calculate Count').item.json.event + ' on ' + $('Calculate Count').item.json.month + ' ' + $('Calculate Count').item.json.date;\nreturn [{json: {query}}];"
+      },
+      "id": "7ea7ca9b-bc34-4d5a-8754-87df1dde63ea",
+      "name": "Format Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5856,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ollama.sbanerjee.cloud/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: 'nomic-embed-text', prompt: $json.query } }}",
+        "options": {}
+      },
+      "id": "236081db-b2a0-4393-a1ff-6de56100ff96",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        6080,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibebloom-memory-ylyt9n0.svc.aped-4627-b74a.pinecone.io/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_rXwch_QMDeiE8MofUJtXqeLHZXHmTwzWF7G1d3EkEoHdNeyg1hLion7v6d19yzD8DZLZq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vector: $json.embedding, topK: 3, includeMetadata: true } }}",
+        "options": {}
+      },
+      "id": "2037f333-edd1-4e46-9483-2fe2c5310cb4",
+      "name": "Pinecone Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        6304,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet pastLessons = \"\";\nif ($json.matches && $json.matches.length > 0) {\n  pastLessons = \"\\n\\nCRITICAL SLOGAN RULES TO AVOID:\\n\";\n  for(const match of $json.matches) {\n     pastLessons += \"- \" + match.metadata.lesson + \"\\n\";\n  }\n}\nreturn [{json: { pastLessons }}];\n"
+      },
+      "id": "7c98bfa0-9da5-49b1-8d3a-0df7f9da353c",
+      "name": "Format Memory",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6528,
+        784
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Imp Dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Imp Dates": {
+      "main": [
+        [
+          {
+            "node": "Filter Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Setup": {
+      "main": [
+        [
+          {
+            "node": "Count LGTM rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count LGTM rows": {
+      "main": [
+        [
+          {
+            "node": "Calculate Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Count": {
+      "main": [
+        [
+          {
+            "node": "If Count < 30",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Count < 30": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Format Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Slogan Generation": {
+      "main": [
+        [
+          {
+            "node": "Append to Slogan Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Slogan Ideas": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query": {
+      "main": [
+        [
+          {
+            "node": "Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Query": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Search": {
+      "main": [
+        [
+          {
+            "node": "Format Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Memory": {
+      "main": [
+        [
+          {
+            "node": "Ollama Slogan Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "4a366419-65da-4456-9a09-da94f937cdd4",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-10T09:48:53.822Z",
+      "createdAt": "2026-04-10T09:48:53.822Z",
+      "role": "workflow:owner",
+      "workflowId": "NouNcI4UltqUATSu",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
