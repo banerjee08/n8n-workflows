@@ -1,0 +1,1377 @@
+{
+  "updatedAt": "2026-07-09T14:58:24.909Z",
+  "createdAt": "2026-07-08T19:41:29.670Z",
+  "id": "JA1oqqZlfgGkkCXX",
+  "name": "Resume and Cover Letter Generation",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "c55d43f8-cc59-4a26-9934-6ba3af65f1f4",
+      "name": "Schedule Trigger (Every 30 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Certifications",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "31fd9f24-4d4b-423d-8a25-b3134632a518",
+      "name": "Read Certifications Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1296,
+        1312
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nlet certsList = [];\nfor (const row of rows) {\n  const d = row.json;\n  const provider = d['Provider'] || '';\n  const name = d['Name of the Certification'] || d['Certification'] || '';\n  const date = d['Date/Month of Completion'] || d['Date'] || '';\n  if (!name) continue;\n  certsList.push(name + (provider ? ' — ' + provider : '') + (date ? ' (' + date + ')' : ''));\n}\nconst certificationsText = certsList.length > 0 ? certsList.map(c => '• ' + c).join('\\n') : '';\nreturn [{ json: { certificationsText, hasCertifications: certsList.length > 0 } }];"
+      },
+      "id": "72f87f91-8e73-4487-97f9-267b7ad1518c",
+      "name": "Compile Certifications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Skills",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "70a2a081-dc97-44a8-9dbd-aaf2fa465ab5",
+      "name": "Read Skills Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1744,
+        1312
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nlet skillsByCategory = {};\nlet allSkills = [];\nfor (const row of rows) {\n  const data = row.json;\n  const category = data['Category'] || data['Skill Category'] || data['Type'] || 'General';\n  const skill = data['Skill'] || data['Skill Name'] || data['Name'] || '';\n  const level = data['Level'] || data['Proficiency'] || '';\n  if (!skill) continue;\n  const label = level ? skill + ' (' + level + ')' : skill;\n  allSkills.push(label);\n  if (!skillsByCategory[category]) skillsByCategory[category] = [];\n  skillsByCategory[category].push(label);\n}\nlet skillsText = '';\nfor (const [cat, skills] of Object.entries(skillsByCategory)) {\n  skillsText += '**' + cat + '**: ' + skills.join(', ') + '\\n';\n}\nif (!skillsText) skillsText = 'Python, JavaScript, SQL, REST APIs, Cloud Computing, Data Analysis';\nconst flatSkills = allSkills.slice(0, 18).join(', ') || skillsText;\nreturn [{ json: { skillsByCategory, skillsText, flatSkills, totalSkills: allSkills.length } }];"
+      },
+      "id": "2e716209-e6de-4d8e-8c66-c8d6e7b2e63e",
+      "name": "Compile Skills from Sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Job Application Sheet",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "9a0160cf-d29e-478f-8e03-95a2dabc6b43",
+      "name": "Read Job Application Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2192,
+        1312
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json['Resume Status'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "Create one"
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json['Resume Status'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "Needs Rework"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "a73f0fbe-c700-4883-86c2-61e886b5dd3d",
+      "name": "Filter: Create or Rework (Resume)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.1,
+      "position": [
+        2416,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $json['Resume Status'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "Reviewed"
+            },
+            {
+              "id": "c4",
+              "leftValue": "={{ $json['Cover Letter Status'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "Needs Rework"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "4dbb4a4b-8888-4f51-b5bc-be10d53de418",
+      "name": "Filter: CL Trigger",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.1,
+      "position": [
+        2416,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c5",
+              "leftValue": "={{ $json['Status of Resume and CL'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "To be reviewed"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "41ec3d70-5b70-42bb-86fe-cb2f686bb890",
+      "name": "Filter: To Be Reviewed",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.1,
+      "position": [
+        2416,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "resume_feedback",
+        "limit": 5,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_approved",
+              "condition": "is",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "id": "754e6c69-4222-4ecc-b50d-a8006ac2ef63",
+      "name": "Query Supabase for Examples",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        1024
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "resume_logs",
+        "limit": 5,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "document_type",
+              "condition": "eq",
+              "keyValue": "resume"
+            },
+            {
+              "keyName": "company_name",
+              "condition": "eq",
+              "keyValue": "={{ $('Filter: Create or Rework (Resume)').item.json['Company'] || '' }}"
+            }
+          ]
+        }
+      },
+      "id": "e1dd1734-91be-43f7-8638-a463fa50963c",
+      "name": "Fetch Current Draft (Resume)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2864,
+        1024
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('Filter: Create or Rework (Resume)').item.json;\nconst company = (item['Company'] || 'Target Company').trim();\nconst jobTitle = (item['Position - Title'] || 'Professional').trim();\nconst jobDesc = (item['Position - Description'] || 'Not provided.').trim();\nconst rowNumber = item['row_number'] || item['rowNumber'] || 2;\nconst isRework = (item['Resume Status'] || '').trim() === 'Needs Rework';\nconst reworkNotes = (item['Notes for Resume'] || '').trim();\n\nlet skillsText = '';\ntry { skillsText = $('Compile Skills from Sheet').first().json.skillsText || ''; } catch(e) {}\nif (!skillsText) skillsText = 'Python, JavaScript, SQL, REST APIs, Data Analysis';\n\nlet certificationsText = '';\ntry { certificationsText = $('Compile Certifications').first().json.certificationsText || ''; } catch(e) {}\n\nlet examplesText = '';\ntry {\n  const exs = $('Query Supabase for Examples').all();\n  let n = 1;\n  for (const ex of exs) {\n    if (ex.json && ex.json.generated_markdown && !ex.json.error) {\n      examplesText += '### Reference ' + n + ' — ' + ex.json.job_title + ' @ ' + ex.json.company_name + ':\\n' + ex.json.generated_markdown + '\\n\\n---\\n\\n';\n      n++;\n    }\n  }\n} catch(e) {}\n\nlet existingMarkdown = '';\ntry {\n  const drafts = $('Fetch Current Draft (Resume)').all()\n    .filter(d => d.json && d.json.generated_markdown && !d.json.error)\n    .sort((a, b) => new Date(b.json.created_at) - new Date(a.json.created_at));\n  if (drafts.length > 0) existingMarkdown = drafts[0].json.generated_markdown;\n} catch(e) {}\n\nlet promptText = '';\nif (isRework && existingMarkdown) {\n  promptText = 'You are an Expert Resume Editor for Sumanto Banerjee.\\n\\n'\n    + 'REWORK MODE: Apply ONLY the specific feedback below to the current resume. '\n    + 'Do NOT change any other section. Every other line must remain word-for-word identical.\\n\\n'\n    + 'CURRENT RESUME:\\n---\\n' + existingMarkdown + '\\n---\\n\\n'\n    + 'FEEDBACK TO IMPLEMENT:\\n' + reworkNotes + '\\n\\n'\n    + 'Return the COMPLETE updated resume in Markdown with ONLY the above changes applied. No explanations, no commentary.';\n} else {\n  promptText = 'You are an Expert ATS-Optimized Resume Writer for Sumanto Banerjee.\\n\\n'\n    + 'TARGET ROLE: ' + jobTitle + '\\n'\n    + 'TARGET COMPANY: ' + company + '\\n\\n'\n    + 'JOB DESCRIPTION:\\n' + jobDesc + '\\n\\n'\n    + 'SUMANTO SKILLS (pick the most relevant — do not invent new ones):\\n' + skillsText\n    + (certificationsText ? '\\n\\nCERTIFICATIONS (include ALL in the resume):\\n' + certificationsText : '')\n    + (examplesText ? '\\n\\nSUMANTO\\'S OWN REFERENCE RESUMES (use exact phrasing, bullets, structure as needed):\\n' + examplesText : '')\n    + '\\n\\n---\\n\\n'\n    + 'GENERATE a complete ATS-optimized ONE-PAGE resume in Markdown.\\n\\n'\n    + 'STRUCTURE:\\n'\n    + '# Sumanto Banerjee\\n'\n    + '[Contact: email | phone | LinkedIn | Location]\\n\\n'\n    + '## Professional Summary\\n'\n    + '[2-3 sentences mentioning exact role and company. Quantify impact.]\\n\\n'\n    + '## Core Skills\\n'\n    + '[8-12 bullet points of the most relevant skills from the list]\\n\\n'\n    + '## Professional Experience\\n'\n    + '[Most relevant roles. Bullets use: Accomplished X, measured by Y, by doing Z. Bold key metrics and tech.]\\n\\n'\n    + '## Education\\n'\n    + '[Degree, University, Year]\\n\\n'\n    + '## Certifications\\n'\n    + '[List all certifications from the certifications section above]\\n\\n'\n    + '## Key Projects (only if space permits on one page)\\n'\n    + '[Brief 2-line descriptions with tech and metrics]\\n\\n'\n    + 'STRICT RULES:\\n'\n    + '1. ONE PAGE ONLY — ruthlessly cut anything not directly relevant to the JD\\n'\n    + '2. ATS-FRIENDLY — use bullet lists for skills, avoid tables\\n'\n    + '3. BOLD key metrics, technologies, and tools\\n'\n    + '4. Every experience bullet: Google Formula (Accomplished X measured by Y by doing Z)\\n'\n    + '5. If information is missing — OMIT that section. NO placeholder text whatsoever\\n'\n    + '6. You may borrow exact phrases and bullets from the reference resumes above\\n'\n    + '7. Output ONLY the Markdown — no commentary or explanations';\n}\n\nreturn [{ json: { company, jobTitle, jobDesc, rowNumber, isRework, reworkNotes, existingMarkdown, skillsText, certificationsText, promptText, candidateName: 'Sumanto Banerjee' } }];"
+      },
+      "id": "589c9bdc-0c4c-4c9b-9cf3-4c84b49dbced",
+      "name": "Prepare Resume Inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3152,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}"
+      },
+      "id": "39d16847-e539-44fe-a988-5e0b084287bd",
+      "name": "Generate Resume (Ollama)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        3440,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "model": "qwen3:1.7b",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "f203e402-ba32-45f3-bdb5-7e4853b5e942",
+      "name": "Ollama Model (Resume)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        1136
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "qHCgFApTsWnlJaEW",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "4d667937-04bf-42f5-acc2-64438fd950ac",
+      "name": "Wait 5s (Resume)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3792,
+        1024
+      ],
+      "webhookId": "a11469ba-7b5b-4f0a-aba2-42f81aa8651b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const md = $json.text || '';\nconst inp = $('Prepare Resume Inputs').item.json;\nconst { company, jobTitle, rowNumber, candidateName } = inp;\nconst fileName = 'Resume - ' + candidateName + ' - ' + company + '.pdf';\nfunction mdToHtml(text) {\n  let h = text;\n  h = h.replace(/^# (.+)$/gm, '<h1 class=\"name\">$1</h1>');\n  h = h.replace(/^## (.+)$/gm, '<h2 class=\"section-title\">$1</h2>');\n  h = h.replace(/^### (.+)$/gm, '<h3 class=\"job-title\">$1</h3>');\n  h = h.replace(/^---$/gm, '<hr/>');\n  h = h.replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>');\n  h = h.replace(/\\*([^*\\n]+)\\*/g, '<span class=\"date\">$1</span>');\n  h = h.replace(/^- (.+)$/gm, '<li>$1</li>');\n  h = h.replace(/(<li>[\\s\\S]*?<\\/li>\\n?)+/g, (b) => '<ul>' + b + '</ul>');\n  h = h.replace(/^(📧[^\\n]+)$/gm, '<p class=\"contact\">$1</p>');\n  h = h.replace(/\\n\\n+/g, '</p><p>');\n  h = '<p>' + h + '</p>';\n  h = h.replace(/<p>\\s*(<h[123]|<hr|<ul)/g, '$1');\n  h = h.replace(/(<\\/h[123]>|<\\/ul>|<hr\\/>)\\s*<\\/p>/g, '$1');\n  h = h.replace(/<p>\\s*<\\/p>/g, '');\n  return h;\n}\nconst bodyHtml = mdToHtml(md);\nconst css = '@page{size:A4;margin:14mm 12mm 14mm 12mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:10pt;color:#1a1a2e;line-height:1.5}h1.name{font-size:21pt;font-weight:700;color:#16213e;border-bottom:3px solid #0f3460;padding-bottom:4px;margin-bottom:2px}p.contact{font-size:8.5pt;color:#555;margin-bottom:8px;font-family:Arial,sans-serif}hr{border:none;border-top:1.5px solid #0f3460;margin:7px 0}h2.section-title{font-size:10.5pt;font-weight:700;color:#0f3460;text-transform:uppercase;letter-spacing:1.2px;margin:10px 0 4px 0;border-bottom:1px solid #e0e0e0;padding-bottom:2px}h3.job-title{font-size:10pt;font-weight:700;color:#16213e;margin:7px 0 1px 0}span.date{font-size:8.5pt;color:#666;font-style:italic;display:block;margin-bottom:2px}ul{margin:2px 0 6px 15px}li{margin-bottom:2px;font-size:9.5pt}strong{color:#0f3460}p{margin-bottom:4px;font-size:9.5pt}';\nconst fullHtml = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"/><style>' + css + '</style></head><body>' + bodyHtml + '<div style=\"position:fixed;bottom:5mm;right:12mm;font-size:7.5pt;color:#bbb;\">Resume \\u2013 ' + candidateName + ' \\u2013 ' + company + '</div></body></html>';\nreturn [{ json: { company, jobTitle, rowNumber, candidateName, fileName, rawMarkdown: md, htmlContent: fullHtml } }];"
+      },
+      "id": "9c6de958-a09a-4957-83eb-5fa2bb0e18f9",
+      "name": "Markdown → HTML (Resume)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4016,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nreturn [{ json: { company: item.company, jobTitle: item.jobTitle, rowNumber: item.rowNumber, candidateName: item.candidateName, fileName: item.fileName, rawMarkdown: item.rawMarkdown }, binary: { data: { data: Buffer.from(item.htmlContent, 'utf-8').toString('base64'), mimeType: 'text/html', fileName: 'index.html' } } }];"
+      },
+      "id": "7f1107b2-7eee-456f-9561-205858d0284f",
+      "name": "HTML → Binary (Resume)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4240,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "marginTop",
+              "value": "0.55"
+            },
+            {
+              "name": "marginBottom",
+              "value": "0.55"
+            },
+            {
+              "name": "marginLeft",
+              "value": "0.47"
+            },
+            {
+              "name": "marginRight",
+              "value": "0.47"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "cc755897-9be8-4862-8374-4a15fa7f1e0a",
+      "name": "Generate PDF Resume (Gotenberg)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        4464,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "name": "=Resume - Sumanto Banerjee - {{ $('HTML → Binary (Resume)').item.json.company }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1olQf3WMT090Bslomyga9ECH2YpW9IIRx",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "727bd713-483d-49fb-ba97-326c929d77f4",
+      "name": "Upload Resume to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4688,
+        1024
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mbBdEw3wuWF9AaoQ",
+          "name": "Job-Gdrive auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Job Application Sheet",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('HTML → Binary (Resume)').item.json.rowNumber }}",
+            "Resume Status": "Ready for Review",
+            "Resume": "={{ $json.webViewLink || '' }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf616ce0-ff9c-4431-b27c-4472579818dd",
+      "name": "Update Status → Ready for Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4912,
+        1024
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "resume_logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "30a7c561-6ba2-4cfb-9a77-7c18ff8a3ff7",
+      "name": "Log Resume to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5136,
+        1024
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "select"
+      },
+      "id": "03b09f6d-2cba-4e17-bedf-1d1cc1f6d983",
+      "name": "Fetch Current Draft (CL)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        1312
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('Filter: CL Trigger').item.json;\nconst company = (item['Company'] || 'Target Company').trim();\nconst jobTitle = (item['Position - Title'] || 'Professional').trim();\nconst jobDesc = (item['Position - Description'] || 'Not provided.').trim();\nconst rowNumber = item['row_number'] || item['rowNumber'] || 2;\nconst isRework = (item['Cover Letter Status'] || '').trim() === 'Needs Rework';\nconst reworkNotes = (item['Notes for CL'] || '').trim();\nconst today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });\n\nlet skillsText = '';\ntry { skillsText = $('Compile Skills from Sheet').first().json.skillsText || ''; } catch(e) {}\nif (!skillsText) skillsText = 'Python, JavaScript, SQL, REST APIs, Data Analysis';\n\nlet certificationsText = '';\ntry { certificationsText = $('Compile Certifications').first().json.certificationsText || ''; } catch(e) {}\n\nlet existingMarkdown = '';\ntry {\n  const drafts = $('Fetch Current Draft (CL)').all()\n    .filter(d => d.json && d.json.generated_markdown && !d.json.error)\n    .sort((a, b) => new Date(b.json.created_at) - new Date(a.json.created_at));\n  if (drafts.length > 0) existingMarkdown = drafts[0].json.generated_markdown;\n} catch(e) {}\n\nlet promptText = '';\nif (isRework && existingMarkdown) {\n  promptText = 'You are an Expert Cover Letter Editor for Sumanto Banerjee.\\n\\n'\n    + 'REWORK MODE: Apply ONLY the specific feedback below. Do NOT change any other section. '\n    + 'The rest of the cover letter must remain word-for-word identical.\\n\\n'\n    + 'CURRENT COVER LETTER:\\n---\\n' + existingMarkdown + '\\n---\\n\\n'\n    + 'FEEDBACK TO IMPLEMENT:\\n' + reworkNotes + '\\n\\n'\n    + 'Return the COMPLETE updated cover letter in Markdown with ONLY the above changes applied. No explanations.';\n} else {\n  promptText = 'You are an Expert Cover Letter Writer for Sumanto Banerjee.\\n\\n'\n    + 'STYLE REFERENCE: Match the professional, direct, confident tone of Sumanto\\'s reference cover letter at https://docs.google.com/document/d/1mc26EG0xIQcFLovGqzp01IYbnydTOrlgYs_KVwKxMx0\\n\\n'\n    + 'TARGET ROLE: ' + jobTitle + '\\n'\n    + 'TARGET COMPANY: ' + company + '\\n'\n    + 'DATE: ' + today + '\\n\\n'\n    + 'JOB DESCRIPTION:\\n' + jobDesc + '\\n\\n'\n    + 'SUMANTO\\'S SKILLS (use only from this list):\\n' + skillsText\n    + (certificationsText ? '\\n\\nCERTIFICATIONS:\\n' + certificationsText : '')\n    + '\\n\\n---\\n\\n'\n    + 'Write a compelling one-page cover letter in Markdown:\\n\\n'\n    + '# Cover Letter\\n\\n' + today + '\\n\\nHiring Manager\\n' + company + '\\n\\n---\\n\\n'\n    + '**Dear Hiring Manager,**\\n\\n'\n    + '[Opening: 2-3 sentences of genuine specific enthusiasm for this ' + jobTitle + ' role at ' + company + '. Reference something specific about the company.]\\n\\n'\n    + '[Body 1: 3-4 sentences connecting Sumanto\\'s most relevant skills directly to JD requirements. Use specific skill names and metrics.]\\n\\n'\n    + '[Body 2: 2-3 sentences — unique value, a specific achievement, or certification relevant to this role.]\\n\\n'\n    + '[Closing: 1-2 sentences on availability and next steps.]\\n\\n'\n    + 'Sincerely,\\n**Sumanto Banerjee**\\n\\n'\n    + 'RULES:\\n'\n    + '- No buzzwords (no passionate, dynamic, results-driven)\\n'\n    + '- If any detail is unknown — OMIT it. No placeholders\\n'\n    + '- Match the reference cover letter tone\\n'\n    + '- Output ONLY the Markdown';\n}\n\nreturn [{ json: { company, jobTitle, rowNumber, isRework, reworkNotes, today, skillsText, certificationsText, existingMarkdown, promptText, candidateName: 'Sumanto Banerjee' } }];"
+      },
+      "id": "c1fe1b53-929a-4788-b277-410d8267eef1",
+      "name": "Prepare Cover Letter Inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2864,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}"
+      },
+      "id": "601ffe68-bcc6-4bb6-b22a-f38cf9b03b3f",
+      "name": "Generate Cover Letter (Ollama)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        3088,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "443a1ede-3041-4b53-bf8d-07a7b82fcf3c",
+      "name": "Ollama Model (Cover Letter)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        3168,
+        1440
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "qHCgFApTsWnlJaEW",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "6331f149-ff01-4512-ba89-1cb1f1ab9dcc",
+      "name": "Wait 5s (Cover Letter)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3504,
+        1312
+      ],
+      "webhookId": "f064eeb5-33fb-48b4-90d7-ece3015043bc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const md = $json.text || '';\nconst inp = $('Prepare Cover Letter Inputs').item.json;\nconst { company, jobTitle, rowNumber, today, candidateName } = inp;\nconst fileName = 'Cover Letter - ' + candidateName + ' - ' + company + '.pdf';\nfunction mdToHtml(text) {\n  let h = text;\n  h = h.replace(/^# (.+)$/gm, '<h1 class=\"doc-title\">$1</h1>');\n  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');\n  h = h.replace(/^---$/gm, '<hr/>');\n  h = h.replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>');\n  h = h.replace(/\\*([^*\\n]+)\\*/g, '<em>$1</em>');\n  h = h.replace(/^- (.+)$/gm, '<li>$1</li>');\n  h = h.replace(/(<li>[\\s\\S]*?<\\/li>\\n?)+/g, (b) => '<ul>' + b + '</ul>');\n  h = h.replace(/\\n\\n+/g, '</p><p>');\n  h = '<p>' + h + '</p>';\n  h = h.replace(/<p>\\s*(<h[12]|<hr|<ul)/g, '$1');\n  h = h.replace(/(<\\/h[12]>|<\\/ul>|<hr\\/>)\\s*<\\/p>/g, '$1');\n  h = h.replace(/<p>\\s*<\\/p>/g, '');\n  return h;\n}\nconst bodyHtml = mdToHtml(md);\nconst css = '@page{size:A4;margin:20mm 18mm 20mm 18mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;font-size:11pt;color:#1a1a2e;line-height:1.7}h1.doc-title{font-size:18pt;color:#0f3460;border-bottom:2px solid #0f3460;padding-bottom:6px;margin-bottom:12px}hr{border:none;border-top:1px solid #ccc;margin:10px 0}strong{color:#0f3460}ul{margin:5px 0 8px 16px}li{margin-bottom:3px}p{margin-bottom:8px}';\nconst fullHtml = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"/><style>' + css + '</style></head><body>' + bodyHtml + '<div style=\"position:fixed;bottom:8mm;right:18mm;font-size:8pt;color:#bbb;\">Cover Letter \\u2013 ' + candidateName + ' \\u2013 ' + company + '</div></body></html>';\nreturn [{ json: { company, jobTitle, rowNumber, today, candidateName, fileName, rawMarkdown: md, htmlContent: fullHtml } }];"
+      },
+      "id": "00d0f2ad-f3d5-457a-8ee8-64020186966b",
+      "name": "Markdown → HTML (Cover Letter)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3792,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nreturn [{ json: { company: item.company, jobTitle: item.jobTitle, rowNumber: item.rowNumber, candidateName: item.candidateName, fileName: item.fileName, rawMarkdown: item.rawMarkdown, today: item.today }, binary: { data: { data: Buffer.from(item.htmlContent, 'utf-8').toString('base64'), mimeType: 'text/html', fileName: 'index.html' } } }];"
+      },
+      "id": "2892a5f3-3083-4af5-86f2-9310b154b870",
+      "name": "HTML → Binary (Cover Letter)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4016,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "marginTop",
+              "value": "0.79"
+            },
+            {
+              "name": "marginBottom",
+              "value": "0.79"
+            },
+            {
+              "name": "marginLeft",
+              "value": "0.71"
+            },
+            {
+              "name": "marginRight",
+              "value": "0.71"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "c017ae27-23cb-4ae0-abe7-8a1e990a4122",
+      "name": "Generate PDF Cover (Gotenberg)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        4240,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "name": "=Cover Letter - Sumanto Banerjee - {{ $('HTML → Binary (Cover Letter)').item.json.company }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "dfe65693-51d8-45e7-8570-a62baa9e6d92",
+      "name": "Upload Cover Letter to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4464,
+        1312
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mbBdEw3wuWF9AaoQ",
+          "name": "Job-Gdrive auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Job Application Sheet",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('HTML → Binary (Cover Letter)').item.json.rowNumber }}",
+            "Cover Letter Status": "Ready for Review",
+            "Cover Letter": "={{ $json.webViewLink || '' }}",
+            "Status of Resume and CL": "To be reviewed"
+          },
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {}
+      },
+      "id": "e963059f-36b5-49ac-949e-f712484eed5b",
+      "name": "Update Status → CL Ready for Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4688,
+        1312
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d67fbea9-1f4d-428a-ac30-abaefce22224",
+      "name": "Log Cover Letter to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4912,
+        1312
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "select"
+      },
+      "id": "e1a15b65-e13c-44b8-be88-e329f7f420a0",
+      "name": "Fetch Resume for Review",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        1616
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "select"
+      },
+      "id": "2c88b397-6ace-485e-a0b8-3e0719c89610",
+      "name": "Fetch CL for Review",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2864,
+        1616
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('Filter: To Be Reviewed').item.json;\nconst company = (item['Company'] || '').trim();\nconst jobTitle = (item['Position - Title'] || '').trim();\nconst jobDesc = (item['Position - Description'] || '').trim();\nconst rowNumber = item['row_number'] || item['rowNumber'] || 2;\n\nlet resumeMarkdown = 'NOT AVAILABLE';\ntry {\n  const drafts = $('Fetch Resume for Review').all()\n    .filter(d => d.json && d.json.generated_markdown && !d.json.error)\n    .sort((a, b) => new Date(b.json.created_at) - new Date(a.json.created_at));\n  if (drafts.length > 0) resumeMarkdown = drafts[0].json.generated_markdown;\n} catch(e) {}\n\nlet clMarkdown = 'NOT AVAILABLE';\ntry {\n  const clDrafts = $('Fetch CL for Review').all()\n    .filter(d => d.json && d.json.generated_markdown && !d.json.error)\n    .sort((a, b) => new Date(b.json.created_at) - new Date(a.json.created_at));\n  if (clDrafts.length > 0) clMarkdown = clDrafts[0].json.generated_markdown;\n} catch(e) {}\n\nconst promptText = 'You are a strict QA Reviewer for job application documents.\\n\\n'\n  + 'Job Title: ' + jobTitle + '\\nCompany: ' + company + '\\n\\n'\n  + 'JOB DESCRIPTION:\\n' + jobDesc + '\\n\\n'\n  + 'RESUME TO REVIEW:\\n---\\n' + resumeMarkdown + '\\n---\\n\\n'\n  + 'COVER LETTER TO REVIEW:\\n---\\n' + clMarkdown + '\\n---\\n\\n'\n  + 'Review both documents carefully. Check:\\n'\n  + '1. ATS-friendliness — keywords from the JD are present, no tables for skills\\n'\n  + '2. Resume fits on one page (concise, no padding)\\n'\n  + '3. No placeholder text like [placeholder] anywhere\\n'\n  + '4. Factual consistency between resume and cover letter\\n'\n  + '5. Strong, quantified experience bullets\\n'\n  + '6. Cover letter references the specific role and company correctly\\n'\n  + '7. Professional tone throughout\\n\\n'\n  + 'Return your verdict as VALID JSON ONLY — no other text:\\n'\n  + '{ \"verdict\": \"LGTM\" or \"Resume rework\" or \"CL rework\" or \"Both rework\", \"notes\": \"Brief explanation or All good if LGTM\" }';\n\nreturn [{ json: { company, jobTitle, jobDesc, rowNumber, resumeMarkdown, clMarkdown, promptText } }];"
+      },
+      "id": "e6e6d5e2-85b1-4185-a046-5dcad1204f7a",
+      "name": "Prepare Reviewer Inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3152,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}"
+      },
+      "id": "8adf6804-5173-41a3-ace5-4e22582a68c4",
+      "name": "Reviewer LLM (Ollama)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        3440,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "c9682640-3d43-499f-9d25-bb22dbf2c187",
+      "name": "Ollama Model (Reviewer)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        1840
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "qHCgFApTsWnlJaEW",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.text || '{}';\nconst rowNumber = $('Prepare Reviewer Inputs').item.json.rowNumber;\nlet verdict = 'To be reviewed';\nlet notes = '';\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    const parsed = JSON.parse(match[0]);\n    verdict = parsed.verdict || 'To be reviewed';\n    notes = parsed.notes || '';\n  }\n} catch(e) {\n  notes = 'Reviewer could not parse response: ' + raw.substring(0, 300);\n}\nreturn [{ json: { verdict, notes, rowNumber } }];"
+      },
+      "id": "111af15b-e560-48b8-8735-0aff2feeeb8b",
+      "name": "Parse Reviewer Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3792,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1R1zIyHjUDArc9GgsOA9t1u0K--sibGwcog5QxYYCWwA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Job Application Sheet",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.rowNumber }}",
+            "Status of Resume and CL": "={{ $json.verdict }}",
+            "Notes by Reviewer": "={{ $json.notes }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa3386c6-2c48-4cad-912a-aeaa83986830",
+      "name": "Update Reviewer Decision",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4016,
+        1616
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every 30 min)": {
+      "main": [
+        [
+          {
+            "node": "Read Certifications Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Certifications Sheet": {
+      "main": [
+        [
+          {
+            "node": "Compile Certifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Certifications": {
+      "main": [
+        [
+          {
+            "node": "Read Skills Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Skills Sheet": {
+      "main": [
+        [
+          {
+            "node": "Compile Skills from Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Skills from Sheet": {
+      "main": [
+        [
+          {
+            "node": "Read Job Application Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Job Application Sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter: Create or Rework (Resume)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter: CL Trigger",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter: To Be Reviewed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Create or Rework (Resume)": {
+      "main": [
+        [
+          {
+            "node": "Query Supabase for Examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Supabase for Examples": {
+      "main": [
+        [
+          {
+            "node": "Fetch Current Draft (Resume)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Current Draft (Resume)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Resume Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Resume Inputs": {
+      "main": [
+        [
+          {
+            "node": "Generate Resume (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model (Resume)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Resume (Ollama)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Resume (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Resume)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Resume)": {
+      "main": [
+        [
+          {
+            "node": "Markdown → HTML (Resume)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown → HTML (Resume)": {
+      "main": [
+        [
+          {
+            "node": "HTML → Binary (Resume)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML → Binary (Resume)": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF Resume (Gotenberg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF Resume (Gotenberg)": {
+      "main": [
+        [
+          {
+            "node": "Upload Resume to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Resume to Drive": {
+      "main": [
+        [
+          {
+            "node": "Update Status → Ready for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status → Ready for Review": {
+      "main": [
+        [
+          {
+            "node": "Log Resume to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: CL Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Current Draft (CL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Current Draft (CL)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Cover Letter Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Cover Letter Inputs": {
+      "main": [
+        [
+          {
+            "node": "Generate Cover Letter (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model (Cover Letter)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Cover Letter (Ollama)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Cover Letter (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Cover Letter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Cover Letter)": {
+      "main": [
+        [
+          {
+            "node": "Markdown → HTML (Cover Letter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown → HTML (Cover Letter)": {
+      "main": [
+        [
+          {
+            "node": "HTML → Binary (Cover Letter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML → Binary (Cover Letter)": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF Cover (Gotenberg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF Cover (Gotenberg)": {
+      "main": [
+        [
+          {
+            "node": "Upload Cover Letter to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Cover Letter to Drive": {
+      "main": [
+        [
+          {
+            "node": "Update Status → CL Ready for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status → CL Ready for Review": {
+      "main": [
+        [
+          {
+            "node": "Log Cover Letter to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: To Be Reviewed": {
+      "main": [
+        [
+          {
+            "node": "Fetch Resume for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Resume for Review": {
+      "main": [
+        [
+          {
+            "node": "Fetch CL for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CL for Review": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reviewer Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reviewer Inputs": {
+      "main": [
+        [
+          {
+            "node": "Reviewer LLM (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model (Reviewer)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reviewer LLM (Ollama)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer LLM (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Parse Reviewer Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reviewer Decision": {
+      "main": [
+        [
+          {
+            "node": "Update Reviewer Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "c5ba1bbd-7ed4-41d3-ae92-8dbf3aa1e015",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-08T19:41:29.670Z",
+      "createdAt": "2026-07-08T19:41:29.670Z",
+      "role": "workflow:owner",
+      "workflowId": "JA1oqqZlfgGkkCXX",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
