@@ -1,0 +1,701 @@
+{
+  "updatedAt": "2026-07-10T18:28:40.444Z",
+  "createdAt": "2026-07-10T02:57:44.718Z",
+  "id": "TrkPzOuCZuh6NNPd",
+  "name": "Hardened Ingestion & Quiz Generation (Fixed)",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "tableId": "document_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "google_file_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "file_name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "queue_order",
+              "fieldValue": "={{ $itemIndex + 1 }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "da07dcf4-359e-49c1-a0a0-50ee0587be51",
+      "name": "Seed DB with Drive Files",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e4028fc3-1861-4c6c-8fa0-72d2dfcafcd9",
+      "name": "Schedule Trigger (6:00 AM IST)1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        2448,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "document_queue",
+        "limit": 1
+      },
+      "id": "a18063d7-5569-4000-9e18-41cfd0993449",
+      "name": "Check If DB Empty1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        416
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [],
+          "string": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isEmpty"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "a6f0962a-053c-43dd-a6ef-d334054d6a4a",
+      "name": "Is DB Empty?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2896,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "document_queue",
+        "limit": 1,
+        "orderBy": "=queue_order.desc",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "processing"
+            }
+          ]
+        }
+      },
+      "id": "73f44e92-fce6-41ea-9069-800bcc8512ed",
+      "name": "Check Current Doc Status1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        464
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "5f721e86-40be-4be9-a80f-d942b5193047",
+      "name": "Is Current Doc Empty?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3408,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "document_queue",
+        "limit": 1,
+        "orderBy": "queue_order",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "bf18f51c-f612-4310-b323-8de80091c375",
+      "name": "Get Next Pending Doc1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3792,
+        208
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "c2040f0a-e454-4356-9e9c-c9e49cafaf70",
+      "name": "Is Pending Empty?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4016,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "81260234-4f94-4d9e-a61f-92d19f1245f6",
+      "name": "Loop Back to First Doc2",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4256,
+        80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.google_file_id }}",
+        "options": {}
+      },
+      "id": "a27f1409-6ee3-46e9-b31d-a15bbeeecde8",
+      "name": "Download Google Drive Doc2",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4464,
+        320
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mbBdEw3wuWF9AaoQ",
+          "name": "Job-Gdrive auth"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "c66882d2-12e2-4c92-89a1-2d1e887da82f",
+      "name": "Extract Document Text1",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        4688,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.text || '';\nconst currentPage = parseInt($node[\"Check Current Doc Status1\"]?.json?.current_page || $node[\"Get Next Pending Doc1\"]?.json?.current_page || $node[\"Loop Back to First Doc2\"]?.json?.current_page || 1);\nconst charsPerPage = 1500;\nconst startChar = (currentPage - 1) * charsPerPage * 35;\nlet endChar = currentPage * charsPerPage * 35;\nlet isEof = false;\nif (startChar >= text.length) isEof = true;\nif (endChar >= text.length) { endChar = text.length; isEof = true; }\nreturn {\n  text_chunk: text.substring(startChar, endChar),\n  current_page: currentPage,\n  next_page: isEof ? currentPage : currentPage + 35,\n  is_eof: isEof,\n  file_name: $node[\"Check Current Doc Status1\"]?.json?.file_name || $node[\"Get Next Pending Doc1\"]?.json?.file_name || $node[\"Loop Back to First Doc2\"]?.json?.file_name,\n  google_file_id: $node[\"Check Current Doc Status1\"]?.json?.google_file_id || $node[\"Get Next Pending Doc1\"]?.json?.google_file_id || $node[\"Loop Back to First Doc2\"]?.json?.google_file_id\n};"
+      },
+      "id": "da9a68a8-733d-4f53-b99d-ebd5c4c5112c",
+      "name": "Resilient Slice1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama3\",\n  \"prompt\": \"You are an expert interviewer. Generate exactly 10 questions of varying answer lengths based strictly on the text. Return strictly as a JSON object with a single array \\\"questions\\\" containing objects with keys \\\"question_text\\\" and \\\"answer_type\\\".\\n\\nSource Text:\\n\" + {{ JSON.stringify($json.text_chunk) }},\n  \"stream\": false,\n  \"format\": \"json\"\n}",
+        "options": {}
+      },
+      "id": "456849b4-95e9-4a98-9275-60694119f1d6",
+      "name": "Ollama HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        5136,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.response }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "2392dc22-876b-47d1-bfe6-82c900fb28f1",
+      "name": "Ollama Success Check?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        5360,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "Ollama timeout/crash detected."
+      },
+      "id": "96bc3036-0b5b-4062-98c8-0afff3c7cb16",
+      "name": "Safely Abort1",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        5584,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $input.item.json.response || '';\nlet items = [];\ntry {\n  const parsed = JSON.parse(responseText);\n  items = parsed.questions || parsed;\n} catch (e) {}\nif (!items || items.length === 0) {\n  return [{\n    Date: new Date().toISOString().split('T')[0],\n    Question: \"⚠️ MANUAL REVIEW REQUIRED: Malformed output.\",\n    User_Answer: \"N/A\",\n    Status: \"Review Needed\",\n    Source_Doc: $node[\"Resilient Slice1\"].json.file_name,\n    Source_Page: `${$node[\"Resilient Slice1\"].json.current_page}`\n  }];\n}\nreturn items.map(q => ({\n  Date: new Date().toISOString().split('T')[0],\n  Question: q.question_text || q.question,\n  User_Answer: \"\",\n  Status: \"Pending\",\n  Source_Doc: $node[\"Resilient Slice1\"].json.file_name,\n  Source_Page: `${$node[\"Resilient Slice1\"].json.current_page}-${$node[\"Resilient Slice1\"].json.next_page}`\n}));"
+      },
+      "id": "b27ed929-5fb1-4b7c-b5e7-177f75047b01",
+      "name": "Parse Ollama Resilient1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5584,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": "Sheet1",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "b4b7c3d1-667e-492d-b0ea-a359f0ca9a08",
+      "name": "Append to Google Sheets1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        5808,
+        416
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6t1r0N5V5T2bICfH",
+          "name": "Job-Google auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "96488d6d-1be0-4011-a743-d635e1354609",
+      "name": "Update Tracker in Supabase1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        6032,
+        416
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "'1Plz8z2gK27JPMPScCM9ukdzoFgT9Vj6I' in parents and (mimeType = 'application/pdf' or mimeType = 'application/vnd.google-apps.document')"
+            },
+            {
+              "name": "fields",
+              "value": "files(id, name)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3088,
+        128
+      ],
+      "id": "85c7d684-3195-4d18-8f87-0f727764575a",
+      "name": "HTTP Request",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mbBdEw3wuWF9AaoQ",
+          "name": "Job-Gdrive auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve the array of files from the first incoming item\nconst files = $input.first().json.files || [];\n\n// Map and split them into individual n8n items\nreturn files.map(data => {\n  return { \n    json: { \n      id: data.id, \n      name: data.name \n    } \n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3312,
+        128
+      ],
+      "id": "21e987bf-55c8-4ff1-9362-d08ffe327709",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Seed DB with Drive Files": {
+      "main": [
+        [
+          {
+            "node": "Get Next Pending Doc1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger (6:00 AM IST)1": {
+      "main": [
+        [
+          {
+            "node": "Check If DB Empty1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If DB Empty1": {
+      "main": [
+        [
+          {
+            "node": "Is DB Empty?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is DB Empty?1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Current Doc Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Current Doc Status1": {
+      "main": [
+        [
+          {
+            "node": "Is Current Doc Empty?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Current Doc Empty?1": {
+      "main": [
+        [
+          {
+            "node": "Get Next Pending Doc1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Google Drive Doc2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Next Pending Doc1": {
+      "main": [
+        [
+          {
+            "node": "Is Pending Empty?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Pending Empty?1": {
+      "main": [
+        [
+          {
+            "node": "Loop Back to First Doc2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Google Drive Doc2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back to First Doc2": {
+      "main": [
+        [
+          {
+            "node": "Download Google Drive Doc2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Google Drive Doc2": {
+      "main": [
+        [
+          {
+            "node": "Extract Document Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Document Text1": {
+      "main": [
+        [
+          {
+            "node": "Resilient Slice1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resilient Slice1": {
+      "main": [
+        [
+          {
+            "node": "Ollama HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Ollama Success Check?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Success Check?1": {
+      "main": [
+        [
+          {
+            "node": "Safely Abort1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Ollama Resilient1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Ollama Resilient1": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Update Tracker in Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Seed DB with Drive Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "33169e50-e708-4859-a34a-8e9058819ba3",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-10T02:57:44.718Z",
+      "createdAt": "2026-07-10T02:57:44.718Z",
+      "role": "workflow:owner",
+      "workflowId": "TrkPzOuCZuh6NNPd",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
