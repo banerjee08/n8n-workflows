@@ -1,0 +1,106 @@
+{
+  "updatedAt": "2026-07-10T05:58:36.602Z",
+  "createdAt": "2026-07-10T05:57:20.578Z",
+  "id": "6Mhj6vpcpkMFYOOv",
+  "name": "Workflow 1.5: GDrive Queue Sync",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "36df189b-33ef-41b5-8c6a-70ff65eb3b37",
+      "name": "On clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list"
+      },
+      "id": "1463b99f-ea36-4ecb-9a8c-0a1cf76d21ec",
+      "name": "List GDrive Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mbBdEw3wuWF9AaoQ",
+          "name": "Job-Gdrive auth"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "582e03cc-84a9-4052-a161-72806a7d5159",
+      "name": "Seed DB with Drive Files",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "JnOHtFeVhj3IN3B2",
+          "name": "Job - Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "List GDrive Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List GDrive Files": {
+      "main": [
+        [
+          {
+            "node": "Seed DB with Drive Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "409a7513-64ca-45a7-97f8-f12bc6fe4cb7",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-10T05:57:20.578Z",
+      "createdAt": "2026-07-10T05:57:20.578Z",
+      "role": "workflow:owner",
+      "workflowId": "6Mhj6vpcpkMFYOOv",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
