@@ -1,0 +1,221 @@
+{
+  "updatedAt": "2026-07-10T04:46:43.610Z",
+  "createdAt": "2026-07-10T04:46:43.610Z",
+  "id": "QndQ31ECHIACn5UZ",
+  "name": "Workflow 2: Grading System",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 22 * * *"
+            }
+          ]
+        }
+      },
+      "id": "0bf65bdf-15a4-4cfa-a0d9-f7db20ade4dd",
+      "name": "Schedule Trigger (10:00 PM IST)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "id": "f1fe416d-0ea2-4389-a9f7-b53c706ce31e",
+      "name": "Read Answers from Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "38888f3d-46b0-4ff6-a39a-282fb6ace9f9",
+      "name": "Filter Un-Graded Answers",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama3\",\n  \"prompt\": \"You are an expert academic evaluator. Grade the User's Answer strictly as \\\"Right\\\" or \\\"Wrong\\\" and provide a concise 1-2 sentence constructive correction.\\nFormat output strictly as JSON with key \\\"grade\\\" and \\\"feedback\\\".\\n\\nQuestion:\\n\" + {{ JSON.stringify($json[\"Question\"]) }} + \"\\n\\nUser's Answer:\\n\" + {{ JSON.stringify($json[\"User Answer\"]) }},\n  \"stream\": false,\n  \"format\": \"json\"\n}",
+        "options": {}
+      },
+      "id": "be99230b-d3fe-4104-9f33-8c7c4ab94e2c",
+      "name": "Ollama Grading HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        608,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseObj = JSON.parse($input.item.json.response);\nlet parsed = { grade: 'Wrong', feedback: 'Failed to process feedback.' };\nif (responseObj) {\n  parsed.grade = responseObj.grade || 'Wrong';\n  parsed.feedback = responseObj.feedback || 'Evaluated.';\n}\nreturn {\n  Question: $node[\"Filter Un-Graded Answers\"].json[\"Question\"],\n  User_Answer: $node[\"Filter Un-Graded Answers\"].json[\"User Answer\"],\n  Grade: parsed.grade,\n  Feedback: parsed.feedback,\n  Source_Doc: $node[\"Filter Un-Graded Answers\"].json[\"Source Doc/Page\"]\n};"
+      },
+      "id": "02fd8c27-3aee-46d3-b2a9-fcf3ff427c4b",
+      "name": "Parse Grade Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "id": "1e221fcb-c11d-441f-89ef-2c3c4dc84847",
+      "name": "Update Sheets with Grade",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1008,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "cdf93083-93ab-451c-aba5-10dd5537142e",
+      "name": "Log to Supabase Quiz_History",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (10:00 PM IST)": {
+      "main": [
+        [
+          {
+            "node": "Read Answers from Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Answers from Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filter Un-Graded Answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Un-Graded Answers": {
+      "main": [
+        [
+          {
+            "node": "Ollama Grading HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Grading HTTP": {
+      "main": [
+        [
+          {
+            "node": "Parse Grade Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Grade Output": {
+      "main": [
+        [
+          {
+            "node": "Update Sheets with Grade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheets with Grade": {
+      "main": [
+        [
+          {
+            "node": "Log to Supabase Quiz_History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "6a59f0c6-b7ce-4b93-9ad4-7b770ccc3da1",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-10T04:46:43.610Z",
+      "createdAt": "2026-07-10T04:46:43.610Z",
+      "role": "workflow:owner",
+      "workflowId": "QndQ31ECHIACn5UZ",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
