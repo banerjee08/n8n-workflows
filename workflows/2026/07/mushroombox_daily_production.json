@@ -1,0 +1,64 @@
+{
+  "updatedAt": "2026-07-27T09:20:52.196Z",
+  "createdAt": "2026-07-27T07:17:07.721Z",
+  "id": "Kj6CZGLEXa6E1587",
+  "name": "MushroomBox_Daily_Production",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0BKJ0VMSG7"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "64d99e60-0dba-4757-82b8-593b0335cbbc",
+      "name": "Slack Trigger",
+      "webhookId": "50677bc3-8910-484b-9c4d-9756bfc40c16",
+      "credentials": {
+        "slackApi": {
+          "id": "7SlaRY9KHzXPV88C",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "c6ded40a-8ac1-49e6-901a-8d73b5a2b55f",
+  "activeVersionId": null,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-07-27T07:17:07.721Z",
+      "createdAt": "2026-07-27T07:17:07.721Z",
+      "role": "workflow:owner",
+      "workflowId": "Kj6CZGLEXa6E1587",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
