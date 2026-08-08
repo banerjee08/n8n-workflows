@@ -1,0 +1,142 @@
+{
+  "updatedAt": "2026-08-08T15:27:49.334Z",
+  "createdAt": "2026-08-08T15:26:09.117Z",
+  "id": "HdeaGK7h3AcMvSmw",
+  "name": "03_MushroomBox_Data_Reader",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "310fc2e9-1902-4bf5-a11a-38efea5a1f57",
+      "name": "Execute Reader Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "daily_production",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date",
+              "condition": "gte",
+              "keyValue": "={{ $json.start_date }}"
+            },
+            {
+              "keyName": "date",
+              "condition": "lte",
+              "keyValue": "={{ $json.end_date }}"
+            }
+          ]
+        }
+      },
+      "id": "56332d38-127c-411c-9b42-3e69fe08366f",
+      "name": "Query Supabase Range",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama3.2:latest\",\n  \"prompt\": \"User Query: '{{ $('Execute Reader Trigger').item.json.read_query }}'\\nRaw Database Records: {{ JSON.stringify($items('Query Supabase Range')) }}\\n\\nAnswer the user's question clearly and concisely in natural language using the provided data. Use bullet points and emojis where appropriate.\",\n  \"stream\": false\n}",
+        "options": {}
+      },
+      "id": "93055563-2b70-4a9f-81e6-3787e84c4be5",
+      "name": "Ollama Summarizer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Execute Reader Trigger').item.json.chatId }}",
+        "text": "={{ $json.response }}",
+        "additionalFields": {}
+      },
+      "id": "99813f5e-da1d-421a-b8db-dc97e004348e",
+      "name": "Telegram Reader Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        0
+      ],
+      "webhookId": "454483e4-2d64-4dd5-b4dc-20f3dfad910c"
+    }
+  ],
+  "connections": {
+    "Execute Reader Trigger": {
+      "main": [
+        [
+          {
+            "node": "Query Supabase Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Supabase Range": {
+      "main": [
+        [
+          {
+            "node": "Ollama Summarizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Summarizer": {
+      "main": [
+        [
+          {
+            "node": "Telegram Reader Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "3fe0e47e-9e9b-476c-8036-b4d6d2d6c08a",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-08T15:26:09.117Z",
+      "createdAt": "2026-08-08T15:26:09.117Z",
+      "role": "workflow:owner",
+      "workflowId": "HdeaGK7h3AcMvSmw",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
