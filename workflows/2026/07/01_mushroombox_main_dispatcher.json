@@ -1,0 +1,257 @@
+{
+  "updatedAt": "2026-08-08T18:18:42.633Z",
+  "createdAt": "2026-07-27T07:17:07.721Z",
+  "id": "Kj6CZGLEXa6E1587",
+  "name": "01_MushroomBox_Main_Dispatcher",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "0b20c2ea-2d10-4421-a258-9451837f6f68",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1136,
+        128
+      ],
+      "webhookId": "a7c89f80-f50f-4e88-a921-a5d6fa9d9157",
+      "credentials": {
+        "telegramApi": {
+          "id": "hSKJwW04LuOkUxQn",
+          "name": "MushroomBox_Tracker_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst todayStr = now.toISOString().split('T')[0];\nconst dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });\n\nreturn [{\n  json: {\n    chatId: $json.message.chat.id,\n    userMessage: $json.message.text,\n    currentDate: todayStr,\n    currentDayOfWeek: dayOfWeek\n  }\n}];"
+      },
+      "id": "9f4daca2-711c-4c3e-848a-48f43ea421ad",
+      "name": "Get Date Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama3.2:latest\",\n  \"prompt\": \"Today's date is {{ $json.currentDate }} ({{ $json.currentDayOfWeek }}).\\nUser message: '{{ $json.userMessage }}'\\n\\nClassify the intent into WRITE (logging production/sales/meters/edits) or READ (queries/totals/reports).\\nIf WRITE, extract:\\n- target_date (YYYY-MM-DD). IF NO DATE IS MENTIONED, YOU MUST USE {{ $json.currentDate }}.\\n- production_kg (number or null)\\n- sales (object mapping vendor name to kg, e.g. {\\\"Vendor A\\\": 5})\\n- meter_1 (number or null)\\n- meter_2 (number or null)\\n\\nIf READ, extract:\\n- start_date (YYYY-MM-DD)\\n- end_date (YYYY-MM-DD)\\n- read_query (short string describing the question)\\n\\nOutput ONLY valid JSON. YOU MUST NEST THE DATA INSIDE A 'payload' OBJECT like this:\\n{\\n  \\\"intent\\\": \\\"WRITE\\\",\\n  \\\"target_date\\\": \\\"YYYY-MM-DD\\\",\\n  \\\"payload\\\": {\\n    \\\"production_kg\\\": null,\\n    \\\"sales\\\": {},\\n    \\\"meter_1\\\": null,\\n    \\\"meter_2\\\": null\\n  }\\n}\",\n  \"stream\": false\n}",
+        "options": {}
+      },
+      "id": "3891110c-cc11-430d-8482-af36a121a971",
+      "name": "Ollama Intent Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -688,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseRaw = $json.response;\nlet parsed = {};\n\ntry {\n  // Use Regex to extract only the JSON part from inside the chat/markdown text\n  const match = typeof responseRaw === 'string' ? responseRaw.match(/\\{[\\s\\S]*\\}/) : null;\n  const jsonString = match ? match[0] : responseRaw;\n  \n  parsed = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;\n} catch(e) {\n  parsed = { intent: 'UNKNOWN', raw: responseRaw, error: e.message };\n}\n\n// Smart fallback: If the model forgot the 'payload' wrapper, build it manually\nlet finalPayload = parsed.payload;\nif (!finalPayload && parsed.intent === 'WRITE') {\n  finalPayload = {\n    production_kg: parsed.production_kg || null,\n    sales: parsed.sales || {},\n    meter_1: parsed.meter_1 || null,\n    meter_2: parsed.meter_2 || null\n  };\n}\n\nreturn [{\n  json: {\n    chatId: $('Get Date Context').item.json.chatId,\n    originalMessage: $('Get Date Context').item.json.userMessage,\n    intent: parsed.intent || 'UNKNOWN',\n    target_date: parsed.target_date || $('Get Date Context').item.json.currentDate,\n    start_date: parsed.start_date || $('Get Date Context').item.json.currentDate,\n    end_date: parsed.end_date || $('Get Date Context').item.json.currentDate,\n    payload: finalPayload || {},\n    read_query: parsed.read_query || $('Get Date Context').item.json.userMessage\n  }\n}];"
+      },
+      "id": "556182b5-9b92-400a-9b36-518d643457d5",
+      "name": "Parse Ollama Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "WRITE"
+            },
+            {
+              "value2": "READ",
+              "output": 1
+            }
+          ]
+        },
+        "fallbackOutput": 2
+      },
+      "id": "8f488fef-81ab-487b-87e7-62e526d3a398",
+      "name": "Switch Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "7qWZczNqXYWZtMqx",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/7qWZczNqXYWZtMqx",
+          "cachedResultName": "02_MushroomBox_Data_Writer"
+        },
+        "mode": "each",
+        "options": {}
+      },
+      "id": "647fd131-f1b4-4f26-86d2-0332515129ff",
+      "name": "Execute Data Writer",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "REPLACE_WITH_READER_WORKFLOW_ID",
+        "mode": "each",
+        "options": {}
+      },
+      "id": "c016d5a1-1b2b-40d5-bbd3-b144853d01ca",
+      "name": "Execute Data Reader",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "❓ Sorry, I couldn't clearly parse whether you wanted to log data or read records. Please try rephrasing your message.",
+        "additionalFields": {}
+      },
+      "id": "ab8d875d-f5eb-49a3-a73a-908b0bbbb138",
+      "name": "Telegram Fallback",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "c65c9a22-b034-4dbd-ab98-4e4f20fddcf5",
+      "credentials": {
+        "telegramApi": {
+          "id": "hSKJwW04LuOkUxQn",
+          "name": "MushroomBox_Tracker_bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Date Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Date Context": {
+      "main": [
+        [
+          {
+            "node": "Ollama Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Ollama Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Ollama Response": {
+      "main": [
+        [
+          {
+            "node": "Switch Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Intent": {
+      "main": [
+        [
+          {
+            "node": "Execute Data Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute Data Reader",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "c7c2716b-8ac7-4366-96bb-13f76c207e45",
+  "activeVersionId": null,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-07-27T07:17:07.721Z",
+      "createdAt": "2026-07-27T07:17:07.721Z",
+      "role": "workflow:owner",
+      "workflowId": "Kj6CZGLEXa6E1587",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
