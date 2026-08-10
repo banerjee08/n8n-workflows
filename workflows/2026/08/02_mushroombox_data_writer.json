@@ -1,0 +1,309 @@
+{
+  "updatedAt": "2026-08-08T17:57:33.177Z",
+  "createdAt": "2026-08-08T15:21:24.129Z",
+  "id": "7qWZczNqXYWZtMqx",
+  "name": "02_MushroomBox_Data_Writer",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "77337d01-072a-4828-b8e8-f4ad6b687217",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "schema": "farm",
+        "operation": "getAll",
+        "tableId": "=daily_production",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=date",
+              "condition": "eq",
+              "keyValue": "={{ $json.target_date }}"
+            }
+          ]
+        }
+      },
+      "id": "27aeaa15-88c7-4f29-a1aa-90ad81804c99",
+      "name": "Search Supabase Row",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "yaW1fgaQKuY9BquK",
+          "name": "MushroomBox"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.length > 0 }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "169f73ec-7306-4c39-806d-de79a6ea6ad0",
+      "name": "Row Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "daily_production",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.target_date }}"
+            },
+            {
+              "fieldId": "production_kg",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.production_kg }}"
+            },
+            {
+              "fieldId": "meter_1",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.meter_1 }}"
+            },
+            {
+              "fieldId": "meter_2",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.meter_2 }}"
+            },
+            {
+              "fieldId": "sales_json",
+              "fieldValue": "={{ JSON.stringify($('Execute Workflow Trigger').item.json.payload.sales) }}"
+            }
+          ]
+        }
+      },
+      "id": "08afae9a-f9a4-414b-9856-597ac6034932",
+      "name": "Update Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "yaW1fgaQKuY9BquK",
+          "name": "MushroomBox"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "daily_production",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.target_date }}"
+            },
+            {
+              "fieldId": "production_kg",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.production_kg }}"
+            },
+            {
+              "fieldId": "meter_1",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.meter_1 }}"
+            },
+            {
+              "fieldId": "meter_2",
+              "fieldValue": "={{ $('Execute Workflow Trigger').item.json.payload.meter_2 }}"
+            },
+            {
+              "fieldId": "sales_json",
+              "fieldValue": "={{ JSON.stringify($('Execute Workflow Trigger').item.json.payload.sales) }}"
+            }
+          ]
+        }
+      },
+      "id": "f6f192c3-be0a-49ee-9d22-390ae68d1dcb",
+      "name": "Insert Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "yaW1fgaQKuY9BquK",
+          "name": "MushroomBox"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__singleValue": true,
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__singleValue": true,
+          "value": "Daily_Logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $('Execute Workflow Trigger').item.json.target_date }}",
+            "Production_KG": "={{ $('Execute Workflow Trigger').item.json.payload.production_kg }}",
+            "Meter_1": "={{ $('Execute Workflow Trigger').item.json.payload.meter_1 }}",
+            "Meter_2": "={{ $('Execute Workflow Trigger').item.json.payload.meter_2 }}",
+            "Sales_Summary": "={{ JSON.stringify($('Execute Workflow Trigger').item.json.payload.sales) }}"
+          },
+          "matchingColumns": [
+            "Date"
+          ]
+        },
+        "options": {}
+      },
+      "id": "1838de09-5756-43d2-ac02-fcdbc3cb9e2a",
+      "name": "Sync Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        256,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Execute Workflow Trigger').item.json.chatId }}",
+        "text": "=✅ Logged data for {{ $('Execute Workflow Trigger').item.json.target_date }}:\n\n🍄 Production: {{ $('Execute Workflow Trigger').item.json.payload.production_kg || 'N/A' }} kg\n🛒 Sales: {{ JSON.stringify($('Execute Workflow Trigger').item.json.payload.sales) }}\n⚡ Meter 1: {{ $('Execute Workflow Trigger').item.json.payload.meter_1 || 'N/A' }}\n⚡ Meter 2: {{ $('Execute Workflow Trigger').item.json.payload.meter_2 || 'N/A' }}",
+        "additionalFields": {}
+      },
+      "id": "9b1be15c-0ffe-4260-b64b-ef1c533677d5",
+      "name": "Telegram Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        128
+      ],
+      "webhookId": "44ef40d2-bd38-4b25-b348-93bcf2c44a17"
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search Supabase Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Supabase Row": {
+      "main": [
+        [
+          {
+            "node": "Row Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row Exists?": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Supabase": {
+      "main": [
+        [
+          {
+            "node": "Sync Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Supabase": {
+      "main": [
+        [
+          {
+            "node": "Sync Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Telegram Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "53824abd-4869-4fbc-b48f-2a5605c1b5d2",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-08T15:21:24.129Z",
+      "createdAt": "2026-08-08T15:21:24.129Z",
+      "role": "workflow:owner",
+      "workflowId": "7qWZczNqXYWZtMqx",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
