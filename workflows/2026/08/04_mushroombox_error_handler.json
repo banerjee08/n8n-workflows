@@ -1,0 +1,83 @@
+{
+  "updatedAt": "2026-08-08T15:26:41.871Z",
+  "createdAt": "2026-08-08T15:26:36.650Z",
+  "id": "bzOraKYg0DPpYOMK",
+  "name": "04_MushroomBox_Error_Handler",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "db4a2a91-b085-4abe-bc4e-3642a86de398",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_ADMIN_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ *MushroomBox Automation Error*\\n\\n*Workflow:* {{ $json.workflow.name }}\\n*Failed Node:* {{ $json.execution.error.node.name }}\\n*Error Message:* {{ $json.execution.error.message }}\\n\\n*Execution ID:* {{ $json.execution.id }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "aed748b8-ee97-4a0d-9a97-14f31f75b8ca",
+      "name": "Telegram Error Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "8107e721-a34b-4a03-b3db-647c044adf75",
+      "credentials": {
+        "telegramApi": {
+          "id": "hSKJwW04LuOkUxQn",
+          "name": "MushroomBox_Tracker_bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "58dbeee8-c08b-4e83-b074-0e7930c4d4bd",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-08T15:26:36.650Z",
+      "createdAt": "2026-08-08T15:26:36.650Z",
+      "role": "workflow:owner",
+      "workflowId": "bzOraKYg0DPpYOMK",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
