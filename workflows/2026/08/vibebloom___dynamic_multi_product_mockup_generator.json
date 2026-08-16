@@ -1,0 +1,416 @@
+{
+  "updatedAt": "2026-08-16T14:44:10.658Z",
+  "createdAt": "2026-08-15T19:15:51.444Z",
+  "id": "YDKA7eaz2nWlVO84",
+  "name": "VibeBloom - Dynamic Multi-Product Mockup Generator",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "dadd3bed-7aa6-4bf5-bf12-f2b999624ceb",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 246035317,
+          "mode": "list",
+          "cachedResultName": "Slogan Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=246035317"
+        },
+        "options": {}
+      },
+      "id": "8fbcbfe6-e563-472c-9211-a7902e8dfefe",
+      "name": "Read Slogans from Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lightweight pure-JS UUID v4 generator (no external crypto required)\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nfunction wrapText(text, maxChars = 16) {\n  const words = text.trim().split(/\\s+/);\n  const lines = [];\n  let cur = '';\n  for (const w of words) {\n    if ((cur + ' ' + w).trim().length <= maxChars) {\n      cur = (cur + ' ' + w).trim();\n    } else {\n      if (cur) lines.push(cur);\n      cur = w;\n    }\n  }\n  if (cur) lines.push(cur);\n  return lines;\n}\n\nfunction generateSvg(lines, width, height, baseFontSize, letterSpacing = 3) {\n  const maxLineLen = Math.max(...lines.map(l => l.length)) || 1;\n  const fontSize = Math.min(baseFontSize, Math.floor((width * 0.8) / maxLineLen));\n  const lineHeight = fontSize * 1.25;\n  const startY = (height / 2) - ((lines.length - 1) * lineHeight / 2);\n  const tspans = lines.map((l, i) => `<tspan x=\"50%\" y=\"${startY + (i * lineHeight)}\">${l}</tspan>`).join('\\n');\n  return `<svg width=\"${width}\" height=\"${height}\" viewBox=\"0 0 ${width} ${height}\" xmlns=\"http://www.w3.org/2000/svg\"><text text-anchor=\"middle\" fill=\"#FFFFFF\" font-family=\"Impact, Arial Black, sans-serif\" font-size=\"${fontSize}\" font-weight=\"bold\" letter-spacing=\"${letterSpacing}\">${tspans}</text></svg>`;\n}\n\n// TARGET PRODUCT CATALOG REGISTRY\nconst TARGET_PRODUCTS = [\n  {\n    name: 'T-Shirt',\n    blueprint_id: 12,\n    print_provider_id: 29,\n    variant_id: 18102,\n    price: 2500,\n    width: 4000,\n    height: 4800,\n    maxChars: 16,\n    baseFontSize: 320,\n    placementY: 0.45\n  },\n  {\n    name: 'Hoodie',\n    blueprint_id: 380,\n    print_provider_id: 29,\n    variant_id: 45831,\n    price: 4500,\n    width: 4000,\n    height: 4800,\n    maxChars: 16,\n    baseFontSize: 300,\n    placementY: 0.50\n  },\n  {\n    name: 'Tank Top',\n    blueprint_id: 36,\n    print_provider_id: 29,\n    variant_id: 22101,\n    price: 2200,\n    width: 4000,\n    height: 4800,\n    maxChars: 14,\n    baseFontSize: 300,\n    placementY: 0.45\n  },\n  {\n    name: 'Coffee Mug',\n    blueprint_id: 68,\n    print_provider_id: 1,\n    variant_id: 17390,\n    price: 1200,\n    width: 2700,\n    height: 1100,\n    maxChars: 22,\n    baseFontSize: 180,\n    placementY: 0.50\n  },\n  {\n    name: 'Phone Case',\n    blueprint_id: 541,\n    print_provider_id: 3,\n    variant_id: 61201,\n    price: 1800,\n    width: 2000,\n    height: 4000,\n    maxChars: 12,\n    baseFontSize: 240,\n    placementY: 0.50\n  }\n];\n\nconst outputItems = [];\n\nfor (const item of $input.all()) {\n  // Read slogan from 'Slogan Idea' or fallback fields\n  const slogan = (item.json['Slogan Idea'] || item.json.Slogan || item.json.slogan || 'VIBEBLOOM').toUpperCase();\n  \n  // Use existing UUID or generate a new v4 UUID\n  const sloganUuid = item.json.uuid || item.json.Slogan_id || generateUUID();\n\n// --- NEW LOGIC: Filter products based on 'product_categories' ---\n  const requestedCategories = item.json.product_categories || item.json.Product_categories;\n  let filteredProducts = TARGET_PRODUCTS; // Default to all products\n\n  // Check if there's actually data in the category field\n  if (requestedCategories && requestedCategories.toString().trim() !== \"\") {\n    \n    // Convert whatever Google Sheets sent (Array, String, etc.) into one giant lowercase string\n    const rawDataString = JSON.stringify(requestedCategories).toLowerCase();\n\n    // Keep only the products whose name appears somewhere in that string\n    filteredProducts = TARGET_PRODUCTS.filter(prod => {\n      return rawDataString.includes(prod.name.toLowerCase());\n    });\n  }\n\n  // Iterate over the dynamically filtered list instead of all products\n  for (const prod of filteredProducts) {\n    const lines = wrapText(slogan, prod.maxChars);\n    const svgString = generateSvg(lines, prod.width, prod.height, prod.baseFontSize);\n    const base64 = Buffer.from(svgString).toString('base64');\n    const productSlug = prod.name.toLowerCase().replace(/\\s+/g, '_');\n\n    outputItems.push({\n      json: {\n        row_number: item.json.row_number,\n        uuid: sloganUuid, \n        ...item.json,\n        Slogan_id: sloganUuid,\n        slogan: slogan,\n        product_name: prod.name,\n        blueprint_id: prod.blueprint_id,\n        print_provider_id: prod.print_provider_id,\n        \n        // variant_id: prod.variant_id,\n        // temporary hardcoding variant_id\n        variant_id: 18102,\n        price: prod.price,\n        placement_y: prod.placementY,\n        file_base64: base64,\n        file_name: `${productSlug}_${sloganUuid.slice(0, 8)}.svg`\n      }\n    });\n  }\n}\n\nreturn outputItems;"
+      },
+      "id": "e18dd160-7bb4-4d5a-a62c-0a0943ba2a20",
+      "name": "Generate Multi-Product Specs & Graphics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "05212e02-58b5-48cf-838b-c69c1f40dfbf",
+      "name": "Loop Over Products",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.printify.com/v1/uploads/images.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file_name",
+              "value": "={{ $('Convert SVG to PNG (Puppeteer)').item.json.slogan_id }}"
+            },
+            {
+              "name": "contents",
+              "value": "={{ $json.file_base64 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "aa0a8692-75fb-463c-9b4d-41c316ffd7a7",
+      "name": "Upload Art to Printify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ogjGObtqZCy3jDfa",
+          "name": "Printify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.printify.com/v1/shops/28600424/products.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"VibeBloom {{ $('Generate Multi-Product Specs & Graphics').item.json.product_name }} - {{ $('Generate Multi-Product Specs & Graphics').item.json.slogan }}\",\n  \"description\": \"VibeBloom Streetwear Collection\",\n  \"blueprint_id\": {{ $('Generate Multi-Product Specs & Graphics').item.json.blueprint_id || 0 }},\n  \"print_provider_id\": {{ $('Generate Multi-Product Specs & Graphics').item.json.print_provider_id || 0 }},\n  \"variants\": [\n    {\n      \"id\": {{ $('Generate Multi-Product Specs & Graphics').item.json.variant_id || 0 }},\n      \"price\": {{ $('Generate Multi-Product Specs & Graphics').item.json.price || 0 }},\n      \"is_enabled\": true\n    }\n  ],\n  \"print_areas\": [\n    {\n      \"variant_ids\": [\n        {{ $('Generate Multi-Product Specs & Graphics').item.json.variant_id || 0 }}\n      ],\n      \"placeholders\": [\n        {\n          \"position\": \"front\",\n          \"images\": [\n            {\n              \"id\": \"{{ $('Upload Art to Printify').item.json.id }}\",\n              \"x\": 0.5,\n              \"y\": {{ $('Generate Multi-Product Specs & Graphics').item.json.placement_y || 0.5 }},\n              \"scale\": 1,\n              \"angle\": 0\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ff04a2b1-955b-4e06-a9b0-6a626a9c3c87",
+      "name": "Create Product & Mockup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1952,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ogjGObtqZCy3jDfa",
+          "name": "Printify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Mockups_Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Slogan": "={{ $('Loop Over Products').item.json.slogan }}",
+            "Product": "={{ $('Loop Over Products').item.json.product_name }}",
+            "Mockup_URL": "={{ $json.images[0].src }}",
+            "Printify_Product_ID": "={{ $json.id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "13ad38c0-faa4-4380-8ac0-6eb01824f40c",
+      "name": "Log Mockup in Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2176,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a76e6931-8f32-47c8-acac-6d5fbe9fef65",
+              "leftValue": "={{ $json.status}}",
+              "rightValue": "LGTM",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        0
+      ],
+      "id": "9c88ba4a-e3a3-4678-9689-e47d138e78e0",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        0
+      ],
+      "id": "080d5320-ef53-4876-93b4-f06aa7c0e9a5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "file_base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "4d81cf8b-7cd8-465c-b5d4-6521f48181c9",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://puppeteer:3000/screenshot",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"html\": \"<html><body style='margin:0; background:transparent;'><img src='data:image/svg+xml;base64,{{ $json.file_base64 }}' style='width:4000px; height:4800px; display:block;'/></body></html>\",\n  \"viewport\": {\n    \"width\": 4000,\n    \"height\": 4800\n  },\n  \"options\": {\n    \"omitBackground\": true\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "cc6fd2cf-734a-460c-b3bf-23efa79c6108",
+      "name": "Convert SVG to PNG (Puppeteer)"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Slogans from Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Slogans from Sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Multi-Product Specs & Graphics": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Products": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Upload Art to Printify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Art to Printify": {
+      "main": [
+        [
+          {
+            "node": "Create Product & Mockup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Product & Mockup": {
+      "main": [
+        [
+          {
+            "node": "Log Mockup in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Mockup in Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Generate Multi-Product Specs & Graphics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Convert SVG to PNG (Puppeteer)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert SVG to PNG (Puppeteer)": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "5d8b0720-b05a-439e-9d3e-7183b2d56ecb",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-15T19:15:51.444Z",
+      "createdAt": "2026-08-15T19:15:51.444Z",
+      "role": "workflow:owner",
+      "workflowId": "YDKA7eaz2nWlVO84",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
