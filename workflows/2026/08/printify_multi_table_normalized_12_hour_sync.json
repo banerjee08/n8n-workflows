@@ -1,0 +1,765 @@
+{
+  "updatedAt": "2026-08-19T18:14:20.348Z",
+  "createdAt": "2026-08-19T11:05:46.091Z",
+  "id": "wj0FiPgYOMp4lwib",
+  "name": "Printify Multi-Table Normalized 12-Hour Sync",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        192
+      ],
+      "id": "13224e1a-3740-46e1-92c0-0d1a5c0e615f"
+    },
+    {
+      "parameters": {
+        "url": "https://api.printify.com/v1/catalog/blueprints.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Fetch Master Blueprints",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1792,
+        192
+      ],
+      "id": "25c641b4-aff9-44d9-9d69-b19bf7af6da1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ogjGObtqZCy3jDfa",
+          "name": "Printify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst blueprintsList = [];\n\nfor (const item of items) {\n  // Access the JSON data directly from each item element\n  const data = item.json;\n  \n  if (data && (data.id || data.blueprint_id)) {\n    blueprintsList.push({\n      json: {\n        \"Blueprint ID\": data.id || data.blueprint_id,\n        \"Product Title\": data.title || \"\",\n        \"Description\": data.description || \"Not available\",\n        \"Brand\": data.brand || \"\",\n        \"Model\": data.model || \"\",\n        \"Images\": JSON.stringify(data.images || []),\n        \"Last Updated\": new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn blueprintsList;"
+      },
+      "name": "Format Blueprints Catalog",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        192
+      ],
+      "id": "ffaa35c1-4a39-4378-b433-1b962ceb0dce",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Blueprints_Catalog",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Blueprint ID": "={{ $json[\"Blueprint ID\"] }}",
+            "Product Title": "={{ $json[\"Product Title\"] }}",
+            "Brand": "={{ $json[\"Brand\"] }}",
+            "Model": "={{ $json[\"Model\"] }}",
+            "Images": "={{ $json[\"Images\"] }}",
+            "Last Updated": "={{ $json[\"Last Updated\"] }}"
+          },
+          "matchingColumns": [
+            "Blueprint ID"
+          ],
+          "schema": [
+            {
+              "id": "Blueprint ID",
+              "displayName": "Blueprint ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product Title",
+              "displayName": "Product Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Brand",
+              "displayName": "Brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Model",
+              "displayName": "Model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Suppliers",
+              "displayName": "Total Suppliers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Active Suppliers",
+              "displayName": "Active Suppliers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Images",
+              "displayName": "Images",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Upsert Blueprints Tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2464,
+        192
+      ],
+      "id": "038f089e-0fcf-431f-9598-d576f8bf4b46",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.printify.com/v1/catalog/blueprints/{{ $json[\"Blueprint ID\"] }}/print_providers/{{ $json[\"Provider ID\"] }}/variants.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 700
+            }
+          }
+        }
+      },
+      "name": "Fetch Variants & Pricing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3584,
+        192
+      ],
+      "id": "30f7d94c-e36c-49f0-b8b0-e01c332a5025",
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 2000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ogjGObtqZCy3jDfa",
+          "name": "Printify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Variants & Pricing",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Blueprint ID": "={{ $json[\"Blueprint ID\"] }}",
+            "Provider ID": "={{ $json[\"Provider ID\"] }}",
+            "Variant ID": "={{ $json[\"Variant ID\"] }}",
+            "Color": "={{ $json[\"Color\"] }}",
+            "Size": "={{ $json[\"Size\"] }}",
+            "Placement Position": "={{ $json[\"Placement Position\"] }}",
+            "Puppeteer Width": "={{ $json[\"Puppeteer Width\"] }}",
+            "Puppeteer Height": "={{ $json[\"Puppeteer Height\"] }}",
+            "Last Updated": "={{ $json[\"Last Updated\"] }}",
+            "Provider Name": "={{ $json[\"Provider Name\"] }}",
+            "Variant Name": "={{ $json[\"Variant ID\"] }}",
+            "Printing Method": "={{ $json[\"Printing Method\"] }}"
+          },
+          "matchingColumns": [
+            "Blueprint ID",
+            "Provider ID",
+            "Variant ID"
+          ],
+          "schema": [
+            {
+              "id": "Blueprint ID",
+              "displayName": "Blueprint ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Provider ID",
+              "displayName": "Provider ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Provider Name",
+              "displayName": "Provider Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Variant ID",
+              "displayName": "Variant ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Variant Name",
+              "displayName": "Variant Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Color",
+              "displayName": "Color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Size",
+              "displayName": "Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Placement Position",
+              "displayName": "Placement Position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Printing Method",
+              "displayName": "Printing Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Puppeteer Width",
+              "displayName": "Puppeteer Width",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Puppeteer Height",
+              "displayName": "Puppeteer Height",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Upsert Variants Tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4256,
+        192
+      ],
+      "id": "30f6dc77-cc54-43fc-b0a2-1e1c0da59d87",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM",
+          "mode": "list",
+          "cachedResultName": "Telegram-POD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 165911286,
+          "mode": "list",
+          "cachedResultName": "Print Providers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iHN4yUFSTxAk4UX3np0KFtL1tHnpdpreg_W_7Y3mVnM/edit#gid=165911286"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Blueprint ID": "={{ $json[\"Blueprint ID\"] }}",
+            "Provider ID": "={{ $json[\"Provider ID\"] }}",
+            "Provider Name": "={{ $json[\"Provider Name\"] }}",
+            "Print Method": "={{ $json[\"Print Method\"] }}",
+            "Last Updated": "={{ $json[\"Last Updated\"] }}"
+          },
+          "matchingColumns": [
+            "Blueprint ID"
+          ],
+          "schema": [
+            {
+              "id": "Blueprint ID",
+              "displayName": "Blueprint ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Provider ID",
+              "displayName": "Provider ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Provider Name",
+              "displayName": "Provider Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Print Method",
+              "displayName": "Print Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3136,
+        192
+      ],
+      "id": "88728db9-b261-4919-8249-e2baf81d33a1",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kowj61ntGk297jWr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst variantRows = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const variants = data.variants || [];\n  \n  // Safely extract IDs from current context or parent nodes\n  const blueprintId = item.json[\"Blueprint ID\"] || data.blueprint_id || \"\";\n  const providerId = item.json[\"Provider ID\"] || data.print_provider_id || \"\";\n  const providerName = item.json[\"Provider Name\"] || \"Unknown\";\n  \n  if (!Array.isArray(variants)) continue;\n\n  for (const variant of variants) {\n    const variantId = variant.id;\n    const variantName = variant.title || \"Unknown\";\n    const color = variant.options?.color || \"N/A\";\n    const size = variant.options?.size || \"N/A\";\n    \n    const placeholders = variant.placeholders || [];\n    \n    if (placeholders.length === 0) {\n      variantRows.push({\n        json: {\n          \"Blueprint ID\": blueprintId,\n          \"Provider ID\": providerId,\n          \"Provider Name\": providerName,\n          \"Variant ID\": variantId,\n          \"Variant Name\": variantName,\n          \"Color\": color,\n          \"Size\": size,\n          \"Placement Position\": \"None\",\n          \"Printing Method\": \"N/A\",\n          \"Puppeteer Width\": \"N/A\",\n          \"Puppeteer Height\": \"N/A\",\n          \"Last Updated\": new Date().toISOString()\n        }\n      });\n    } else {\n      for (const ph of placeholders) {\n        variantRows.push({\n          json: {\n            \"Blueprint ID\": blueprintId,\n            \"Provider ID\": providerId,\n            \"Provider Name\": providerName,\n            \"Variant ID\": variantId,\n            \"Variant Name\": variantName,\n            \"Color\": color,\n            \"Size\": size,\n            \"Placement Position\": ph.position || \"unknown\",\n            \"Printing Method\": ph.decoration_method || \"N/A\",\n            \"Puppeteer Width\": ph.width || \"N/A\",\n            \"Puppeteer Height\": ph.height || \"N/A\",\n            \"Last Updated\": new Date().toISOString()\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn variantRows;"
+      },
+      "name": "Format Variants",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3808,
+        192
+      ],
+      "id": "34e0b7c8-c660-4949-96b1-e294dbc49a22",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst formattedProviders = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const provider = items[i].json;\n\n  // 1. Get the parent Blueprint ID via paired item matching\n  const parentBlueprint = $(\"Upsert Blueprints Tab\").itemMatching(i)?.json;\n  const blueprintId = parentBlueprint ? parentBlueprint[\"Blueprint ID\"] : null;\n\n  // 2. Format decoration_methods array to a comma-separated string\n  let printMethodStr = \"\";\n  if (Array.isArray(provider.decoration_methods)) {\n    printMethodStr = provider.decoration_methods.join(\", \");\n  } else if (typeof provider.decoration_methods === \"string\") {\n    printMethodStr = provider.decoration_methods;\n  }\n\n  // 3. Push the clean row structure\n  if (provider && provider.id) {\n    formattedProviders.push({\n      json: {\n        \"Blueprint ID\": blueprintId,\n        \"Provider ID\": provider.id,\n        \"Provider Name\": provider.title || \"Unknown\",\n        \"Print Method\": printMethodStr,\n        \"Last Updated\": new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn formattedProviders;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        192
+      ],
+      "id": "e5097bfa-fddd-4b02-a773-e091b1a93826",
+      "name": "Format Print Providers",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 4
+    },
+    {
+      "parameters": {
+        "url": "=https://api.printify.com/v1/catalog/blueprints/{{ $json['Blueprint ID'] }}/print_providers.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 700
+            }
+          }
+        }
+      },
+      "name": "Fetch Print Providers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2688,
+        192
+      ],
+      "id": "e2871d04-f4b3-4a9d-bc17-93d95e25a67f",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ogjGObtqZCy3jDfa",
+          "name": "Printify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        192
+      ],
+      "id": "bfae31cb-adf4-4b2e-8d8e-52a41cbb20cc",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        192
+      ],
+      "id": "768db595-1391-4271-b93c-23c0648eb854",
+      "name": "Limit1"
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        4032,
+        192
+      ],
+      "id": "cb5770f9-96f7-407c-a8e6-7a9e2de1188c",
+      "name": "Limit2"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Master Blueprints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Master Blueprints": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Blueprints Catalog": {
+      "main": [
+        [
+          {
+            "node": "Upsert Blueprints Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Blueprints Tab": {
+      "main": [
+        [
+          {
+            "node": "Fetch Print Providers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Variants & Pricing": {
+      "main": [
+        [
+          {
+            "node": "Format Variants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Limit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Variants": {
+      "main": [
+        [
+          {
+            "node": "Limit2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Print Providers": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Print Providers": {
+      "main": [
+        [
+          {
+            "node": "Format Print Providers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Format Blueprints Catalog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Variants & Pricing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit2": {
+      "main": [
+        [
+          {
+            "node": "Upsert Variants Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "2bfe8bc4-ddc1-4ee4-8cf5-b1e56a5dbf4c",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-19T11:05:46.091Z",
+      "createdAt": "2026-08-19T11:05:46.091Z",
+      "role": "workflow:owner",
+      "workflowId": "wj0FiPgYOMp4lwib",
+      "projectId": "BMqKkALi7mM0Oifw"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
