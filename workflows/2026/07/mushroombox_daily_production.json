@@ -1,0 +1,46 @@
+{
+  "updatedAt": "2026-07-27T09:20:52.196Z",
+  "createdAt": "2026-07-27T07:17:07.721Z",
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "MushroomBox_Daily_Production",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0BKJ0VMSG7"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "64d99e60-0dba-4757-82b8-593b0335cbbc",
+      "name": "Slack Trigger",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "slackApi Credential"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {},
+  "nodeGroups": []
+}

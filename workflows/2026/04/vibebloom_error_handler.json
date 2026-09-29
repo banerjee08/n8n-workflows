@@ -1,0 +1,63 @@
+{
+  "updatedAt": "2026-04-10T14:13:07.608Z",
+  "createdAt": "2026-04-10T09:49:01.850Z",
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "vibebloom_error_handler",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "54b07046-6dce-484e-9ed8-020783933e51",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ '\u26a0\ufe0f *n8n Workflow Error Alert*\\n\\n*Workflow ID:* ' + $json.execution.workflowId + '\\n*Workflow Name:* ' + $json.execution.workflowName + '\\n*Failing Node:* ' + $json.execution.lastNodeExecuted + '\\n*Error Message:* ' + $json.execution.error.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "36e54c14-3195-4b45-b998-f23d8de1e014",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegramApi Credential"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {}
+}

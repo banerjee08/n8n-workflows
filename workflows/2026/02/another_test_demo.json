@@ -1,0 +1,16 @@
+{
+  "updatedAt": "2026-02-17T10:33:01.502Z",
+  "createdAt": "2026-02-17T10:33:01.502Z",
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "another Test demo",
+  "active": false,
+  "isArchived": false,
+  "nodes": [],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": null
+}
