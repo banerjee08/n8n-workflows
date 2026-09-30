@@ -1,0 +1,1484 @@
+{
+  "name": "Workflow 3 - 1-Page Grounded Cover Letter Generator & Self-Learning Reviewer",
+  "nodes": [
+    {
+      "id": "dbdec60d-8778-4642-8f13-ed73d645590c",
+      "name": "Every 15 Mins (Or Manual Run)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        7120,
+        3152
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "10,25,40,55 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "477ba0ab-b60c-4a91-978c-7a392ee689c9",
+      "name": "Postgres Audit: Ensure CL Tables & Check Stored CLs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        7344,
+        2544
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS cover_letter_few_shot_library (\n    id SERIAL PRIMARY KEY,\n    role_category VARCHAR(64) DEFAULT 'ALL',\n    company_example VARCHAR(120) NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    is_active BOOLEAN DEFAULT TRUE,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS cover_letter_generations (\n    resume_id VARCHAR(100) PRIMARY KEY,\n    s_no VARCHAR(50),\n    company_name VARCHAR(200) NOT NULL,\n    position_title VARCHAR(200) NOT NULL,\n    salutation_html TEXT NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    cl_drive_file_id VARCHAR(200),\n    cl_drive_web_link TEXT,\n    cl_status VARCHAR(64) DEFAULT 'Generated',\n    revision_count INTEGER DEFAULT 1,\n    last_reviewer_note TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- 1. Remove old duplicate Sept 23 cover_letter rules\nDELETE FROM learned_rules WHERE id IN (5, 10);\n\n-- 2. Clean up Rule #12 so it is a pure global Title Case & Tableau rule (without Damco's 'LLM over SQL')\nUPDATE learned_rules\nSET section_name = 'skills',\n    role_category = 'ALL',\n    rule_instruction = 'All skill names and category names in Core Skills MUST be in Title Case (e.g., Consulting, Stakeholder Management, Data Profiling). Prefer Tableau over Power BI unless Power BI is explicitly required.'\nWHERE id = 12;\n\n-- 3. Replace cover letter sample with the Short-Sentence, HR-Aware Industry-Standard sample\nDELETE FROM cover_letter_few_shot_library;\n\nINSERT INTO cover_letter_few_shot_library (\n    role_category, company_example, para1_hook_html, para2_stewardship_html,\n    para3_impact_story_html, para4_resilience_html, para5_closing_html, is_active\n) VALUES (\n    'ALL',\n    'Grounded Enterprise & Operations Analytics (Gold Standard Sample)',\n    '<p>I am writing to apply for the Technical Business Analyst role at Turing. What stood out to me in the job description is the focus on turning messy day-to-day operations into clean data models and clear reports. Before spending the last five years in data analytics, I ran my own small marketing agency for ten years. That mix taught me how much time teams lose when numbers do not match across different tools. Fixing those gaps between business teams and engineering is the part of the job I enjoy most.</p>',\n    '<p>Outside of writing SQL queries and building Tableau dashboards, I spend my free time on my terrace in Gurugram growing mushrooms and automating small daily tasks with n8n. Growing mushrooms in North India''s weather is not a fancy hobby. It comes down to watching basic details closely. If moisture or airflow slips even a little, the whole batch fails. I bring that same habit to my work when I check data quality, map workflows, or build reports that leaders rely on.</p>',\n    '<p>I also believe analysis is only useful when it solves a real problem on the ground. At Concentrix, our hiring data showed that new joiners were struggling once they started work. Sending another dashboard to management was not fixing the issue. I looked closely at the hiring steps and worked with leadership to bring our training team directly into the interview stage. That simple change improved hire quality by 84%. In my current role at Highspring India, I use the same practical approach across four engineering teams to automate recurring reports and cut manual work by 40%.</p>',\n    '<p>My day-to-day work covers SQL, Python, Tableau, and working closely with business and tech teams. If the team at Turing uses an internal tool I have not worked with yet, I learn new systems quickly. Practical challenges early in my career taught me how to stay resourceful, focus on the basics, and get things done without hand-holding. When I take ownership of a task, nobody has to follow up twice.</p>',\n    '<p>I would welcome the chance to bring this steady, practical approach to Turing. Thank you for your time and consideration, and I look forward to speaking with you soon.</p>',\n    TRUE\n);\n\n-- 4. Update or seed the Grounded 1-Page Cover Letter rule with HR-aware & short-sentence enforcement\nDELETE FROM learned_rules WHERE section_name = 'cover_letter' AND triggered_by_comment = 'System Grounded CL Rule';\n\nINSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nVALUES (\n    'cover_letter',\n    'ALL',\n    'Keep the Cover Letter strictly to 1 A4 page (260-320 words total across 5 paragraphs) in standard justified business letter format. Write in short, simple, human-like sentences (12-18 words per sentence, max 20 words). Address the company or functional department by name (never say \"your team\" since the recipient is often HR/Talent Acquisition). NEVER use em-dashes (\u2014), semicolons, mid-paragraph bolding, or fancy/AI words like disparate, stewardship, rigorous, multifaceted, synergetic, leverage, orchestrate, intersection, friction, cohort, or paradigm.',\n    'System Grounded CL Rule',\n    TRUE\n);\n\n-- 5. Return full audit summary\nSELECT\n  (SELECT COUNT(*) FROM cover_letter_generations) AS total_cover_letters_stored,\n  (SELECT COUNT(*) FROM cover_letter_generations WHERE cl_status IN ('LGTM', 'Approved', 'Approved & Learned')) AS approved_cover_letters,\n  (SELECT COUNT(*) FROM learned_rules WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl')) AS total_cl_learned_rules,\n  (SELECT COUNT(*) FROM cover_letter_few_shot_library WHERE is_active = TRUE) AS total_cl_few_shot_examples,\n  (SELECT COALESCE(json_agg(c), '[]'::json) FROM (\n    SELECT resume_id, s_no, company_name, position_title, revision_count, cl_status, last_reviewer_note, updated_at\n    FROM cover_letter_generations\n    ORDER BY updated_at DESC\n    LIMIT 5\n  ) c) AS latest_cover_letters,\n  (SELECT COALESCE(json_agg(l), '[]'::json) FROM (\n    SELECT id, section_name, role_category, rule_instruction, triggered_by_comment, company_context, created_at\n    FROM learned_rules\n    WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl', 'skills', 'global', 'all')\n    ORDER BY created_at DESC\n    LIMIT 10\n  ) l) AS latest_cl_learned_rules;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "61937976-c29b-41be-b10a-8abbca0a9163",
+      "name": "Get Rows Where Cover Letter Status = Create one",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        7344,
+        2736
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Cover Letter Status",
+              "lookupValue": "Create one"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "6e70cb17-eda0-453b-9c2b-a89dc40561f0",
+      "name": "Get Rows Where Cover Letter Status = Needs Rework",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        7344,
+        3440
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Cover Letter Status",
+              "lookupValue": "Needs Rework"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "3978eb77-4fb1-4211-9397-83334b822c5b",
+      "name": "Get Rows Where Cover Letter Status = LGTM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        7344,
+        3888
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Cover Letter Status",
+              "lookupValue": "LGTM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "bc0e5be0-2ae6-4f01-8534-065952ee75f9",
+      "name": "Loop Over CL Generate Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        7568,
+        2736
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "b8a329ae-0273-4cf4-a7de-35f506f9e741",
+      "name": "Postgres: Fetch Resume Context, Reference CL & Learned Rules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        7792,
+        2672
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT row_to_json(r) FROM (\n    SELECT resume_id, role_category, extracted_jd_keywords, summary_html\n    FROM resume_generations\n    WHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n       OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n       OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\n    ORDER BY updated_at DESC\n    LIMIT 1\n  ) r) AS resume_context,\n  (SELECT row_to_json(f) FROM (\n    SELECT * FROM cover_letter_few_shot_library\n    WHERE is_active = TRUE\n    ORDER BY id DESC\n    LIMIT 1\n  ) f) AS cl_reference,\n  (SELECT COALESCE(json_agg(rule_instruction), '[]'::json) FROM (\n    SELECT rule_instruction\n    FROM learned_rules\n    WHERE is_active = TRUE\n      AND (LOWER(section_name) LIKE '%cover%' OR LOWER(section_name) = 'cl' OR LOWER(section_name) IN ('global', 'all'))\n    ORDER BY id ASC\n  ) lr) AS cl_rules;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "e708b022-aeb4-48e1-b2c5-5e5dcbfba468",
+      "name": "Prepare Grounded Cover Letter Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8016,
+        2672
+      ],
+      "parameters": {
+        "jsCode": "const row = $('Loop Over CL Generate Rows (1 by 1)').last().json || {};\nconst pg = $input.first().json || {};\nconst resumeCtx = pg.resume_context || {};\n\nconst sNo = row['S. No.'];\nconst resumeId = (row['Resume_id'] && String(row['Resume_id']).trim() !== '')\n  ? String(row['Resume_id']).trim()\n  : (resumeCtx.resume_id || `RES-${sNo || Date.now()}`);\n\nconst rawCompany = String(row['Company'] || '').trim() || 'Hiring Organization';\nconst cleanCompany = rawCompany.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'Company';\nconst industry = String(row['Industry'] || '').trim() || 'Technology & Enterprise Operations';\nconst positionTitle = String(row['Position - Title'] || '').trim() || 'Senior Data & Business Analyst';\nconst rawJd = String(row['Position - Description'] || '').trim();\nconst aboutCompany = String(row['About Company'] || '').trim() || `An organization operating in ${industry}`;\nconst notesForCl = String(row['Notes for CL'] || '').trim();\n\nconst hrName = String(row['HR'] || '').trim();\nconst hasValidHrName = Boolean(hrName && hrName.toLowerCase() !== 'n/a' && hrName.toLowerCase() !== 'none');\nconst formattedDate = new Date().toLocaleDateString('en-US', {\n  month: 'long',\n  day: 'numeric',\n  year: 'numeric',\n  timeZone: 'Asia/Kolkata'\n});\nconst recipientBlockHtml = hasValidHrName\n  ? `<div>${hrName}</div><div>Talent Acquisition, ${rawCompany}</div>`\n  : `<div>Hiring Team</div><div>${rawCompany}</div>`;\nconst greetingLine = hasValidHrName ? `Dear ${hrName},` : 'Dear Hiring Manager,';\nconst subjectRoleLabel = /\\b(role|position)\\b/i.test(positionTitle) ? positionTitle : `the ${positionTitle} Role`;\n\n// Complete Industry-Standard Business Letter Header Block (Date + Recipient + Subject Line + Salutation)\nconst salutationHtml = `<div class=\"letter-meta\">\n  <div class=\"letter-date\">${formattedDate}</div>\n  <div class=\"recipient-block\">\n    ${recipientBlockHtml}\n  </div>\n  <div class=\"subject-line\"><strong>Subject: Application for ${subjectRoleLabel}</strong></div>\n</div>\n<p class=\"salutation\">${greetingLine}</p>`;\n\nconst defaultReference = {\n  para1_hook_html: `<p>I am writing to apply for the ${positionTitle} role at ${rawCompany}. What stood out to me in the job description is the practical focus on turning messy day-to-day operations into clean data models and reliable reports. Before spending the last five years in data analytics, I ran my own small marketing agency for ten years. That mix taught me how much time teams lose when numbers do not match across different tools. Fixing those gaps between business teams and engineering is the part of the job I enjoy most.</p>`,\n  para2_stewardship_html: `<p>Outside of writing SQL queries and building Tableau dashboards, I spend my free time on my terrace in Gurugram growing mushrooms and automating small daily tasks with n8n. Growing mushrooms in North India's weather is not a fancy hobby. It comes down to watching basic details closely. If moisture or airflow slips even a little, the whole batch fails. I bring that same habit to my work when I check data quality, map workflows, or build reports that leaders rely on.</p>`,\n  para3_impact_story_html: `<p>I also believe analysis is only useful when it solves a real problem on the ground. At Concentrix, our hiring data showed that new joiners were struggling once they started work. Sending another dashboard to management was not fixing the issue. I looked closely at the hiring steps and worked with leadership to bring our training team directly into the interview stage. That simple change improved hire quality by 84%. In my current role at Highspring India, I use the same practical approach across four engineering teams to automate recurring reports and cut manual work by 40%.</p>`,\n  para4_resilience_html: `<p>My day-to-day work covers SQL, Python, Tableau, and working closely with business and tech teams. If the team at ${rawCompany} uses an internal tool I have not worked with yet, I learn new systems quickly. Practical challenges early in my career taught me how to stay resourceful, focus on the basics, and get things done without hand-holding. When I take ownership of a task, nobody has to follow up twice.</p>`,\n  para5_closing_html: `<p>I would welcome the chance to bring this steady, practical approach to ${rawCompany}. Thank you for your time and consideration, and I look forward to speaking with you soon.</p>`\n};\n\nconst clRef = (pg.cl_reference && pg.cl_reference.para1_hook_html) ? pg.cl_reference : defaultReference;\nconst clRulesList = Array.isArray(pg.cl_rules) && pg.cl_rules.length > 0\n  ? pg.cl_rules.map((r, i) => `${i + 1}. ${r}`).join('\\n')\n  : '1. Keep the cover letter strictly to 1 page (260-320 words total across 5 paragraphs). Write in short, simple, human-like sentences (12-18 words per sentence). Never say \"your team\" (refer to the company by name). Never use fancy words like disparate or stewardship.';\n\nconst effectiveJobDescription = rawJd.length >= 40\n  ? rawJd\n  : `Target Role: ${positionTitle} at ${rawCompany} (${industry}). About Company: ${aboutCompany}. Notes: ${notesForCl || 'None'}.`;\n\nreturn [{\n  json: {\n    sNo,\n    resumeId,\n    company: rawCompany,\n    cleanCompany,\n    industry,\n    positionTitle,\n    jobDescription: effectiveJobDescription,\n    aboutCompany,\n    notesForCl,\n    salutationHtml,\n    roleCategory: resumeCtx.role_category || 'bi_data_analyst',\n    jdBlueprint: resumeCtx.extracted_jd_keywords || {},\n    clReference: clRef,\n    clRules: clRulesList,\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "dac0b5ac-c449-41f1-ad53-71b7d6c658aa",
+      "name": "Gemini: Generate 1-Page Grounded Cover Letter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        8240,
+        2672
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are writing a 1-page, plain-English, human-sounding Cover Letter for Sumanto Banerjee applying for ${$json.positionTitle} at ${$json.company} (${$json.industry}).\n\nCANDIDATE REAL BACKGROUND (GROUND TRUTH \u2014 DO NOT INVENT FAKE FACTS):\n- Current Role (Oct 2025 \u2013 Present): Sr. Data Analyst at Highspring India (On-site Google, Gurugram). Leads 3+ automation projects (cutting manual work by 40%), validates A/B tests across 15+ product launches, works across 4+ engineering and business teams, and works with 1M+ monthly records in SQL, Python, and Tableau.\n- Prior Role (Apr 2022 \u2013 Aug 2025): Lead Trainer at Concentrix Daksh (Gurugram). Analyzed hiring and workforce data; instead of just sending management another dashboard, worked with leadership to bring the training team directly into the interview stage, improving hire quality by 84% and boosting team productivity by 25%.\n- Earlier Career (2010 \u2013 2020): Founder at Maerke Stratcomm (Delhi) for 10 years, running client projects and growing HORECA sales by 25% for Wild Vitamin Drink. B.Comm (Hons.) from University of Delhi.\n- Real Hobbies Outside Work: Growing mushrooms on his terrace in Gurugram (watching basic details like moisture and airflow closely) and automating small daily tasks with n8n.\n\nSTUDY THIS GOLD-STANDARD HUMAN-WRITTEN SAMPLE (MATCH ITS SHORT SENTENCES & SIMPLE VOCABULARY):\n- Paragraph 1: ${$json.clReference.para1_hook_html}\n- Paragraph 2: ${$json.clReference.para2_stewardship_html}\n- Paragraph 3: ${$json.clReference.para3_impact_story_html}\n- Paragraph 4: ${$json.clReference.para4_resilience_html}\n- Paragraph 5: ${$json.clReference.para5_closing_html}\n\nINPUTS FOR THIS APPLICATION:\n- COMPANY: ${$json.company} (${$json.industry})\n- ABOUT COMPANY: ${$json.aboutCompany}\n- POSITION TITLE: ${$json.positionTitle}\n- USER NOTES FOR COVER LETTER ('Notes for CL'): ${$json.notesForCl || 'None provided \u2014 open plainly with why the day-to-day work in the Job Description fits Sumanto.'}\n- JOB DESCRIPTION:\n${String($json.jobDescription || '').slice(0, 2500)}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.clRules}\n\nSTRICT HUMAN-WRITING & SHORT-SENTENCE RULES (CRITICAL):\n1. KEEP SENTENCES SHORT (12 TO 18 WORDS PER SENTENCE, MAX 20 WORDS):\n   - Never write long, winding 30+ word sentences.\n   - If a sentence has more than one comma, break it into two separate sentences with a period.\n   - NEVER use em-dashes (\u2014) or semicolons (;) to chain clauses together. Use a period and start a new sentence.\n2. NEVER SAY 'YOUR TEAM' (HR-AWARE RECIPIENT RULE):\n   - The letter is often read first by HR / Talent Acquisition, NOT the hiring manager you will report to.\n   - Therefore, NEVER write 'your team' (e.g., do NOT write 'bring this approach to your team' or 'if your team uses').\n   - Instead, always refer to the company by name ('${$json.company}') or 'the analytics team at ${$json.company}' (e.g., 'bring this steady, practical approach to ${$json.company}' and 'If the team at ${$json.company} uses an internal tool...').\n3. USE SIMPLE, EVERYDAY SPOKEN WORDS (NO FANCY OR AI WORDS):\n   - BANNED WORDS: NEVER use words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'delve', 'testament', 'orchestrate', 'leverage', 'paradigm', 'overarching', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', 'proprietary', 'hygiene', 'ecosystem', 'spearhead', 'unwavering', 'landscape', 'tapestry', 'seamless', or 'catalyze'.\n   - Use plain human words instead: say 'different tools' (not 'disparate systems'), 'close attention' or 'habit' (not 'rigorous stewardship'), 'new joiners' (not 'cohorts'), 'hiring steps' (not 'operational funnel'), 'simple change' (not 'structural adjustment').\n4. STRICT 1-PAGE WORD BUDGET (260 TO 320 WORDS TOTAL ACROSS 5 PARAGRAPHS):\n   - Paragraph 1 (para1_hook_html, 4-5 short sentences, ~65 words): State what stood out in the ${$json.positionTitle} JD at ${$json.company}. Mention his 5 years in data analytics after 10 years running his own small agency. Explain simply that he likes fixing data gaps between business and tech teams.\n   - Paragraph 2 (para2_stewardship_html, 4-5 short sentences, ~65 words): Mention his terrace mushroom growing in Gurugram and n8n automation hobby in plain, humble terms (watching moisture and airflow closely so the batch does not fail), and connect that habit to the day-to-day responsibilities in this JD.\n   - Paragraph 3 (para3_impact_story_html, 4-5 short sentences, ~75 words): Tell the Concentrix story (bringing the training team into interviews to improve hire quality by 84%) and/or the Highspring India work (automating recurring reports across four engineering teams to cut manual work by 40%) in short, clear sentences.\n   - Paragraph 4 (para4_resilience_html, 3-4 short sentences, ~55 words): Mention his core stack (SQL, Python, Tableau) and state honestly that if the team at ${$json.company} uses an internal tool he has not worked with yet, he learns fast, stays resourceful, and is dependable.\n   - Paragraph 5 (para5_closing_html, ONE single <p> tag with 2 short sentences, ~30 words): 'I would welcome the chance to bring this steady, practical approach to ${$json.company}. Thank you for your time and consideration, and I look forward to speaking with you soon.'\n5. NO BOLD TAGS IN BODY PARAGRAPHS: Do NOT put <strong> or <b> tags inside the paragraphs.\n\nReturn STRICT JSON only (no markdown fences) matching this exact schema:\n{\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "87187464-2a0d-488b-9624-09f310189af0",
+      "name": "Switch Model (CL Generator)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8464,
+        2592
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Grounded Cover Letter Context').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Generator after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "46c883b7-b2ca-4815-8ea6-bf62361e1e4a",
+      "name": "Wait 7s (Switch CL Gen Model)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8688,
+        2672
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "9e1ca038-2c8e-441a-bc85-a5a4386139d1",
+      "name": "Wait 5s (Gemini RPM Guard)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8464,
+        2400
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "da33265e-fa20-4848-a442-e05cf6e4c59d",
+      "name": "Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8688,
+        2400
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare Grounded Cover Letter Context').last().json;\nconst rawText = $('Gemini: Generate 1-Page Grounded Cover Letter').last().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\n// Post-processor to enforce human-like plain English, HR-aware phrasing, no mid-sentence bolding, no em-dashes, and 1 <p> per paragraph\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  // Merge any split </p><p> inside a single paragraph slot\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  // Remove mid-paragraph <strong> and <b> tags so body text looks human-written\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  // Replace em-dashes with clean punctuation\n  s = s.replace(/\\s*\u2014\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  // Replace 'your team' with HR-aware company phrasing\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  // Replace common fancy AI words if any slipped through\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst paras = {\n  para1_hook_html: cleanHumanParagraph(parsed.para1_hook_html, ctx.clReference.para1_hook_html),\n  para2_stewardship_html: cleanHumanParagraph(parsed.para2_stewardship_html, ctx.clReference.para2_stewardship_html),\n  para3_impact_story_html: cleanHumanParagraph(parsed.para3_impact_story_html, ctx.clReference.para3_impact_story_html),\n  para4_resilience_html: cleanHumanParagraph(parsed.para4_resilience_html, ctx.clReference.para4_resilience_html),\n  para5_closing_html: cleanHumanParagraph(parsed.para5_closing_html, ctx.clReference.para5_closing_html)\n};\n\n// Calculate plain-text character count to dynamically auto-fit CSS so the PDF is GUARANTEED 1 Page\nconst combinedHtml = `${paras.para1_hook_html}${paras.para2_stewardship_html}${paras.para3_impact_story_html}${paras.para4_resilience_html}${paras.para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page {\n    size: A4;\n    margin: ${pageMargin};\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: ${bodyFontSize};\n    line-height: ${bodyLineHeight};\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .cl-header {\n    text-align: center;\n    margin-bottom: ${headerMarginBottom};\n    border-bottom: 1px solid #222222;\n    padding-bottom: 10px;\n  }\n  .cl-header h1 {\n    font-size: 22pt;\n    font-weight: normal;\n    margin: 0 0 4px 0;\n    letter-spacing: 0.3px;\n    color: #111111;\n  }\n  .cl-contact {\n    font-size: 9.6pt;\n    color: #222222;\n    margin-bottom: 2px;\n  }\n  .cl-contact a {\n    color: #1155cc;\n    text-decoration: none;\n  }\n  .cl-location {\n    font-size: 9.6pt;\n    color: #333333;\n  }\n  .letter-meta {\n    margin-bottom: 12px;\n    line-height: 1.38;\n    text-align: left;\n  }\n  .letter-date {\n    margin-bottom: 10px;\n    color: #222222;\n  }\n  .recipient-block {\n    margin-bottom: 10px;\n    color: #111111;\n  }\n  .subject-line {\n    margin-bottom: 12px;\n    color: #111111;\n  }\n  p {\n    margin: 0 0 ${paraMarginBottom} 0;\n    text-align: justify;\n  }\n  p.salutation {\n    margin-bottom: 11px;\n    text-align: left;\n  }\n  strong {\n    font-weight: bold;\n    color: #000000;\n  }\n  .sign-off {\n    margin-top: ${signOffMarginTop};\n    page-break-inside: avoid;\n    break-inside: avoid;\n    text-align: left;\n  }\n  .sign-off p {\n    text-align: left;\n  }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}</title>\n  <style>${clCss}</style>\n</head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">REDACTED_EMAIL@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n\n  ${ctx.salutationHtml}\n  ${paras.para1_hook_html}\n  ${paras.para2_stewardship_html}\n  ${paras.para3_impact_story_html}\n  ${paras.para4_resilience_html}\n  ${paras.para5_closing_html}\n\n  <div class=\"sign-off\">\n    <p style=\"margin-bottom: 6px;\">Sincerely,</p>\n    <p><strong>Sumanto Banerjee</strong></p>\n  </div>\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    paras,\n    plainTextLen,\n    pdfFileName: fileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+      }
+    },
+    {
+      "id": "8e3fd293-ecb0-4a5c-90ae-bfd097db3575",
+      "name": "Wait 2s (KVM2 CPU Guard)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8912,
+        2400
+      ],
+      "parameters": {
+        "amount": 2
+      }
+    },
+    {
+      "id": "e9f9576c-2546-4072-ad06-54cefbd6d010",
+      "name": "Gotenberg: Render 1-Page Cover Letter PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9136,
+        2400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "index_html"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            },
+            {
+              "name": "nativePageRanges",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "413742be-9136-4695-9294-06e44caf2738",
+      "name": "Upload Cover Letter PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        9360,
+        2400
+      ],
+      "parameters": {
+        "name": "={{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.pdfFileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "940d55bd-3b70-4b6a-bf90-81e49ce28516",
+      "name": "Postgres: Save Cover Letter Paragraphs & Drive ID (No Upsert)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        9584,
+        2400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM cover_letter_generations\nWHERE resume_id = '{{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.resumeId }}'\n   OR (s_no = '{{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.sNo }}' AND '{{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.sNo }}' <> '')\n   OR (LOWER(TRIM(company_name)) = LOWER(TRIM($1)) AND LOWER(TRIM(position_title)) = LOWER(TRIM($2)));\n\nINSERT INTO cover_letter_generations (\n  resume_id, s_no, company_name, position_title, salutation_html,\n  para1_hook_html, para2_stewardship_html, para3_impact_story_html,\n  para4_resilience_html, para5_closing_html, cl_drive_file_id, cl_drive_web_link, cl_status\n) VALUES (\n  '{{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.resumeId }}',\n  '{{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.sNo }}',\n  $1, $2, $3, $4, $5, $6, $7, $8,\n  '{{ $json.id }}',\n  '{{ $json.webViewLink }}',\n  'Ready for Review'\n);",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.company,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.positionTitle,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.salutationHtml,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.paras.para1_hook_html,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.paras.para2_stewardship_html,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.paras.para3_impact_story_html,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.paras.para4_resilience_html,\n  $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.paras.para5_closing_html\n] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "afbebc7a-bf2a-4183-b22d-97bc2a26991d",
+      "name": "Google Sheets: Update Cover Letter Link & Status (No Upsert)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        9808,
+        2400
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.sNo }}",
+            "Resume_id": "={{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.resumeId }}",
+            "Cover Letter": "={{ $('Upload Cover Letter PDF to Google Drive').last().json.webViewLink }}",
+            "Cover Letter Status": "Ready for Review"
+          },
+          "matchingColumns": [
+            "S. No."
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "196bccf7-2491-4f1b-a87d-b7e38b767ceb",
+      "name": "Wait 5s Before Next CL Row",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        10032,
+        2736
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c12e0b5b-2279-470e-8dd8-db5d82fb0c11",
+      "name": "Loop Over CL Review Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        7568,
+        3440
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "e25da26b-d9bd-47c5-9c8f-c9331769469f",
+      "name": "Postgres: Load Cached Cover Letter & Active Rules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        7792,
+        3360
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT row_to_json(c) FROM (\n    SELECT *\n    FROM cover_letter_generations\n    WHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n       OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n       OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\n    ORDER BY updated_at DESC\n    LIMIT 1\n  ) c) AS cached_cl,\n  (SELECT COALESCE(json_agg(rule_instruction), '[]'::json) FROM (\n    SELECT rule_instruction\n    FROM learned_rules\n    WHERE is_active = TRUE\n      AND (LOWER(section_name) LIKE '%cover%' OR LOWER(section_name) = 'cl' OR LOWER(section_name) IN ('global', 'all'))\n    ORDER BY id ASC\n  ) lr) AS active_cl_rules;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "154fbec4-391b-40b1-90b8-e2602b1e61a3",
+      "name": "Merge CL Feedback & Cached Paragraphs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8016,
+        3360
+      ],
+      "parameters": {
+        "jsCode": "const sheetRow = $('Loop Over CL Review Rows (1 by 1)').last().json || {};\nconst pgOut = $input.first().json || {};\nconst dbRow = pgOut.cached_cl || {};\nconst activeRules = Array.isArray(pgOut.active_cl_rules) ? pgOut.active_cl_rules : [];\n\nconst notesForCl = String(sheetRow['Notes for CL'] || '').trim();\nconst notesByReviewer = String(sheetRow['Notes by Reviewer'] || '').trim();\nconst genericNotes = String(sheetRow['Notes'] || '').trim();\n\nconst reviewerNotes = [notesForCl, notesByReviewer, genericNotes]\n  .filter(n => n && n.toLowerCase() !== 'none provided')\n  .join('\\n');\n\n// Detect if user wrote 'For this cover letter' or 'For this resume' (one-off edit that must NOT be saved globally)\nconst isForThisClOnly = /\\b(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\b/i.test(reviewerNotes);\n\nconst sNo = String(sheetRow['S. No.'] || dbRow.s_no || '');\nconst resumeId = String(dbRow.resume_id || sheetRow['Resume_id'] || `RES-${sNo || Date.now()}`);\nconst company = String(sheetRow['Company'] || dbRow.company_name || 'Hiring Organization').trim();\nconst cleanCompany = company.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'Company';\nconst positionTitle = String(sheetRow['Position - Title'] || dbRow.position_title || 'Senior Data & Business Analyst').trim();\nconst jobDescription = String(sheetRow['Position - Description'] || '').trim();\nconst nextRevision = Number(dbRow.revision_count || 1) + 1;\n\nconst hrName = String(sheetRow['HR'] || '').trim();\nconst hasValidHrName = Boolean(hrName && hrName.toLowerCase() !== 'n/a' && hrName.toLowerCase() !== 'none');\nconst formattedDate = new Date().toLocaleDateString('en-US', {\n  month: 'long',\n  day: 'numeric',\n  year: 'numeric',\n  timeZone: 'Asia/Kolkata'\n});\nconst recipientBlockHtml = hasValidHrName\n  ? `<div>${hrName}</div><div>Talent Acquisition, ${company}</div>`\n  : `<div>Hiring Team</div><div>${company}</div>`;\nconst greetingLine = hasValidHrName ? `Dear ${hrName},` : 'Dear Hiring Manager,';\nconst subjectRoleLabel = /\\b(role|position)\\b/i.test(positionTitle) ? positionTitle : `the ${positionTitle} Role`;\n\nconst defaultSalutation = `<div class=\"letter-meta\">\n  <div class=\"letter-date\">${formattedDate}</div>\n  <div class=\"recipient-block\">\n    ${recipientBlockHtml}\n  </div>\n  <div class=\"subject-line\"><strong>Subject: Application for ${subjectRoleLabel}</strong></div>\n</div>\n<p class=\"salutation\">${greetingLine}</p>`;\n\nlet oldDriveFileId = dbRow.cl_drive_file_id || '';\nif (!oldDriveFileId && sheetRow['Cover Letter']) {\n  const match = String(sheetRow['Cover Letter']).match(/[-\\w]{25,}/);\n  if (match) oldDriveFileId = match[0];\n}\n\nconst applicableRulesText = activeRules.length > 0\n  ? activeRules.map((r, i) => `${i + 1}. ${r}`).join('\\n')\n  : '1. Keep the cover letter strictly to 1 page (260-320 words total across 5 paragraphs) in short, simple, human-like sentences (12-18 words per sentence). Never say \"your team\" (refer to the company by name).';\n\nreturn [{\n  json: {\n    sNo,\n    resumeId,\n    company,\n    cleanCompany,\n    positionTitle,\n    jobDescription,\n    reviewerNotes,\n    isForThisClOnly,\n    hasReviewerNotes: reviewerNotes.length > 2,\n    applicableRulesText,\n    nextRevision,\n    oldDriveFileId,\n    salutationHtml: defaultSalutation,\n    para1_hook_html: dbRow.para1_hook_html || `<p>I am writing to apply for the ${positionTitle} role at ${company}. What stood out to me in the job description is the focus on turning messy day-to-day operations into clean data models and reliable reports. Before spending the last five years in data analytics, I ran my own small marketing agency for ten years. That mix taught me how much time teams lose when numbers do not match across different tools. Fixing those gaps between business teams and engineering is the part of the job I enjoy most.</p>`,\n    para2_stewardship_html: dbRow.para2_stewardship_html || `<p>Outside of writing SQL queries and building Tableau dashboards, I spend my free time on my terrace in Gurugram growing mushrooms and automating small daily tasks with n8n. Growing mushrooms in North India's weather is not a fancy hobby. It comes down to watching basic details closely. If moisture or airflow slips even a little, the whole batch fails. I bring that same habit to my work when I check data quality, map workflows, or build reports that leaders rely on.</p>`,\n    para3_impact_story_html: dbRow.para3_impact_story_html || `<p>I also believe analysis is only useful when it solves a real problem on the ground. At Concentrix, our hiring data showed that new joiners were struggling once they started work. Sending another dashboard to management was not fixing the issue. I looked closely at the hiring steps and worked with leadership to bring our training team directly into the interview stage. That simple change improved hire quality by 84%. In my current role at Highspring India, I use the same practical approach across four engineering teams to automate recurring reports and cut manual work by 40%.</p>`,\n    para4_resilience_html: dbRow.para4_resilience_html || `<p>My day-to-day work covers SQL, Python, Tableau, and working closely with business and tech teams. If the team at ${company} uses an internal tool I have not worked with yet, I learn new systems quickly. Practical challenges early in my career taught me how to stay resourceful, focus on the basics, and get things done without hand-holding. When I take ownership of a task, nobody has to follow up twice.</p>`,\n    para5_closing_html: dbRow.para5_closing_html || `<p>I would welcome the chance to bring this steady, practical approach to ${company}. Thank you for your time and consideration, and I look forward to speaking with you soon.</p>`,\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "0e3a36f4-38f3-41ab-addb-0020b155b053",
+      "name": "IF CL Reviewer Notes Present",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        8240,
+        3360
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-cl-has-feedback",
+              "leftValue": "={{ $json.hasReviewerNotes }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c2ea0d7d-e6cc-48b9-b117-4499ac0d0574",
+      "name": "Wait 5s (Gemini Review RPM Guard #1)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8464,
+        3264
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "2679eb39-63a3-4083-a5c9-738f28063543",
+      "name": "Gemini: Fix Flagged Cover Letter Paragraph & Extract Rule",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        8688,
+        3264
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are the Self-Learning Cover Letter Editor for Sumanto Banerjee.\n\nTarget Role: ${$json.positionTitle} at ${$json.company}\nContains 'For this cover letter / resume' One-Off Flag: ${$json.isForThisClOnly}\nReviewer Feedback ('Notes for CL' / 'Notes by Reviewer'):\n\"\"\"${$json.reviewerNotes}\"\"\"\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.applicableRulesText}\n\nCURRENT CACHED PARAGRAPHS:\n- para1_hook_html: ${$json.para1_hook_html}\n- para2_stewardship_html: ${$json.para2_stewardship_html}\n- para3_impact_story_html: ${$json.para3_impact_story_html}\n- para4_resilience_html: ${$json.para4_resilience_html}\n- para5_closing_html: ${$json.para5_closing_html}\n\nSTRICT INSTRUCTIONS:\n1. Apply the Reviewer Feedback to rewrite the affected paragraph(s) and also clean up any overly long sentences across the letter so the entire letter is 260\u2013320 words total across 5 paragraphs.\n2. SHORT HUMAN SENTENCES & PLAIN WORDS (CRITICAL): Every sentence MUST be 12 to 18 words on average (max 20 words). NEVER use em-dashes (\u2014), semicolons (;), mid-paragraph <strong> bolding, or fancy AI words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'leverage', 'orchestrate', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', or 'paradigm'.\n3. NEVER SAY 'YOUR TEAM': Because the letter is addressed to HR / Talent Acquisition, never say 'your team'\u2014always say '${$json.company}' or 'the team at ${$json.company}'.\n4. Paragraph 5 (para5_closing_html) MUST be a single <p>...</p> tag (do NOT split into two <p> tags).\n5. 'FOR THIS COVER LETTER / RESUME' EPHEMERAL RULE (CRITICAL): If the Reviewer Feedback contains 'For this cover letter', 'For this CL', 'For this resume', or 'only for this', you MUST apply the edit to the paragraph HTML for THIS cover letter, but you MUST set \"rule_scope\": \"NONE\" and \"permanent_learned_rule\": \"\" (empty string) so it is NOT learned for future cover letters.\n\nReturn STRICT JSON only (no markdown fences):\n{\n  \"rule_scope\": \"ALL\" | \"NONE\",\n  \"permanent_learned_rule\": \"Concise reusable rule for future cover letters (MUST BE '' if rule_scope is NONE or user wrote 'For this cover letter / resume')\",\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "6008abb0-cb8f-4f64-b5e2-a48ddeb4f773",
+      "name": "Switch Model (CL Reviewer)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8912,
+        3216
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Reviewer after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "8f55be00-a6e5-4bb7-9dd5-43937479c40d",
+      "name": "Wait 7s (Switch CL Review Model)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        9136,
+        3312
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "88f40128-b41d-48ac-96ef-324757258ce1",
+      "name": "Recompile Reviewed 1-Page Cover Letter HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8912,
+        3024
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst rawText = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  s = s.replace(/\\s*\u2014\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst para1_hook_html = cleanHumanParagraph(parsed.para1_hook_html, ctx.para1_hook_html);\nconst para2_stewardship_html = cleanHumanParagraph(parsed.para2_stewardship_html, ctx.para2_stewardship_html);\nconst para3_impact_story_html = cleanHumanParagraph(parsed.para3_impact_story_html, ctx.para3_impact_story_html);\nconst para4_resilience_html = cleanHumanParagraph(parsed.para4_resilience_html, ctx.para4_resilience_html);\nconst para5_closing_html = cleanHumanParagraph(parsed.para5_closing_html, ctx.para5_closing_html);\n\nconst isOneOff = Boolean(\n  ctx.isForThisClOnly ||\n  String(parsed.rule_scope || '').toUpperCase() === 'NONE' ||\n  /\\b(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\b/i.test(String(parsed.permanent_learned_rule || ''))\n);\n\nconst extractedRule = isOneOff ? '' : String(parsed.permanent_learned_rule || '').trim();\nconst shouldSaveLearnedRule = !isOneOff && extractedRule.length > 5;\n\nconst combinedHtml = `${para1_hook_html}${para2_stewardship_html}${para3_impact_story_html}${para4_resilience_html}${para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page { size: A4; margin: ${pageMargin}; }\n  * { box-sizing: border-box; }\n  body { font-family: 'Georgia', 'Times New Roman', serif; font-size: ${bodyFontSize}; line-height: ${bodyLineHeight}; color: #111111; margin: 0; padding: 0; }\n  .cl-header { text-align: center; margin-bottom: ${headerMarginBottom}; border-bottom: 1px solid #222222; padding-bottom: 10px; }\n  .cl-header h1 { font-size: 22pt; font-weight: normal; margin: 0 0 4px 0; letter-spacing: 0.3px; color: #111111; }\n  .cl-contact { font-size: 9.6pt; color: #222222; margin-bottom: 2px; }\n  .cl-contact a { color: #1155cc; text-decoration: none; }\n  .cl-location { font-size: 9.6pt; color: #333333; }\n  .letter-meta { margin-bottom: 12px; line-height: 1.38; text-align: left; }\n  .letter-date { margin-bottom: 10px; color: #222222; }\n  .recipient-block { margin-bottom: 10px; color: #111111; }\n  .subject-line { margin-bottom: 12px; color: #111111; }\n  p { margin: 0 0 ${paraMarginBottom} 0; text-align: justify; }\n  p.salutation { margin-bottom: 11px; text-align: left; }\n  strong { font-weight: bold; color: #000000; }\n  .sign-off { margin-top: ${signOffMarginTop}; page-break-inside: avoid; break-inside: avoid; text-align: left; }\n  .sign-off p { text-align: left; }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\" /><title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}</title><style>${clCss}</style></head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">REDACTED_EMAIL@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n  ${ctx.salutationHtml}\n  ${para1_hook_html}\n  ${para2_stewardship_html}\n  ${para3_impact_story_html}\n  ${para4_resilience_html}\n  ${para5_closing_html}\n  <div class=\"sign-off\"><p style=\"margin-bottom: 6px;\">Sincerely,</p><p><strong>Sumanto Banerjee</strong></p></div>\n</body></html>`;\n\nreturn [{\n  json: {\n    ...ctx,\n    extractedRule,\n    shouldSaveLearnedRule,\n    para1_hook_html,\n    para2_stewardship_html,\n    para3_impact_story_html,\n    para4_resilience_html,\n    para5_closing_html,\n    pdfFileName: `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}.pdf`\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+      }
+    },
+    {
+      "id": "0e287839-75b2-4098-82dd-af3af7083c99",
+      "name": "Postgres: Save Cover Letter Learned Rule (If Not One-Off)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        9136,
+        3024
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, company_context, is_active)\nSELECT\n  'cover_letter',\n  'ALL',\n  $1,\n  $2,\n  $3,\n  TRUE\nWHERE '{{ $json.shouldSaveLearnedRule }}' = 'true'\n  AND LENGTH(TRIM($1)) > 5\n  AND $1 !~* '\\m(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\M'\n  AND $2 !~* '\\m(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\M'\n  AND NOT EXISTS (\n    SELECT 1 FROM learned_rules\n    WHERE LOWER(TRIM(rule_instruction)) = LOWER(TRIM($1))\n       OR (LOWER(TRIM(COALESCE(triggered_by_comment, ''))) = LOWER(TRIM($2)) AND LOWER(TRIM(COALESCE(company_context, ''))) = LOWER(TRIM($3)))\n  );",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.extractedRule,\n  $json.reviewerNotes,\n  $json.company\n] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "597da3e7-4070-44ca-b7de-59849f8bc2e0",
+      "name": "Wait 2s (KVM2 Review CPU Guard)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        9360,
+        3024
+      ],
+      "parameters": {
+        "amount": 2
+      }
+    },
+    {
+      "id": "5c24fdee-a5b4-455f-9ed1-16f3cd747f89",
+      "name": "Gotenberg: Render Updated 1-Page Cover Letter PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9584,
+        3024
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "index_html"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            },
+            {
+              "name": "nativePageRanges",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "10c3c391-e332-4f87-bb52-b12870d08eea",
+      "name": "Google Drive: Delete Old Cover Letter PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "continueOnFail": true,
+      "position": [
+        9808,
+        3024
+      ],
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.oldDriveFileId }}"
+        },
+        "options": {
+          "deletePermanently": true
+        }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "485ebfda-ddd6-40b3-a80f-2d22a611c0f7",
+      "name": "Google Drive: Upload Updated Cover Letter PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        10032,
+        3024
+      ],
+      "parameters": {
+        "name": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.pdfFileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "9be59fcd-a19e-4622-880b-f10ecf19f8d9",
+      "name": "Postgres: Update Cached Cover Letter Paragraphs & Revision",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        10256,
+        3024
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM cover_letter_generations\nWHERE resume_id = '{{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.resumeId }}'\n   OR (s_no = '{{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.sNo }}' AND '{{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.sNo }}' <> '');\n\nINSERT INTO cover_letter_generations (\n  resume_id, s_no, company_name, position_title, salutation_html,\n  para1_hook_html, para2_stewardship_html, para3_impact_story_html,\n  para4_resilience_html, para5_closing_html, cl_drive_file_id, cl_drive_web_link,\n  cl_status, revision_count, last_reviewer_note, updated_at\n) VALUES (\n  '{{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.resumeId }}',\n  '{{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.sNo }}',\n  $1, $2, $3, $4, $5, $6, $7, $8,\n  '{{ $json.id }}',\n  '{{ $json.webViewLink }}',\n  'Updated - Ready for Review',\n  {{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.nextRevision }},\n  $9,\n  CURRENT_TIMESTAMP\n);",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.company,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.positionTitle,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.salutationHtml,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.para1_hook_html,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.para2_stewardship_html,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.para3_impact_story_html,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.para4_resilience_html,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.para5_closing_html,\n  $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.reviewerNotes\n] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "38afe986-ef8a-45db-bb52-4317114aaa4f",
+      "name": "Google Sheets: Update Revised CL Link & Status = Ready for Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        10480,
+        3024
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.sNo }}",
+            "Resume_id": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.resumeId }}",
+            "Cover Letter": "={{ $('Google Drive: Upload Updated Cover Letter PDF').last().json.webViewLink }}",
+            "Cover Letter Status": "Ready for Review"
+          },
+          "matchingColumns": [
+            "S. No."
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "ef76a358-bdb2-4197-9c74-bcd2837ff37c",
+      "name": "Wait 5s Before Next CL Review Row",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        10704,
+        3536
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "4d36ed46-7fbf-4598-b2fd-20a6d29bc167",
+      "name": "Loop Over CL LGTM Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        7568,
+        3888
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "3ddca5fd-af63-4190-a445-c59ffc2bcb9a",
+      "name": "Postgres: Promote LGTM Cover Letter to Few-Shot Library",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        7792,
+        3744
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE cover_letter_generations\nSET cl_status = 'Approved', updated_at = CURRENT_TIMESTAMP\nWHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n   OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n   OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'));\n\nDELETE FROM cover_letter_few_shot_library\nWHERE company_example IN (\n  SELECT 'Approved CL - ' || company_name || ' (' || position_title || ')'\n  FROM cover_letter_generations\n  WHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n     OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n     OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\n);\n\nINSERT INTO cover_letter_few_shot_library (\n  role_category,\n  company_example,\n  para1_hook_html,\n  para2_stewardship_html,\n  para3_impact_story_html,\n  para4_resilience_html,\n  para5_closing_html,\n  is_active\n)\nSELECT\n  'ALL',\n  'Approved CL - ' || company_name || ' (' || position_title || ')',\n  para1_hook_html,\n  para2_stewardship_html,\n  para3_impact_story_html,\n  para4_resilience_html,\n  para5_closing_html,\n  TRUE\nFROM cover_letter_generations\nWHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n   OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n   OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\nORDER BY updated_at DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "b071ce8e-cfe0-4bd7-a5a1-58feb6d405b2",
+      "name": "Google Sheets: Mark Cover Letter Status = Approved & Learned",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        8016,
+        3744
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Loop Over CL LGTM Rows (1 by 1)').last().json['S. No.'] }}",
+            "Cover Letter Status": "Approved & Learned"
+          },
+          "matchingColumns": [
+            "S. No."
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "8d70a5af-b6d6-4254-9e85-1cfeec386adc",
+      "name": "Wait 3s Before Next LGTM Row",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        8240,
+        3888
+      ],
+      "parameters": {
+        "amount": 3
+      }
+    },
+    {
+      "id": "auto-tg-trig-T4k9rXZ2",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        7120,
+        3332
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 Mins (Or Manual Run)": {
+      "main": [
+        [
+          {
+            "node": "Postgres Audit: Ensure CL Tables & Check Stored CLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = Create one",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = Needs Rework",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Where Cover Letter Status = Create one": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL Generate Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over CL Generate Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Postgres: Fetch Resume Context, Reference CL & Learned Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Fetch Resume Context, Reference CL & Learned Rules": {
+      "main": [
+        [
+          {
+            "node": "Prepare Grounded Cover Letter Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Grounded Cover Letter Context": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Generate 1-Page Grounded Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Generate 1-Page Grounded Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (CL Generator)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (CL Generator)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch CL Gen Model)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch CL Gen Model)": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Generate 1-Page Grounded Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard)": {
+      "main": [
+        [
+          {
+            "node": "Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s (KVM2 CPU Guard)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s (KVM2 CPU Guard)": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: Render 1-Page Cover Letter PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: Render 1-Page Cover Letter PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload Cover Letter PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Cover Letter PDF to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Save Cover Letter Paragraphs & Drive ID (No Upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Save Cover Letter Paragraphs & Drive ID (No Upsert)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Cover Letter Link & Status (No Upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Update Cover Letter Link & Status (No Upsert)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s Before Next CL Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s Before Next CL Row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL Generate Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Where Cover Letter Status = Needs Rework": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL Review Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over CL Review Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Postgres: Load Cached Cover Letter & Active Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Load Cached Cover Letter & Active Rules": {
+      "main": [
+        [
+          {
+            "node": "Merge CL Feedback & Cached Paragraphs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge CL Feedback & Cached Paragraphs": {
+      "main": [
+        [
+          {
+            "node": "IF CL Reviewer Notes Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF CL Reviewer Notes Present": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini Review RPM Guard #1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 5s Before Next CL Review Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini Review RPM Guard #1)": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Fix Flagged Cover Letter Paragraph & Extract Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Fix Flagged Cover Letter Paragraph & Extract Rule": {
+      "main": [
+        [
+          {
+            "node": "Recompile Reviewed 1-Page Cover Letter HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (CL Reviewer)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (CL Reviewer)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch CL Review Model)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch CL Review Model)": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Fix Flagged Cover Letter Paragraph & Extract Rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recompile Reviewed 1-Page Cover Letter HTML": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Save Cover Letter Learned Rule (If Not One-Off)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Save Cover Letter Learned Rule (If Not One-Off)": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s (KVM2 Review CPU Guard)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s (KVM2 Review CPU Guard)": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: Render Updated 1-Page Cover Letter PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: Render Updated 1-Page Cover Letter PDF": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Delete Old Cover Letter PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive: Delete Old Cover Letter PDF": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Upload Updated Cover Letter PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive: Upload Updated Cover Letter PDF": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Update Cached Cover Letter Paragraphs & Revision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Update Cached Cover Letter Paragraphs & Revision": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Revised CL Link & Status = Ready for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Update Revised CL Link & Status = Ready for Review": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s Before Next CL Review Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s Before Next CL Review Row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL Review Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Where Cover Letter Status = LGTM": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL LGTM Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over CL LGTM Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Postgres: Promote LGTM Cover Letter to Few-Shot Library",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Promote LGTM Cover Letter to Few-Shot Library": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Mark Cover Letter Status = Approved & Learned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Mark Cover Letter Status = Approved & Learned": {
+      "main": [
+        [
+          {
+            "node": "Wait 3s Before Next LGTM Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3s Before Next LGTM Row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL LGTM Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Postgres Audit: Ensure CL Tables & Check Stored CLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = Create one",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = Needs Rework",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Cover Letter Status = LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "62KRhAtxxyJdhxhd"
+  }
+}

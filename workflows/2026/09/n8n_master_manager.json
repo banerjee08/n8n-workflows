@@ -1,0 +1,622 @@
+{
+  "name": "n8n_Master_Manager",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## \u2699\ufe0f QUICK SETUP (One-Time)\n1. Open **`\u2699\ufe0f Master Config (Edit Here)`** and paste:\n   - `N8N_API_KEY` *(n8n Settings \u2192 n8n API)*\n   - `TELEGRAM_BOT_TOKEN` & `ADMIN_CHAT_ID`\n   - `GEMINI_API_KEY` *(Free at aistudio.google.com)*\n   - `GITHUB_TOKEN` *(GitHub Fine-Grained PAT)*\n2. Select your Telegram Bot credential in **`Telegram Trigger`**.\n3. Toggle this workflow **Active (Published)** and send `/menu` or `/schedule` to your Telegram bot!",
+        "height": 260,
+        "width": 440,
+        "color": 4
+      },
+      "id": "sticky-setup-guide",
+      "name": "Sticky Note: Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## \ud83d\udcf1 LANE 1: Telegram Controller + Schedule Advisor + Smart Queue\n- Live workflow list (`GET /api/v1/workflows`) with Execute, Publish, Pause, Stop & Shift Time\n- **Overlap Protection:** If a workflow is running, new runs are queued in the FIFO Pipeline\n- **Free Hours & Schedule Advisor (`/schedule`):** Shows 24h IST load, free hours, best slots & 1-click Auto-Stagger",
+        "height": 240,
+        "width": 980,
+        "color": 5
+      },
+      "id": "sticky-lane-1",
+      "name": "Sticky Note: Lane 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        740,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## \ud83d\udea8 LANE 2: Smart Error Handler, Gemini Doctor & Circuit Breaker\n- Auto-pauses the broken scheduled workflow so it doesn't loop\n- Auto-discovers & pauses downstream dependent workflows (shared Google Sheets, Supabase tables, or sub-workflows)\n- Diagnoses root cause & fix steps via free **Google Gemini Flash** (0% Hostinger KVM2 CPU load)",
+        "height": 220,
+        "width": 520,
+        "color": 3
+      },
+      "id": "sticky-lane-2",
+      "name": "Sticky Note: Lane 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        740,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## \ud83d\udcbe LANE 3: Daily 00:00 IST Commercial-Grade Sanitized GitHub Backup\n- Scrubs all PII, API Keys, Credential IDs, Google Sheet/Doc IDs, Chat IDs, Webhook UUIDs & private domains\n- Makes every exported JSON ready to ship or sell on n8n Marketplace\n- Only commits to `banerjee08/n8n-workflows/workflows/YYYY/MM/` when a workflow actually changes",
+        "height": 220,
+        "width": 520,
+        "color": 6
+      },
+      "id": "sticky-lane-3",
+      "name": "Sticky Note: Lane 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        740,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## \ud83d\udea6 LANE 4: 1-Minute Concurrency Watchdog & FIFO Pipeline Runner\n- Detects when a scheduled workflow overlaps with an already-running workflow\n- Stops the newer overlapping run before it crashes the server, puts it in the Pipeline Queue, and auto-runs it as soon as the active workflow finishes!",
+        "height": 200,
+        "width": 520,
+        "color": 7
+      },
+      "id": "sticky-lane-4",
+      "name": "Sticky Note: Lane 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        740,
+        840
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trig-master",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegramApi Credential"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "node-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-backup",
+      "name": "Daily Backup Schedule (00:00 IST)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "node-watchdog-schedule",
+      "name": "Overlap & Queue Watchdog (Every 1m)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        920
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \u2699\ufe0f MASTER CONFIGURATION \u2014 EDIT YOUR KEYS HERE (OR USE DOCKER ENV VARS)\n// ============================================================================\nconst env = (typeof $env !== 'undefined' && $env) ? $env : {};\nconst cleanEnv = (val, fallback) => {\n  const s = String(val || '').trim();\n  if (!s || s.startsWith('PASTE_YOUR_') || s.includes('REDACTED') || s === '5365295465') {\n    return fallback;\n  }\n  return s;\n};\n\nconst CONFIG = {\n  // 1. Local n8n API Settings (Settings -> n8n API -> Create an API Key)\n  N8N_BASE_URL: cleanEnv(env.N8N_BASE_URL, 'http://localhost:5678').replace(/\\/+$/, ''),\n  N8N_PUBLIC_URL: cleanEnv(env.WEBHOOK_URL, env.N8N_HOST ? 'https://' + env.N8N_HOST : 'https://YOUR_DOMAIN.example.com').replace(/\\/+$/, ''),\n  N8N_API_KEY: cleanEnv(env.N8N_API_KEY, 'PASTE_YOUR_N8N_API_KEY_HERE'),\n\n  // 2. Telegram Bot Settings (@BotFather token & your numeric Telegram Chat ID)\n  TELEGRAM_BOT_TOKEN: cleanEnv(env.TELEGRAM_BOT_TOKEN, 'PASTE_YOUR_TELEGRAM_BOT_TOKEN_HERE'),\n  ADMIN_CHAT_ID: String(cleanEnv(env.ADMIN_CHAT_ID, 'YOUR_TELEGRAM_CHAT_ID')).replace(/^=/, ''),\n\n  // 3. Google Gemini Flash API Key (Free at https://aistudio.google.com/apikey)\n  //    Uses 0% CPU/RAM on your Hostinger KVM2. Automatically falls back to\n  //    local Ollama or built-in diagnostics if left blank.\n  GEMINI_API_KEY: cleanEnv(env.GEMINI_API_KEY, 'PASTE_YOUR_FREE_GEMINI_API_KEY_HERE'),\n  GEMINI_MODEL: cleanEnv(env.GEMINI_MODEL, 'gemini-2.5-flash'),\n  OLLAMA_FALLBACK_URL: cleanEnv(env.OLLAMA_FALLBACK_URL, 'http://172.17.0.1:11434/api/generate'),\n  OLLAMA_FALLBACK_MODEL: cleanEnv(env.OLLAMA_FALLBACK_MODEL, 'qwen3:1.7b'),\n\n  // 4. GitHub Daily Backup Settings (Fine-grained PAT with \"Contents: Read & Write\")\n  GITHUB_TOKEN: cleanEnv(env.GITHUB_TOKEN, 'PASTE_YOUR_GITHUB_PAT_HERE'),\n  GITHUB_REPO: env.GITHUB_REPO || 'banerjee08/n8n-workflows',\n  GITHUB_BRANCH: env.GITHUB_BRANCH || 'main',\n  BACKUP_BASE_DIR: env.BACKUP_BASE_DIR || 'workflows',\n\n  // 5. Concurrency, Pipeline Queue & Schedule Advisor Settings (Hostinger KVM2)\n  MAX_CONCURRENT_WORKFLOWS: Number(env.MAX_CONCURRENT_WORKFLOWS || 1),\n  MAX_EXECUTION_TIMEOUT_MINS: Number(env.MAX_EXECUTION_TIMEOUT_MINS || 45), // Auto-kills hung zombie runs > 45m\n  AUTO_SHIFT_OVERLAPPING_SCHEDULES: true, // Automatically shifts Schedule Trigger time on overlap!\n  TIMEZONE_OFFSET_MINUTES: 330, // IST (UTC+5:30 = +330 mins)\n  TIMEZONE_LABEL: 'IST',\n  PAGE_SIZE: 8,\n  AUTO_WIRE_ON_BACKUP: true,\n  MASTER_WORKFLOW_ID: $workflow.id,\n  MASTER_WORKFLOW_NAME: $workflow.name,\n  CURRENT_EXECUTION_ID: $execution.id\n};\n\n// Detect which of the 4 Triggers activated this execution\nconst item = $input.first()?.json || {};\nlet eventType = 'watchdog';\n\nif (item.execution && item.workflow) {\n  eventType = 'error';\n} else if (item.message || item.callback_query) {\n  const rawText = (item.message?.text || '').trim();\n  const cbData = (item.callback_query?.data || '').trim();\n  if (rawText === '/backup' || rawText.startsWith('/backup@') || cbData === 'cmd:backup') {\n    eventType = 'backup';\n  } else {\n    eventType = 'telegram';\n  }\n} else {\n  // Check if triggered manually via 'When clicking Execute workflow' in n8n UI\n  let firedManually = false;\n  try {\n    if ($(\"When clicking 'Execute workflow'\").isExecuted) {\n      firedManually = true;\n    }\n  } catch (e) {}\n  if (firedManually) {\n    eventType = 'telegram';\n    item.message = {\n      chat: { id: CONFIG.ADMIN_CHAT_ID },\n      text: '/menu'\n    };\n  } else {\n    // Distinguish Daily Backup Schedule (18:30 UTC / 00:00 IST) vs 1-Minute Overlap Watchdog\n    let firedByBackupSchedule = false;\n    try {\n      if ($('Daily Backup Schedule (00:00 IST)').isExecuted) {\n        firedByBackupSchedule = true;\n      }\n    } catch (e) {}\n    eventType = firedByBackupSchedule ? 'backup' : 'watchdog';\n  }\n}\n\nreturn [{\n  json: {\n    ...item,\n    _eventType: eventType,\n    _config: CONFIG\n  }\n}];\n"
+      },
+      "id": "node-master-config",
+      "name": "\u2699\ufe0f Master Config (Edit Here)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "cond-telegram",
+                    "leftValue": "={{ $json._eventType }}",
+                    "rightValue": "telegram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Telegram Command"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "cond-error",
+                    "leftValue": "={{ $json._eventType }}",
+                    "rightValue": "error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Workflow Error"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "cond-backup",
+                    "leftValue": "={{ $json._eventType }}",
+                    "rightValue": "backup",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GitHub Backup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "cond-watchdog",
+                    "leftValue": "={{ $json._eventType }}",
+                    "rightValue": "watchdog",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Overlap Watchdog"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-event-router",
+      "name": "\ud83d\udd00 Route by Event Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        520,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udcf1 LANE 1: TELEGRAM CONTROLLER, CONCURRENCY PIPELINE & SCHEDULE ADVISOR\n// ============================================================================\nconst payload = $input.first().json;\nconst cfg = payload._config;\nconst staticData = $getWorkflowStaticData('global');\nif (!Array.isArray(staticData.pipelineQueue)) staticData.pipelineQueue = [];\nif (!staticData.intentionallyStoppedExecs) staticData.intentionallyStoppedExecs = {};\nif (!staticData.lastPausedGroup) staticData.lastPausedGroup = {};\n\n// Universal HTTP helper\nasync function apiRequest(ctx, opts) {\n  if (ctx && ctx.helpers && typeof ctx.helpers.httpRequest === 'function') {\n    return await ctx.helpers.httpRequest({\n      method: opts.method || 'GET',\n      url: opts.url,\n      headers: opts.headers || {},\n      body: opts.body,\n      json: true,\n    });\n  }\n  const fetchOpts = {\n    method: opts.method || 'GET',\n    headers: {\n      'Accept': 'application/json',\n      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),\n      ...(opts.headers || {}),\n    },\n  };\n  if (opts.body !== undefined) {\n    fetchOpts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);\n  }\n  const res = await fetch(opts.url, fetchOpts);\n  const text = await res.text();\n  let data;\n  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }\n  if (!res.ok) {\n    throw new Error(`HTTP ${res.status}: ${typeof data === 'object' ? JSON.stringify(data) : text}`);\n  }\n  return data;\n}\n\nconst n8nHeaders = { 'X-N8N-API-KEY': cfg.N8N_API_KEY };\n\n// Extract Telegram context\nconst isCallback = Boolean(payload.callback_query);\nconst chatId = String(\n  isCallback\n    ? payload.callback_query?.message?.chat?.id || payload.callback_query?.from?.id\n    : payload.message?.chat?.id || ''\n);\nconst messageId = isCallback ? payload.callback_query?.message?.message_id : null;\nconst callbackQueryId = isCallback ? payload.callback_query?.id : null;\nconst text = (payload.message?.text || '').trim();\nconst cbData = (payload.callback_query?.data || '').trim();\n\n// Security Gate: Only allow ADMIN_CHAT_ID\nif (cfg.ADMIN_CHAT_ID && cfg.ADMIN_CHAT_ID !== 'YOUR_TELEGRAM_CHAT_ID' && chatId !== String(cfg.ADMIN_CHAT_ID)) {\n  return [{\n    json: {\n      _config: cfg,\n      chatId,\n      shouldExecuteSubworkflow: false,\n      telegramResponse: {\n        text: `\u26d4 *Unauthorized Access*\\nYour Chat ID (\\`${chatId}\\`) is not authorized to control this n8n instance.`,\n        parseMode: 'Markdown'\n      }\n    }\n  }];\n}\n\n// Helper: Auto-wire a single workflow\nasync function autoWireWorkflow(wfSummaryOrFull) {\n  const wf = wfSummaryOrFull.nodes\n    ? wfSummaryOrFull\n    : await apiRequest(this, {\n        method: 'GET',\n        url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfSummaryOrFull.id}`,\n        headers: n8nHeaders,\n      });\n\n  if (String(wf.id) === String(cfg.MASTER_WORKFLOW_ID)) {\n    return { changed: false, wf };\n  }\n\n  let changed = false;\n  const nodes = Array.isArray(wf.nodes) ? [...wf.nodes] : [];\n  const connections = wf.connections ? JSON.parse(JSON.stringify(wf.connections)) : {};\n  const settings = wf.settings ? { ...wf.settings } : { executionOrder: 'v1' };\n\n  if (cfg.MASTER_WORKFLOW_ID && settings.errorWorkflow !== cfg.MASTER_WORKFLOW_ID) {\n    settings.errorWorkflow = cfg.MASTER_WORKFLOW_ID;\n    changed = true;\n  }\n\n  const hasSubTrigger = nodes.some(n => n.type === 'n8n-nodes-base.executeWorkflowTrigger');\n  if (!hasSubTrigger) {\n    const primaryTrigger = nodes.find(n =>\n      n.type === 'n8n-nodes-base.scheduleTrigger' ||\n      n.type === 'n8n-nodes-base.manualTrigger' ||\n      n.type.toLowerCase().includes('trigger')\n    );\n\n    const triggerName = 'On-Demand Telegram Trigger';\n    const pos = primaryTrigger?.position ? [primaryTrigger.position[0], primaryTrigger.position[1] + 180] : [0, 180];\n\n    nodes.push({\n      parameters: { inputSource: 'passthrough' },\n      id: 'ondemand-tg-trigger-' + String(wf.id).slice(0, 8),\n      name: triggerName,\n      type: 'n8n-nodes-base.executeWorkflowTrigger',\n      typeVersion: 1.1,\n      position: pos\n    });\n\n    if (primaryTrigger && connections[primaryTrigger.name]) {\n      connections[triggerName] = JSON.parse(JSON.stringify(connections[primaryTrigger.name]));\n    }\n    changed = true;\n  }\n\n  if (changed) {\n    const updated = await apiRequest(this, {\n      method: 'PUT',\n      url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wf.id}`,\n      headers: n8nHeaders,\n      body: {\n        name: wf.name,\n        nodes,\n        connections,\n        settings,\n        ...(wf.staticData ? { staticData: wf.staticData } : {})\n      }\n    });\n    return { changed: true, wf: updated };\n  }\n\n  return { changed: false, wf };\n}\n\n// Helper: Fetch all workflows + running worker executions + recent execution history\nasync function fetchAllState(includeHistory = false) {\n  const wfRes = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows?limit=250`,\n    headers: n8nHeaders\n  });\n  let runningExecs = [];\n  try {\n    const execRes = await apiRequest(this, {\n      method: 'GET',\n      url: `${cfg.N8N_BASE_URL}/api/v1/executions?status=running&limit=100`,\n      headers: n8nHeaders\n    });\n    // Exclude this Master Manager's own execution from worker count\n    runningExecs = (execRes.data || []).filter(\n      e => String(e.workflowId) !== String(cfg.MASTER_WORKFLOW_ID) && String(e.id) !== String(cfg.CURRENT_EXECUTION_ID)\n    );\n  } catch (e) {\n    runningExecs = [];\n  }\n  let recentExecs = [];\n  if (includeHistory) {\n    try {\n      const histRes = await apiRequest(this, {\n        method: 'GET',\n        url: `${cfg.N8N_BASE_URL}/api/v1/executions?limit=150`,\n        headers: n8nHeaders\n      });\n      recentExecs = histRes.data || [];\n    } catch (e) {\n      recentExecs = [];\n    }\n  }\n  const allWorkflows = (wfRes.data || []).filter(w => !w.isArchived);\n  return { allWorkflows, runningExecs, recentExecs };\n}\n\n// ============================================================================\n// \ud83d\uddd3\ufe0f SMART SCHEDULE ANALYZER, FREE HOURS FINDER & AUTO-STAGGER ENGINE\n// ============================================================================\nfunction analyzeWorkflowSchedule(wf, avgDurationMins) {\n  const nodes = wf.nodes || [];\n  const schedNodes = nodes.filter(n => n.type === 'n8n-nodes-base.scheduleTrigger');\n  // Estimate CPU/RAM weight on Hostinger KVM2\n  const nodeTypesAndUrls = nodes.map(n => `${n.type || \"\"} ${n.parameters?.url || \"\"}`).join(\" \").toLowerCase();\n  let weight = '\ud83d\udfe2 Light';\n  let loadScore = 1;\n  if (nodeTypesAndUrls.includes('ollama') || nodeTypesAndUrls.includes('11434') || nodeTypesAndUrls.includes('gotenberg') || nodeTypesAndUrls.includes('puppeteer')) {\n    weight = '\ud83d\udd34 Heavy (LLM/Browser)';\n    loadScore = 3;\n  } else if (nodeTypesAndUrls.includes('googlesheets') || nodeTypesAndUrls.includes('supabase') || nodeTypesAndUrls.includes('printify')) {\n    weight = '\ud83d\udfe1 Medium (API/DB Sync)';\n    loadScore = 2;\n  }\n\n  if (schedNodes.length === 0) {\n    return { hasSchedule: false, weight, loadScore, summary: 'On-Demand / Event Only', occupiedHoursIST: [], triggerMinute: 0 };\n  }\n\n  const occupiedHours = new Set();\n  let triggerMinute = 0;\n  const summaries = [];\n\n  for (const sn of schedNodes) {\n    const intervals = sn.parameters?.rule?.interval || [{}];\n    for (const rule of intervals) {\n      const field = rule.field || 'hours';\n      if (field === 'cronExpression') {\n        const expr = (rule.expression || '0 * * * *').trim();\n        const parts = expr.split(/\\s+/);\n        const minPart = parseInt(parts[0], 10);\n        const hrPart = parts[1];\n        if (!isNaN(minPart)) triggerMinute = minPart;\n        if (hrPart === '*') {\n          for (let h = 0; h < 24; h++) occupiedHours.add(h);\n          summaries.push(`Every hour at :${String(triggerMinute || 0).padStart(2, '0')} (Cron: \\`${expr}\\`)`);\n        } else {\n          const utcHours = hrPart.split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));\n          for (const uh of utcHours) {\n            const totalIstMins = (uh * 60 + (triggerMinute || 0) + cfg.TIMEZONE_OFFSET_MINUTES) % 1440;\n            const istHour = Math.floor(totalIstMins / 60);\n            occupiedHours.add(istHour);\n          }\n          summaries.push(`Cron \\`${expr}\\``);\n        }\n      } else if (field === 'minutes') {\n        const mInt = Number(rule.minutesInterval || 30);\n        for (let h = 0; h < 24; h++) occupiedHours.add(h);\n        triggerMinute = 0;\n        summaries.push(`Every ${mInt} mins`);\n      } else if (field === 'hours') {\n        const hInt = Math.max(1, Number(rule.hoursInterval || 1));\n        triggerMinute = Number(rule.triggerAtMinute || 0);\n        for (let h = 0; h < 24; h += hInt) {\n          occupiedHours.add(h);\n        }\n        summaries.push(`Every ${hInt}h at :${String(triggerMinute).padStart(2, '0')}`);\n      } else if (field === 'days' || field === 'weeks') {\n        const h = Number(rule.triggerAtHour || 0);\n        triggerMinute = Number(rule.triggerAtMinute || 0);\n        occupiedHours.add(h);\n        summaries.push(`Daily at ${String(h).padStart(2, '0')}:${String(triggerMinute).padStart(2, '0')}`);\n      } else {\n        for (let h = 0; h < 24; h++) occupiedHours.add(h);\n        summaries.push(`Frequent (${field})`);\n      }\n    }\n  }\n\n  return {\n    hasSchedule: true,\n    weight,\n    loadScore,\n    avgDurationMins,\n    triggerMinute,\n    summary: summaries.join(', '),\n    occupiedHoursIST: Array.from(occupiedHours).sort((a, b) => a - b)\n  };\n}\n\nfunction buildScheduleAdvisorReport(allWorkflows, recentExecs, bannerMsg = '') {\n  const durationByWf = {};\n  for (const ex of recentExecs) {\n    if (ex.startedAt && ex.stoppedAt) {\n      const durMins = Math.max(0.5, (new Date(ex.stoppedAt) - new Date(ex.startedAt)) / 60000);\n      if (!durationByWf[ex.workflowId]) durationByWf[ex.workflowId] = [];\n      durationByWf[ex.workflowId].push(durMins);\n    }\n  }\n\n  const hourBuckets = Array.from({ length: 24 }, (_, h) => ({\n    hour: h,\n    workflows: [],\n    loadScore: 0,\n    totalRuntimeMins: 0\n  }));\n\n  const scheduledWfDetails = [];\n  const minuteCollisions = {};\n\n  for (const wf of allWorkflows) {\n    if (String(wf.id) === String(cfg.MASTER_WORKFLOW_ID)) continue;\n    const durs = durationByWf[wf.id] || [2.5];\n    const avgDur = Math.round((durs.reduce((a, b) => a + b, 0) / durs.length) * 10) / 10;\n    const info = analyzeWorkflowSchedule(wf, avgDur);\n\n    if (info.hasSchedule) {\n      scheduledWfDetails.push({ wf, info });\n      if (wf.active) {\n        for (const h of info.occupiedHoursIST) {\n          hourBuckets[h].workflows.push({ name: wf.name, min: info.triggerMinute, avgDur, weight: info.weight });\n          hourBuckets[h].loadScore += info.loadScore;\n          hourBuckets[h].totalRuntimeMins += avgDur;\n          const slotKey = `${String(h).padStart(2, '0')}:${String(info.triggerMinute).padStart(2, '0')}`;\n          if (!minuteCollisions[slotKey]) minuteCollisions[slotKey] = [];\n          minuteCollisions[slotKey].push(wf.name);\n        }\n      }\n    }\n  }\n\n  const completelyFreeHours = hourBuckets\n    .filter(b => b.workflows.length === 0)\n    .map(b => `${String(b.hour).padStart(2, '0')}:00`);\n\n  const rankedBestSlots = [...hourBuckets]\n    .sort((a, b) => (a.loadScore - b.loadScore) || (a.totalRuntimeMins - b.totalRuntimeMins))\n    .slice(0, 4)\n    .map((b, idx) => {\n      const usedMins = new Set(b.workflows.map(w => w.min));\n      const candidateMins = [15, 45, 20, 40, 10, 50];\n      const bestMin = candidateMins.find(m => !usedMins.has(m)) || 15;\n      const hStr = String(b.hour).padStart(2, '0');\n      const mStr = String(bestMin).padStart(2, '0');\n      return `\u2022 *Slot #${idx + 1}:* \\`${hStr}:${mStr} ${cfg.TIMEZONE_LABEL}\\` _(Load: ${b.workflows.length} active wf, Cron: \\`${bestMin} ${b.hour} * * *\\`)_`;\n    });\n\n  const collisionLines = [];\n  for (const [slot, names] of Object.entries(minuteCollisions)) {\n    if (names.length > 1) {\n      collisionLines.push(`\u2022 \\`${slot} ${cfg.TIMEZONE_LABEL}\\`: ${names.map(n => `\\`${n}\\``).join(' \u26a1 ')}`);\n    }\n  }\n\n  const wfLines = scheduledWfDetails.map(({ wf, info }) => {\n    const stateIcon = wf.active ? '\ud83d\udfe2' : '\u26aa';\n    return `${stateIcon} *${wf.name}*\\n   \u2514 \u23f1\ufe0f ${info.summary} | ~${info.avgDurationMins}m run | ${info.weight}`;\n  });\n\n  const header = bannerMsg ? `${bannerMsg}\\n\\n` : '';\n  const reportText =\n    `${header}\ud83d\uddd3\ufe0f *Smart Schedule Advisor & Free Hours (${cfg.TIMEZONE_LABEL})*\\n` +\n    `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n    `\ud83d\udccb *Scheduled Workflows (${scheduledWfDetails.length}):*\\n` +\n    (wfLines.length > 0 ? wfLines.join('\\n') : '_No scheduled workflows found._') +\n    `\\n\\n` +\n    `\ud83d\udfe2 *100% Free Hours (${completelyFreeHours.length}/24 hrs with 0 scheduled runs):*\\n` +\n    (completelyFreeHours.length > 0\n      ? `\\`${completelyFreeHours.join(', ')}\\``\n      : `_Every hour has at least one recurring workflow (e.g. every-30m/1h sync). Use staggered minute offsets below!_`) +\n    `\\n\\n` +\n    `\u2728 *Best Recommended Time Slots for a New Workflow:*\\n` +\n    rankedBestSlots.join('\\n') +\n    `\\n\\n` +\n    (collisionLines.length > 0\n      ? `\u26a0\ufe0f *Overlapping Schedule Collisions Detected (${collisionLines.length}):*\\n${collisionLines.slice(0, 5).join('\\n')}\\n_Tap **Auto-Stagger** below to automatically space out their start minutes!_`\n      : `\u2705 *Zero Exact Minute Collisions* among currently active workflows!`) +\n    `\\n\\n\ud83d\udea6 *Pipeline Queue:* ${staticData.pipelineQueue.length} workflow(s) waiting`;\n\n  const keyboard = [\n    [\n      { text: '\ud83e\ude84 Auto-Stagger Overlapping Schedules', callback_data: 'cmd:stagger' }\n    ],\n    [\n      { text: `\ud83d\udea6 View Pipeline Queue (${staticData.pipelineQueue.length})`, callback_data: 'cmd:queue' },\n      { text: '\ud83d\udd04 Refresh Advisor', callback_data: 'cmd:schedule' }\n    ],\n    [\n      { text: '\u2b05\ufe0f Back to Main Menu', callback_data: 'cmd:list:0' }\n    ]\n  ];\n\n  return { text: reportText, inlineKeyboard: keyboard, parseMode: 'Markdown' };\n}\n\n// Helper: Auto-stagger all scheduled workflows so their start minutes don't collide\nasync function autoStaggerAllSchedules(allWorkflows) {\n  const offsetSteps = [0, 5, 10, 3, 8, 13, 2, 7, 12, 1, 6, 11];\n  let stepIdx = 0;\n  const shifted = [];\n\n  for (const wfSummary of allWorkflows) {\n    if (String(wfSummary.id) === String(cfg.MASTER_WORKFLOW_ID)) continue;\n    const wf = wfSummary.nodes\n      ? wfSummary\n      : await apiRequest(this, {\n          method: 'GET',\n          url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfSummary.id}`,\n          headers: n8nHeaders\n        });\n\n    let modified = false;\n    const targetMin = offsetSteps[stepIdx % offsetSteps.length];\n    const nodes = (wf.nodes || []).map(node => {\n      if (node.type !== 'n8n-nodes-base.scheduleTrigger') return node;\n      const newNode = JSON.parse(JSON.stringify(node));\n      const intervals = newNode.parameters?.rule?.interval || [];\n      for (const rule of intervals) {\n        const field = rule.field || 'hours';\n        if (field === 'hours' || field === 'days' || field === 'weeks') {\n          if (Number(rule.triggerAtMinute || 0) !== targetMin) {\n            rule.triggerAtMinute = targetMin;\n            modified = true;\n          }\n        } else if (field === 'minutes') {\n          const mInt = Number(rule.minutesInterval || 30);\n          const mins = [];\n          for (let m = targetMin % mInt; m < 60; m += mInt) mins.push(m);\n          rule.field = 'cronExpression';\n          rule.expression = `${mins.join(',')} * * * *`;\n          delete rule.minutesInterval;\n          modified = true;\n        } else if (field === 'cronExpression' && rule.expression) {\n          const parts = rule.expression.trim().split(/\\s+/);\n          if (parts.length >= 5 && /^\\d+$/.test(parts[0]) && Number(parts[0]) !== targetMin) {\n            parts[0] = String(targetMin);\n            rule.expression = parts.join(' ');\n            modified = true;\n          }\n        }\n      }\n      return newNode;\n    });\n\n    if (nodes.some(n => n.type === 'n8n-nodes-base.scheduleTrigger')) {\n      stepIdx++;\n    }\n\n    if (modified) {\n      await apiRequest(this, {\n        method: 'PUT',\n        url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wf.id}`,\n        headers: n8nHeaders,\n        body: {\n          name: wf.name,\n          nodes,\n          connections: wf.connections || {},\n          settings: wf.settings || { executionOrder: 'v1' },\n          ...(wf.staticData ? { staticData: wf.staticData } : {})\n        }\n      });\n      shifted.push(`\u2022 \\`${wf.name}\\` \u2192 shifted to minute \\`:${String(targetMin).padStart(2, '0')}\\``);\n    }\n  }\n  return shifted;\n}\n\n// Helper: Shift a single workflow's schedule trigger by +N minutes\nasync function shiftWorkflowSchedule(wfId, deltaMinutes) {\n  const wf = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfId}`,\n    headers: n8nHeaders\n  });\n  let newDesc = '';\n  const nodes = (wf.nodes || []).map(node => {\n    if (node.type !== 'n8n-nodes-base.scheduleTrigger') return node;\n    const newNode = JSON.parse(JSON.stringify(node));\n    const intervals = newNode.parameters?.rule?.interval || [{}];\n    for (const rule of intervals) {\n      const field = rule.field || 'hours';\n      if (field === 'hours' || field === 'days' || field === 'weeks') {\n        const curMin = Number(rule.triggerAtMinute || 0);\n        const curHr = Number(rule.triggerAtHour || 0);\n        const totalMins = (curHr * 60 + curMin + deltaMinutes + 1440) % 1440;\n        if (field === 'days' || field === 'weeks') {\n          rule.triggerAtHour = Math.floor(totalMins / 60);\n        }\n        rule.triggerAtMinute = totalMins % 60;\n        newDesc = `:${String(rule.triggerAtMinute).padStart(2, '0')} past the hour`;\n      } else if (field === 'cronExpression' && rule.expression) {\n        const parts = rule.expression.trim().split(/\\s+/);\n        const curMin = parseInt(parts[0], 10) || 0;\n        parts[0] = String((curMin + deltaMinutes) % 60);\n        rule.expression = parts.join(' ');\n        newDesc = `Cron \\`${rule.expression}\\``;\n      } else if (field === 'minutes') {\n        const curInterval = Number(rule.minutesInterval || 30);\n        rule.minutesInterval = Math.max(5, curInterval + deltaMinutes);\n        newDesc = `Every ${rule.minutesInterval} mins`;\n      }\n    }\n    return newNode;\n  });\n\n  let updated = await apiRequest(this, {\n    method: 'PUT',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wf.id}`,\n    headers: n8nHeaders,\n    body: {\n      name: wf.name,\n      nodes,\n      connections: wf.connections || {},\n      settings: wf.settings || { executionOrder: 'v1' },\n      ...(wf.staticData ? { staticData: wf.staticData } : {})\n    }\n  });\n  if (wf.active) {\n    try {\n      updated = await apiRequest(this, {\n        method: 'POST',\n        url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wf.id}/activate`,\n        headers: n8nHeaders\n      });\n    } catch (e) {}\n  }\n  return { wf: updated, newDesc: newDesc || `+${deltaMinutes}m` };\n}\n\n// Helper: Build Main Paginated Menu\nfunction buildMainMenu(allWorkflows, runningExecs, page = 0, bannerMsg = '') {\n  const sorted = [...allWorkflows].sort((a, b) => {\n    if (a.active !== b.active) return a.active ? -1 : 1;\n    return (a.name || '').localeCompare(b.name || '');\n  });\n\n  const pageSize = cfg.PAGE_SIZE || 8;\n  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));\n  const safePage = Math.max(0, Math.min(page, totalPages - 1));\n  const slice = sorted.slice(safePage * pageSize, (safePage + 1) * pageSize);\n\n  const activeCount = sorted.filter(w => w.active).length;\n  const pausedCount = sorted.length - activeCount;\n  const runningByWf = {};\n  for (const ex of runningExecs) {\n    runningByWf[ex.workflowId] = (runningByWf[ex.workflowId] || 0) + 1;\n  }\n  const queuedIds = new Set(staticData.pipelineQueue.map(q => String(q.workflowId)));\n\n  const keyboard = [];\n  for (const wf of slice) {\n    const isRunning = runningByWf[wf.id] > 0;\n    const isQueued = queuedIds.has(String(wf.id));\n    const statusIcon = isRunning ? '\u26a1' : (isQueued ? '\u23f3' : (wf.active ? '\ud83d\udfe2' : '\u26aa'));\n    const cleanName = (wf.name || 'Untitled').slice(0, 34);\n    keyboard.push([\n      {\n        text: `${statusIcon} ${cleanName}`,\n        callback_data: `wf:view:${wf.id}:${safePage}`\n      }\n    ]);\n  }\n\n  if (totalPages > 1) {\n    const navRow = [];\n    if (safePage > 0) navRow.push({ text: '\u2b05\ufe0f Prev', callback_data: `cmd:list:${safePage - 1}` });\n    navRow.push({ text: `\ud83d\udcc4 ${safePage + 1}/${totalPages}`, callback_data: `cmd:list:${safePage}` });\n    if (safePage < totalPages - 1) navRow.push({ text: 'Next \u27a1\ufe0f', callback_data: `cmd:list:${safePage + 1}` });\n    keyboard.push(navRow);\n  }\n\n  keyboard.push([\n    { text: '\ud83d\uddd3\ufe0f Free Hours & Schedule Advisor', callback_data: 'cmd:schedule' },\n    { text: `\ud83d\udea6 Pipeline (${staticData.pipelineQueue.length})`, callback_data: 'cmd:queue' }\n  ]);\n  keyboard.push([\n    { text: '\ud83d\udd04 Refresh List', callback_data: `cmd:list:${safePage}` },\n    { text: '\ud83d\udd27 Auto-Wire All', callback_data: `cmd:autowire:${safePage}` }\n  ]);\n  keyboard.push([\n    { text: '\ud83d\udcbe Backup to GitHub', callback_data: 'cmd:backup' },\n    { text: '\ud83d\uded1 Panic: Pause All', callback_data: `cmd:panic:${safePage}` }\n  ]);\n\n  const header = bannerMsg ? `${bannerMsg}\\n\\n` : '';\n  const body =\n    `${header}\ud83c\udf9b\ufe0f *n8n Master Workflow Manager*\\n` +\n    `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n    `\ud83d\udce6 *Total Workflows:* ${sorted.length}\\n` +\n    `\ud83d\udfe2 *Published:* ${activeCount}  |  \u26aa *Paused:* ${pausedCount}\\n` +\n    `\u26a1 *Running Now:* ${runningExecs.length}  |  \u23f3 *In Pipeline Queue:* ${staticData.pipelineQueue.length}\\n\\n` +\n    `\ud83d\udc47 *Tap a workflow or ask me \"What are the free hours to schedule a workflow?\":*`;\n\n  return { text: body, inlineKeyboard: keyboard, parseMode: 'Markdown' };\n}\n\n// Helper: Build Single Workflow Control Card\nfunction buildWorkflowCard(wf, runningExecs, page = 0, bannerMsg = '') {\n  const wfRunning = runningExecs.filter(e => String(e.workflowId) === String(wf.id));\n  const queueIdx = staticData.pipelineQueue.findIndex(q => String(q.workflowId) === String(wf.id));\n  const nodes = wf.nodes || [];\n  const hasSchedule = nodes.some(n => n.type === 'n8n-nodes-base.scheduleTrigger');\n  const hasSubTrigger = nodes.some(n => n.type === 'n8n-nodes-base.executeWorkflowTrigger');\n  const hasErrorLinked = wf.settings?.errorWorkflow === cfg.MASTER_WORKFLOW_ID;\n  const schedInfo = analyzeWorkflowSchedule(wf, 2.5);\n\n  const statusBadge = wf.active ? '\ud83d\udfe2 PUBLISHED (Active)' : '\u26aa UNPUBLISHED (Paused)';\n  const runBadge = wfRunning.length > 0\n    ? `\u26a1 ${wfRunning.length} Execution(s) Running`\n    : (queueIdx >= 0 ? `\u23f3 Queued in Pipeline (#${queueIdx + 1})` : '\ud83d\udca4 Idle');\n  const wireBadge = (hasSubTrigger && hasErrorLinked) ? '\u2705 Fully Wired' : '\u26a0\ufe0f Needs Auto-Wire';\n\n  const keyboard = [\n    [\n      { text: '\u25b6\ufe0f Execute Now (Smart Queue)', callback_data: `wf:exec:${wf.id}:${page}` }\n    ],\n    [\n      wf.active\n        ? { text: '\u23f8\ufe0f Pause / Unpublish Workflow', callback_data: `wf:off:${wf.id}:${page}` }\n        : { text: '\ud83d\ude80 Publish / Activate Workflow', callback_data: `wf:on:${wf.id}:${page}` }\n    ]\n  ];\n\n  if (hasSchedule) {\n    keyboard.push([\n      { text: '\u23f1\ufe0f Shift Schedule +15m', callback_data: `wf:shift:${wf.id}:15` },\n      { text: '\u23f1\ufe0f Shift Schedule +30m', callback_data: `wf:shift:${wf.id}:30` }\n    ]);\n  }\n\n  keyboard.push([\n    { text: '\ud83d\uded1 Stop Running Execution', callback_data: `wf:stop:${wf.id}:${page}` },\n    { text: '\ud83d\udd27 Auto-Wire', callback_data: `wf:wire:${wf.id}:${page}` }\n  ]);\n\n  keyboard.push([\n    { text: '\ud83d\udd04 Refresh Card', callback_data: `wf:view:${wf.id}:${page}` },\n    { text: '\u2b05\ufe0f Back to List', callback_data: `cmd:list:${page}` }\n  ]);\n\n  const header = bannerMsg ? `${bannerMsg}\\n\\n` : '';\n  const body =\n    `${header}\u2699\ufe0f *Workflow Control Card*\\n` +\n    `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n    `\ud83d\udccc *Name:* \\`${wf.name}\\`\\n` +\n    `\ud83c\udd94 *ID:* \\`${wf.id}\\`\\n` +\n    `\ud83d\udce1 *Status:* ${statusBadge}\\n` +\n    `\ud83c\udfc3 *Execution:* ${runBadge}\\n` +\n    `\u23f0 *Schedule:* ${schedInfo.summary}\\n` +\n    `\u2696\ufe0f *Resource Load:* ${schedInfo.weight}\\n` +\n    `\ud83d\udee1\ufe0f *Telegram & Error Guard:* ${wireBadge}`;\n\n  return { text: body, inlineKeyboard: keyboard, parseMode: 'Markdown' };\n}\n\n// Helper: Build Pipeline Queue Card\nfunction buildQueueCard(runningExecs, allWorkflows, bannerMsg = '') {\n  const wfById = {};\n  for (const w of allWorkflows) wfById[w.id] = w.name;\n\n  const runningLines = runningExecs.map(\n    e => `\u26a1 \\`${wfById[e.workflowId] || e.workflowId}\\` _(Run #${e.id}, started ${String(e.startedAt || '').slice(11, 19)} UTC)_`\n  );\n  const queueLines = staticData.pipelineQueue.map(\n    (q, i) => `${i + 1}. \u23f3 \\`${q.workflowName || q.workflowId}\\` _(${q.reason || 'Queued'})_`\n  );\n\n  const header = bannerMsg ? `${bannerMsg}\\n\\n` : '';\n  const textBody =\n    `${header}\ud83d\udea6 *Execution Concurrency & Pipeline Queue*\\n` +\n    `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n    `\ud83d\udee1\ufe0f *Max Concurrent Runs Allowed:* ${cfg.MAX_CONCURRENT_WORKFLOWS} _(Protects Hostinger KVM2 CPU/RAM)_\\n\\n` +\n    `\u26a1 *Currently Running (${runningExecs.length}):*\\n` +\n    (runningLines.length > 0 ? runningLines.join('\\n') : '_No workflows currently running._') +\n    `\\n\\n\u23f3 *Waiting in FIFO Pipeline (${staticData.pipelineQueue.length}):*\\n` +\n    (queueLines.length > 0\n      ? queueLines.join('\\n') + `\\n\\n_Queued workflows automatically start in order as soon as the active run finishes!_`\n      : '_Pipeline queue is empty._');\n\n  const keyboard = [];\n  if (staticData.pipelineQueue.length > 0) {\n    keyboard.push([\n      { text: '\u25b6\ufe0f Pop & Run Next in Queue Now', callback_data: 'cmd:qpop' },\n      { text: '\ud83d\uddd1\ufe0f Clear Queue', callback_data: 'cmd:qclear' }\n    ]);\n  }\n  keyboard.push([\n    { text: '\ud83d\uddd3\ufe0f Schedule Advisor', callback_data: 'cmd:schedule' },\n    { text: '\ud83d\udd04 Refresh Queue', callback_data: 'cmd:queue' }\n  ]);\n  keyboard.push([\n    { text: '\u2b05\ufe0f Back to Main Menu', callback_data: 'cmd:list:0' }\n  ]);\n\n  return { text: textBody, inlineKeyboard: keyboard, parseMode: 'Markdown' };\n}\n\n// Route Commands & Callbacks\nlet toastText = '';\nlet uiResponse = null;\n\ntry {\n  if (isCallback) {\n    const parts = cbData.split(':');\n    const namespace = parts[0];\n    const action = parts[1];\n\n    if (namespace === 'cmd') {\n      if (action === 'list') {\n        const page = parseInt(parts[2] || '0', 10);\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildMainMenu(allWorkflows, runningExecs, page);\n        toastText = '\ud83d\udd04 Workflow list refreshed';\n      } else if (action === 'schedule') {\n        const { allWorkflows, recentExecs } = await fetchAllState.call(this, true);\n        uiResponse = buildScheduleAdvisorReport(allWorkflows, recentExecs);\n        toastText = '\ud83d\uddd3\ufe0f Schedule Advisor updated';\n      } else if (action === 'stagger') {\n        const { allWorkflows, recentExecs } = await fetchAllState.call(this, true);\n        const shifted = await autoStaggerAllSchedules.call(this, allWorkflows);\n        const refreshed = await fetchAllState.call(this, false);\n        const msg = shifted.length > 0\n          ? `\ud83e\ude84 *Auto-Staggered ${shifted.length} Workflow(s) to Prevent Overlaps:*\\n${shifted.join('\\n')}`\n          : `\u2705 All scheduled workflows are already staggered on distinct minute offsets!`;\n        uiResponse = buildScheduleAdvisorReport(refreshed.allWorkflows, recentExecs, msg);\n        toastText = `\ud83e\ude84 Staggered ${shifted.length} workflow(s)!`;\n      } else if (action === 'queue') {\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildQueueCard(runningExecs, allWorkflows);\n        toastText = '\ud83d\udea6 Pipeline queue refreshed';\n      } else if (action === 'qclear') {\n        staticData.pipelineQueue = [];\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildQueueCard(runningExecs, allWorkflows, '\ud83d\uddd1\ufe0f *Cleared all waiting items from the Pipeline Queue.*');\n        toastText = '\ud83d\uddd1\ufe0f Queue cleared';\n      } else if (action === 'qpop') {\n        if (staticData.pipelineQueue.length > 0) {\n          const nextItem = staticData.pipelineQueue.shift();\n          const wireRes = await autoWireWorkflow.call(this, { id: nextItem.workflowId });\n          return [{\n            json: {\n              _config: cfg,\n              chatId,\n              messageId,\n              callbackQueryId,\n              toastText: `\ud83d\ude80 Launching ${wireRes.wf.name} from queue...`,\n              shouldExecuteSubworkflow: true,\n              targetWorkflowId: wireRes.wf.id,\n              targetWorkflowName: wireRes.wf.name,\n              returnPage: 0\n            }\n          }];\n        }\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildQueueCard(runningExecs, allWorkflows, '\u2139\ufe0f Pipeline queue is already empty.');\n      } else if (action === 'autowire') {\n        const page = parseInt(parts[2] || '0', 10);\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        let wiredCount = 0;\n        for (const w of allWorkflows) {\n          try {\n            const res = await autoWireWorkflow.call(this, w);\n            if (res.changed) wiredCount++;\n          } catch (e) {}\n        }\n        uiResponse = buildMainMenu(\n          allWorkflows,\n          runningExecs,\n          page,\n          `\ud83d\udd27 *Auto-Wire Complete:* Updated *${wiredCount}* workflow(s) with On-Demand Telegram Trigger & Error Circuit Breaker!`\n        );\n        toastText = `\u2705 Wired ${wiredCount} workflow(s)!`;\n      } else if (action === 'panic') {\n        const page = parseInt(parts[2] || '0', 10);\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        let paused = 0;\n        for (const w of allWorkflows) {\n          if (w.active && String(w.id) !== String(cfg.MASTER_WORKFLOW_ID)) {\n            await apiRequest(this, {\n              method: 'POST',\n              url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${w.id}/deactivate`,\n              headers: n8nHeaders\n            });\n            w.active = false;\n            paused++;\n          }\n        }\n        staticData.pipelineQueue = [];\n        uiResponse = buildMainMenu(\n          allWorkflows,\n          runningExecs,\n          page,\n          `\ud83d\uded1 *Emergency Panic Executed:* Paused *${paused}* active workflow(s) & cleared queue.`\n        );\n        toastText = `\ud83d\uded1 Paused ${paused} workflows!`;\n      }\n    } else if (namespace === 'wf') {\n      const wfId = parts[2];\n      const page = parseInt(parts[3] || '0', 10);\n\n      if (action === 'view') {\n        const wf = await apiRequest(this, {\n          method: 'GET',\n          url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfId}`,\n          headers: n8nHeaders\n        });\n        const { runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildWorkflowCard(wf, runningExecs, page);\n      } else if (action === 'shift') {\n        const deltaMins = parseInt(parts[3] || '15', 10);\n        const shiftRes = await shiftWorkflowSchedule.call(this, wfId, deltaMins);\n        const { runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildWorkflowCard(\n          shiftRes.wf,\n          runningExecs,\n          0,\n          `\u23f1\ufe0f *Schedule Updated!* Shifted \\`${shiftRes.wf.name}\\` by +${deltaMins}m (${shiftRes.newDesc}) to prevent overlap.`\n        );\n        toastText = `\u23f1\ufe0f Shifted schedule +${deltaMins}m!`;\n      } else if (action === 'on' || action === 'off') {\n        const endpoint = action === 'on' ? 'activate' : 'deactivate';\n        const wf = await apiRequest(this, {\n          method: 'POST',\n          url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfId}/${endpoint}`,\n          headers: n8nHeaders\n        });\n        const { runningExecs } = await fetchAllState.call(this, false);\n        const banner = action === 'on'\n          ? `\u2705 *Published & Activated:* \\`${wf.name}\\``\n          : `\u23f8\ufe0f *Paused & Unpublished:* \\`${wf.name}\\``;\n        uiResponse = buildWorkflowCard(wf, runningExecs, page, banner);\n        toastText = action === 'on' ? '\ud83d\ude80 Workflow Published!' : '\u23f8\ufe0f Workflow Paused!';\n      } else if (action === 'stop') {\n        const { runningExecs } = await fetchAllState.call(this, false);\n        const targetExecs = runningExecs.filter(e => String(e.workflowId) === String(wfId));\n        let stopped = 0;\n        for (const ex of targetExecs) {\n          try {\n            staticData.intentionallyStoppedExecs[String(ex.id)] = Date.now();\n            await apiRequest(this, {\n              method: 'POST',\n              url: `${cfg.N8N_BASE_URL}/api/v1/executions/${ex.id}/stop`,\n              headers: n8nHeaders\n            });\n            stopped++;\n          } catch (e) {}\n        }\n        staticData.pipelineQueue = staticData.pipelineQueue.filter(q => String(q.workflowId) !== String(wfId));\n        const wf = await apiRequest(this, {\n          method: 'GET',\n          url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfId}`,\n          headers: n8nHeaders\n        });\n        const banner = stopped > 0\n          ? `\ud83d\uded1 *Stopped ${stopped} running execution(s)* for \\`${wf.name}\\`.`\n          : `\u2139\ufe0f No active executions were running for \\`${wf.name}\\` (removed if queued).`;\n        uiResponse = buildWorkflowCard(wf, [], page, banner);\n        toastText = stopped > 0 ? `\ud83d\uded1 Stopped ${stopped} run(s)` : '\u2139\ufe0f Stopped / Unqueued';\n      } else if (action === 'wire') {\n        const res = await autoWireWorkflow.call(this, { id: wfId });\n        const { runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildWorkflowCard(\n          res.wf,\n          runningExecs,\n          page,\n          `\ud83d\udd27 *Auto-Wired:* Added On-Demand Trigger & linked Error Handler!`\n        );\n        toastText = '\ud83d\udd27 Workflow wired!';\n      } else if (action === 'resume_all') {\n        const depCsv = parts[3] || '';\n        const savedGroup = staticData.lastPausedGroup?.[wfId] || [];\n        const idsToResume = Array.from(new Set([wfId, ...savedGroup, ...depCsv.split(',').filter(Boolean)]));\n        const resumedNames = [];\n        for (const id of idsToResume) {\n          try {\n            const w = await apiRequest(this, {\n              method: 'POST',\n              url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${id}/activate`,\n              headers: n8nHeaders\n            });\n            resumedNames.push(w.name || id);\n          } catch (e) {}\n        }\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n        uiResponse = buildMainMenu(\n          allWorkflows,\n          runningExecs,\n          0,\n          `\u2705 *Circuit Breaker Reset!* Re-enabled *${resumedNames.length}* workflow(s):\\n\u2022 ${resumedNames.join('\\n\u2022 ')}`\n        );\n        toastText = `\u2705 Re-enabled ${resumedNames.length} workflow(s)!`;\n      } else if (action === 'exec' || action === 'force_exec') {\n        const wireRes = await autoWireWorkflow.call(this, { id: wfId });\n        const wf = wireRes.wf;\n        const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n\n        // OVERLAP PROTECTION: Check if another workflow is currently running!\n        if (action !== 'force_exec' && runningExecs.length >= cfg.MAX_CONCURRENT_WORKFLOWS) {\n          const runningNames = runningExecs.map(re => {\n            const found = allWorkflows.find(w => String(w.id) === String(re.workflowId));\n            return found ? found.name : `Workflow #${re.workflowId}`;\n          });\n          const alreadyQueued = staticData.pipelineQueue.some(q => String(q.workflowId) === String(wf.id));\n          if (!alreadyQueued) {\n            staticData.pipelineQueue.push({\n              workflowId: wf.id,\n              workflowName: wf.name,\n              queuedAt: new Date().toISOString(),\n              reason: `Queued behind ${runningNames[0]}`\n            });\n          }\n          const pos = staticData.pipelineQueue.findIndex(q => String(q.workflowId) === String(wf.id)) + 1;\n          const overlapBanner =\n            `\ud83d\udea6 *Overlap Protection Triggered!*\\n` +\n            `\u26a1 \\`${runningNames.join(', ')}\\` is currently running and hasn't finished yet.\\n\\n` +\n            `\u23f3 Put *\\`${wf.name}\\`* into the **Pipeline Queue (Position #${pos})** \u2014 it will automatically execute as soon as the current workflow finishes so your server doesn't crash!`;\n\n          const card = buildWorkflowCard(wf, runningExecs, page, overlapBanner);\n          card.inlineKeyboard.unshift([\n            { text: '\u26a1 Force Run Immediately Anyway', callback_data: `wf:force_exec:${wf.id}:${page}` },\n            { text: `\ud83d\udea6 View Queue (${staticData.pipelineQueue.length})`, callback_data: 'cmd:queue' }\n          ]);\n          uiResponse = card;\n          toastText = `\u23f3 Added to Pipeline Queue (#${pos})!`;\n        } else {\n          staticData.pipelineQueue = staticData.pipelineQueue.filter(q => String(q.workflowId) !== String(wf.id));\n          return [{\n            json: {\n              _config: cfg,\n              chatId,\n              messageId,\n              callbackQueryId,\n              toastText: `\ud83d\ude80 Launching ${wf.name}...`,\n              shouldExecuteSubworkflow: true,\n              targetWorkflowId: wf.id,\n              targetWorkflowName: wf.name,\n              returnPage: page\n            }\n          }];\n        }\n      }\n    }\n  } else {\n    // 2. Handle Text Commands & Natural Language Questions\n    const lowerText = text.toLowerCase();\n    if (\n      lowerText.startsWith('/schedule') ||\n      lowerText.startsWith('/free') ||\n      lowerText.startsWith('/slots') ||\n      lowerText.includes('free hour') ||\n      lowerText.includes('good time') ||\n      lowerText.includes('when to schedule') ||\n      lowerText.includes('when will be') ||\n      lowerText.includes('overlap') ||\n      lowerText.includes('schedule another')\n    ) {\n      const { allWorkflows, recentExecs } = await fetchAllState.call(this, true);\n      uiResponse = buildScheduleAdvisorReport(allWorkflows, recentExecs);\n    } else if (lowerText.startsWith('/queue') || lowerText.startsWith('/pipeline')) {\n      const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n      uiResponse = buildQueueCard(runningExecs, allWorkflows);\n    } else if (lowerText.startsWith('/stagger')) {\n      const { allWorkflows, recentExecs } = await fetchAllState.call(this, true);\n      const shifted = await autoStaggerAllSchedules.call(this, allWorkflows);\n      const refreshed = await fetchAllState.call(this, false);\n      uiResponse = buildScheduleAdvisorReport(\n        refreshed.allWorkflows,\n        recentExecs,\n        `\ud83e\ude84 *Auto-Staggered ${shifted.length} Workflow(s):*\\n${shifted.join('\\n')}`\n      );\n    } else if (lowerText.startsWith('/creds') || lowerText.includes('credential') || lowerText.includes('refresh token')) {\n      const { allWorkflows } = await fetchAllState.call(this, false);\n      const pubUrl = (cfg.N8N_PUBLIC_URL || 'https://automations.sbanerjee.cloud').replace(/\\/+$/, '');\n      const credMap = {};\n      for (const w of allWorkflows) {\n        if (String(w.id) === String(cfg.MASTER_WORKFLOW_ID)) continue;\n        for (const n of (w.nodes || [])) {\n          for (const [cType, cObj] of Object.entries(n.credentials || {})) {\n            const key = `${cObj?.name || cType} (${cType})`;\n            if (!credMap[key]) credMap[key] = new Set();\n            credMap[key].add(w.name);\n          }\n        }\n      }\n      const lines = Object.entries(credMap).map(([k, set]) => `\u2022 *${k}*\\n  _Used by:_ ${Array.from(set).map(x => '`' + x.slice(0, 28) + '`').join(', ')}`);\n      uiResponse = {\n        text:\n          `\ud83d\udd11 *n8n Credentials & OAuth Refresh Portal*\\n` +\n          `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n          (lines.length > 0 ? lines.join('\\n\\n') : 'No external credentials detected.') +\n          `\\n\\n\ud83d\udca1 *Tip:* Tap the button below to open your n8n Credentials page and reconnect any expired OAuth token (e.g. Google Sheets / Drive):`,\n        parseMode: 'Markdown',\n        inlineKeyboard: [\n          [{ text: '\ud83d\udd11 Open n8n Credentials Page', url: `${pubUrl}/home/credentials` }],\n          [{ text: '\ud83c\udf9b\ufe0f Back to Workflow Dashboard', callback_data: 'cmd:list:0' }]\n        ]\n      };\n    } else if (lowerText.startsWith('/help') || lowerText === 'help') {\n      uiResponse = {\n        text:\n          `\ud83d\udcd6 *n8n_Master_Manager \u2014 Telegram Command Guide*\\n` +\n          `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n          `*Slash Commands (or type in chat):*\\n` +\n          `\u2022 \\`/menu\\` or \\`/start\\` \u2014 Open the live interactive dashboard of all workflows.\\n` +\n          `\u2022 \\`/free\\` or \\`/schedule\\` \u2014 View 24h free hours, detect schedule collisions & see best times to schedule a new workflow.\\n` +\n          `\u2022 \\`/stagger\\` \u2014 Automatically space out colliding workflow schedules by 5+ mins.\\n` +\n          `\u2022 \\`/queue\\` \u2014 View workflows currently running or waiting in the FIFO pipeline queue.\\n` +\n          `\u2022 \\`/backup\\` \u2014 Sanitize all workflows (strip keys/IDs) & commit changes to GitHub.\\n` +\n          `\u2022 \\`/autowire\\` \u2014 Inject On-Demand Telegram Triggers & Error Trigger links into all workflows.\\n` +\n          `\u2022 \\`/help\\` \u2014 Show this command cheat sheet.\\n\\n` +\n          `*Natural Language Questions:*\\n` +\n          `\u2022 _\"What are the free hours?\"_\\n` +\n          `\u2022 _\"When is a good time to schedule another workflow?\"_`,\n        parseMode: 'Markdown',\n        inlineKeyboard: [\n          [{ text: '\ud83c\udf9b\ufe0f Open Workflow Dashboard', callback_data: 'cmd:list:0' }],\n          [{ text: '\ud83d\uddd3\ufe0f Free Hours & Schedule Advisor', callback_data: 'cmd:schedule' }]\n        ]\n      };\n    } else if (lowerText.startsWith('/autowire')) {\n      const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n      let wiredCount = 0;\n      for (const w of allWorkflows) {\n        try {\n          const res = await autoWireWorkflow.call(this, w);\n          if (res.changed) wiredCount++;\n        } catch (e) {}\n      }\n      uiResponse = buildMainMenu(\n        allWorkflows,\n        runningExecs,\n        0,\n        `\ud83d\udd27 *Auto-Wired ${wiredCount} workflow(s)* for On-Demand Telegram Execution & Error Protection!`\n      );\n    } else {\n      const { allWorkflows, runningExecs } = await fetchAllState.call(this, false);\n      uiResponse = buildMainMenu(allWorkflows, runningExecs, 0);\n    }\n  }\n} catch (err) {\n  uiResponse = {\n    text: `\u274c *n8n Manager API Error*\\n\\`${err.message}\\`\\n\\nPlease verify \\`N8N_API_KEY\\` and \\`N8N_BASE_URL\\` in the *\u2699\ufe0f Master Config* node.`,\n    parseMode: 'Markdown',\n    inlineKeyboard: [[{ text: '\ud83d\udd04 Retry Menu', callback_data: 'cmd:list:0' }]]\n  };\n}\n\nreturn [{\n  json: {\n    _config: cfg,\n    chatId,\n    messageId,\n    callbackQueryId,\n    toastText,\n    shouldExecuteSubworkflow: false,\n    telegramResponse: uiResponse\n  }\n}];\n"
+      },
+      "id": "node-telegram-controller",
+      "name": "\ud83d\udcf1 Telegram Bot Controller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-exec-sub",
+              "leftValue": "={{ $json.shouldExecuteSubworkflow }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-execute",
+      "name": "\u26a1 Needs On-Demand Execution?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{ $json.targetWorkflowId }}",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "node-execute-subworkflow",
+      "name": "\u25b6\ufe0f Execute Target Workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        -120
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udcec FORMAT ON-DEMAND OR PIPELINE-QUEUED EXECUTION RESULT FOR TELEGRAM\n// ============================================================================\nlet ctrl = {};\ntry {\n  if ($('\ud83d\udcf1 Telegram Bot Controller').isExecuted) {\n    ctrl = $('\ud83d\udcf1 Telegram Bot Controller').first().json;\n  } else if ($('\ud83d\udea6 Overlap Watchdog & Pipeline Runner').isExecuted) {\n    ctrl = $('\ud83d\udea6 Overlap Watchdog & Pipeline Runner').first().json;\n  }\n} catch (e) {}\n\nconst cfg = ctrl._config || $('\u2699\ufe0f Master Config (Edit Here)').first().json._config;\nconst staticData = $getWorkflowStaticData('global');\nconst remainingQueue = Array.isArray(staticData.pipelineQueue) ? staticData.pipelineQueue.length : 0;\n\nconst execItems = $input.all();\nconst firstItem = execItems[0]?.json || {};\nconst hadError = Boolean(firstItem.error || firstItem.message?.includes('Error'));\n\nconst statusHeader = hadError\n  ? `\u26a0\ufe0f *Execution Finished with Warning*\\n\ud83d\udccc *Workflow:* \\`${ctrl.targetWorkflowName}\\`\\n\u274c *Detail:* \\`${firstItem.error || firstItem.message}\\``\n  : `\u2705 *Workflow Execution Succeeded!*\\n\ud83d\udccc *Workflow:* \\`${ctrl.targetWorkflowName}\\`\\n\ud83d\udcca *Output Items:* ${execItems.length}\\n\u23f3 *Remaining in Pipeline Queue:* ${remainingQueue}\\n\ud83d\udd52 *Completed:* \\`${new Date().toISOString().slice(0, 19).replace('T', ' ')} UTC\\``;\n\nconst keyboard = [\n  [\n    { text: '\u25b6\ufe0f Run Again', callback_data: `wf:exec:${ctrl.targetWorkflowId}:${ctrl.returnPage || 0}` },\n    { text: '\u2699\ufe0f Workflow Card', callback_data: `wf:view:${ctrl.targetWorkflowId}:${ctrl.returnPage || 0}` }\n  ],\n  [\n    { text: '\ud83d\uddd3\ufe0f Schedule Advisor', callback_data: 'cmd:schedule' },\n    { text: '\u2b05\ufe0f Main Menu', callback_data: `cmd:list:${ctrl.returnPage || 0}` }\n  ]\n];\n\nreturn [{\n  json: {\n    _config: cfg,\n    chatId: ctrl.chatId || cfg.ADMIN_CHAT_ID,\n    messageId: null,\n    callbackQueryId: ctrl.callbackQueryId || null,\n    toastText: hadError ? '\u26a0\ufe0f Execution had errors' : '\u2705 Execution complete!',\n    telegramResponse: {\n      text: statusHeader,\n      parseMode: 'Markdown',\n      inlineKeyboard: keyboard\n    }\n  }\n}];\n"
+      },
+      "id": "node-format-exec-result",
+      "name": "\ud83d\udcec Format Execution Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udea8 LANE 2: SMART ERROR HANDLER, GEMINI AI DOCTOR & DEPENDENCY CIRCUIT BREAKER\n// ============================================================================\nconst payload = $input.first().json;\nconst cfg = payload._config;\nconst n8nHeaders = { 'X-N8N-API-KEY': cfg.N8N_API_KEY };\n\nasync function apiRequest(ctx, opts) {\n  if (ctx && ctx.helpers && typeof ctx.helpers.httpRequest === 'function') {\n    return await ctx.helpers.httpRequest({\n      method: opts.method || 'GET',\n      url: opts.url,\n      headers: opts.headers || {},\n      body: opts.body,\n      json: true,\n    });\n  }\n  const fetchOpts = {\n    method: opts.method || 'GET',\n    headers: {\n      'Accept': 'application/json',\n      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),\n      ...(opts.headers || {}),\n    },\n  };\n  if (opts.body !== undefined) {\n    fetchOpts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);\n  }\n  const res = await fetch(opts.url, fetchOpts);\n  const text = await res.text();\n  let data;\n  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }\n  if (!res.ok) {\n    throw new Error(`HTTP ${res.status}: ${typeof data === 'object' ? JSON.stringify(data) : text}`);\n  }\n  return data;\n}\n\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.intentionallyStoppedExecs) staticData.intentionallyStoppedExecs = {};\nif (!staticData.lastPausedGroup) staticData.lastPausedGroup = {};\n\nconst failedWfId = payload.workflow?.id;\nconst failedWfName = payload.workflow?.name || 'Unknown Workflow';\nconst execId = payload.execution?.id || 'N/A';\nconst failedNodeName = payload.execution?.error?.node?.name || payload.execution?.lastNodeExecuted || 'Unknown Node';\nconst errorMessage = payload.execution?.error?.message || 'Unknown error';\n\n// EDGE CASE GUARD: Ignore executions that were intentionally stopped by the Overlap Watchdog or User\nif (\n  staticData.intentionallyStoppedExecs[String(execId)] ||\n  errorMessage.toLowerCase().includes('canceled') ||\n  errorMessage.toLowerCase().includes('cancelled')\n) {\n  delete staticData.intentionallyStoppedExecs[String(execId)];\n  return [{ json: { _config: cfg, chatId: null, telegramResponse: null } }];\n}\nconst errorDescription = payload.execution?.error?.description || '';\nconst errorStack = (payload.execution?.error?.stack || '').slice(0, 800);\n\nconst CUSTOM_DEPENDENCY_RULES = {\n  'Printify': ['VibeBloom', 'SparkVibe', 'Telegram-POD'],\n  '01_MushroomBox': ['02_MushroomBox', '03_MushroomBox', 'MushroomBox'],\n  'Workflow 1': ['Workflow 1.5', 'Workflow 2', 'Workflow 3'],\n  'Slogan Generation': ['Slogan Check', 'Slogan Revision', 'Dress Design', 'Mockup Generator']\n};\n\nfunction extractResources(wf) {\n  const resources = { sheets: new Set(), supabaseTables: new Set(), subWorkflows: new Set(), prefix: '' };\n  const name = wf.name || '';\n  const prefixMatch = name.match(/^([A-Za-z0-9]+)[_\\s-]+/);\n  if (prefixMatch && prefixMatch[1].length >= 4) {\n    resources.prefix = prefixMatch[1].toLowerCase();\n  }\n  for (const node of (wf.nodes || [])) {\n    const p = node.parameters || {};\n    const docId = p.documentId?.value || (typeof p.documentId === 'string' ? p.documentId : null);\n    if (docId && docId.length > 15 && !docId.includes('YOUR_')) resources.sheets.add(docId);\n    if (p.tableId && typeof p.tableId === 'string') resources.supabaseTables.add(p.tableId);\n    const subId = p.workflowId?.value || (typeof p.workflowId === 'string' ? p.workflowId : null);\n    if (subId) resources.subWorkflows.add(String(subId));\n  }\n  return resources;\n}\n\nlet selfPaused = false;\nconst pausedDependents = [];\nconst pausedDepIds = [];\nlet failedNodeConfig = {};\n\ntry {\n  if (failedWfId && String(failedWfId) !== String(cfg.MASTER_WORKFLOW_ID)) {\n    try {\n      await apiRequest(this, {\n        method: 'POST',\n        url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${failedWfId}/deactivate`,\n        headers: n8nHeaders\n      });\n      selfPaused = true;\n    } catch (e) {}\n  }\n\n  const wfListRes = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows?limit=250`,\n    headers: n8nHeaders\n  });\n  const allWorkflows = wfListRes.data || [];\n  const failedFullWf = allWorkflows.find(w => String(w.id) === String(failedWfId)) || {};\n  const failedRes = extractResources(failedFullWf);\n\n  const foundNode = (failedFullWf.nodes || []).find(n => n.name === failedNodeName);\n  if (foundNode) {\n    failedNodeConfig = { type: foundNode.type, parameters: foundNode.parameters, credentials: foundNode.credentials || {} };\n  }\n  // Extract credential from failedNode or match credential name from errorMessage across workflow nodes\n  let detectedCred = null;\n  if (foundNode && foundNode.credentials) {\n    const entries = Object.entries(foundNode.credentials);\n    if (entries.length > 0) {\n      const [cType, cObj] = entries[0];\n      detectedCred = { type: cType, id: cObj?.id || '', name: cObj?.name || cType };\n    }\n  }\n  if (!detectedCred) {\n    for (const n of (failedFullWf.nodes || [])) {\n      for (const [cType, cObj] of Object.entries(n.credentials || {})) {\n        if (cObj?.name && errorMessage.toLowerCase().includes(String(cObj.name).toLowerCase())) {\n          detectedCred = { type: cType, id: cObj.id || '', name: cObj.name };\n          break;\n        }\n      }\n      if (detectedCred) break;\n    }\n  }\n  failedNodeConfig.detectedCred = detectedCred;\n\n  for (const candidate of allWorkflows) {\n    if (!candidate.active) continue;\n    if (String(candidate.id) === String(failedWfId)) continue;\n    if (String(candidate.id) === String(cfg.MASTER_WORKFLOW_ID)) continue;\n\n    const candRes = extractResources(candidate);\n    let reason = '';\n\n    if (failedRes.subWorkflows.has(String(candidate.id)) || candRes.subWorkflows.has(String(failedWfId))) {\n      reason = 'Direct Sub-workflow link';\n    }\n    if (!reason) {\n      for (const sheetId of failedRes.sheets) {\n        if (candRes.sheets.has(sheetId)) {\n          reason = 'Shares Google Sheet data source';\n          break;\n        }\n      }\n    }\n    if (!reason) {\n      for (const tbl of failedRes.supabaseTables) {\n        if (candRes.supabaseTables.has(tbl)) {\n          reason = `Shares Supabase table (${tbl})`;\n          break;\n        }\n      }\n    }\n    if (!reason) {\n      for (const [parentKey, childKeys] of Object.entries(CUSTOM_DEPENDENCY_RULES)) {\n        if (failedWfName.toLowerCase().includes(parentKey.toLowerCase())) {\n          if (childKeys.some(ck => (candidate.name || '').toLowerCase().includes(ck.toLowerCase()))) {\n            reason = `Pipeline dependency (${parentKey})`;\n            break;\n          }\n        }\n      }\n    }\n    if (!reason && failedRes.prefix && candRes.prefix === failedRes.prefix) {\n      reason = `Same project group (${failedRes.prefix})`;\n    }\n\n    if (reason) {\n      try {\n        await apiRequest(this, {\n          method: 'POST',\n          url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${candidate.id}/deactivate`,\n          headers: n8nHeaders\n        });\n        pausedDependents.push(`\u2022 \\`${candidate.name}\\` _(${reason})_`);\n        pausedDepIds.push(candidate.id);\n      } catch (e) {}\n    }\n  }\n} catch (err) {}\n\nlet aiDiagnosis = '';\nconst diagnosisPrompt =\n  `You are an expert n8n automation engineer. A scheduled workflow just failed.\\n` +\n  `Workflow Name: ${failedWfName}\\n` +\n  `Failed Node: ${failedNodeName} (Type: ${failedNodeConfig.type || 'unknown'})\\n` +\n  `Error Message: ${errorMessage}\\n` +\n  `Error Description: ${errorDescription}\\n` +\n  `Stack Snippet: ${errorStack.slice(0, 400)}\\n\\n` +\n  `Provide a concise response in plain Markdown with:\\n` +\n  `1. *Why It Failed:* (1-2 short sentences)\\n` +\n  `2. *How To Fix It:* (2-3 actionable bullet points in n8n)`;\n\nif (cfg.GEMINI_API_KEY && !cfg.GEMINI_API_KEY.includes('PASTE_YOUR')) {\n  try {\n    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.GEMINI_MODEL}:generateContent?key=${cfg.GEMINI_API_KEY}`;\n    const gemRes = await apiRequest(this, {\n      method: 'POST',\n      url: geminiUrl,\n      headers: { 'x-goog-api-key': cfg.GEMINI_API_KEY },\n      body: {\n        contents: [{ parts: [{ text: diagnosisPrompt }] }],\n        generationConfig: { temperature: 0.2, maxOutputTokens: 350 }\n      }\n    });\n    aiDiagnosis = gemRes?.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  } catch (e) {}\n}\n\nif (!aiDiagnosis && cfg.OLLAMA_FALLBACK_URL) {\n  try {\n    const olRes = await apiRequest(this, {\n      method: 'POST',\n      url: cfg.OLLAMA_FALLBACK_URL,\n      body: {\n        model: cfg.OLLAMA_FALLBACK_MODEL || 'qwen3:1.7b',\n        prompt: diagnosisPrompt,\n        stream: false\n      }\n    });\n    aiDiagnosis = olRes?.response || '';\n  } catch (e) {}\n}\n\nif (!aiDiagnosis) {\n  const lowerErr = (errorMessage + ' ' + errorDescription).toLowerCase();\n  if (lowerErr.includes('401') || lowerErr.includes('403') || lowerErr.includes('unauthorized') || lowerErr.includes('oauth') || lowerErr.includes('token')) {\n    aiDiagnosis =\n      `*Why It Failed:* Credential authentication or OAuth token expired on node \\`${failedNodeName}\\`.\\n` +\n      `*How To Fix It:*\\n\u2022 Open n8n *Credentials* and reconnect the credential used by \\`${failedNodeName}\\`.\\n\u2022 Check if the external API key was rotated or revoked.`;\n  } else if (lowerErr.includes('429') || lowerErr.includes('rate limit') || lowerErr.includes('quota')) {\n    aiDiagnosis =\n      `*Why It Failed:* External API rate limit or quota exceeded in \\`${failedNodeName}\\`.\\n` +\n      `*How To Fix It:*\\n\u2022 Enable *Retry On Fail* (Wait 5000ms, Max 3 tries) in \\`${failedNodeName}\\` settings.\\n\u2022 Tap *Shift Schedule +15m* below if two workflows hit the API at the same time.`;\n  } else if (lowerErr.includes('econnrefused') || lowerErr.includes('etimedout') || lowerErr.includes('enotfound')) {\n    aiDiagnosis =\n      `*Why It Failed:* Network/container endpoint unreachable from \\`${failedNodeName}\\`.\\n` +\n      `*How To Fix It:*\\n\u2022 Verify the target container/service (e.g. Ollama, Gotenberg, Puppeteer) is running on your Hostinger VPS.\\n\u2022 Check Docker network hostname/IP in \\`${failedNodeName}\\`.`;\n  } else {\n    aiDiagnosis =\n      `*Why It Failed:* Node \\`${failedNodeName}\\` threw \\`${errorMessage}\\`.\\n` +\n      `*How To Fix It:*\\n\u2022 Inspect Execution \\`#${execId}\\` in n8n to view the exact input payload at \\`${failedNodeName}\\`.\\n\u2022 Add null-safety checks or enable *Continue On Fail* if empty rows are expected.`;\n  }\n}\n\nconst depSection = pausedDependents.length > 0\n  ? `\\n\ud83d\uded1 *Auto-Paused Dependent Workflows (${pausedDependents.length}):*\\n${pausedDependents.join('\\n')}\\n`\n  : `\\n\u2139\ufe0f *Dependent Workflows:* None active required pausing.\\n`;\n\nconst pubUrl = (cfg.N8N_PUBLIC_URL || 'https://automations.sbanerjee.cloud').replace(/\\/+$/, '');\nconst detCred = failedNodeConfig.detectedCred;\nconst isCredError = Boolean(\n  detCred ||\n  /credential|reconnect|oauth|token|expired|401|403|unauthorized|invalid_grant/i.test(errorMessage + ' ' + errorDescription)\n);\nconst credLine = detCred\n  ? `\ud83d\udd11 *Credential:* \\`${detCred.name}\\` (\\`${detCred.type}\\`)\\n\ud83d\udd17 *Refresh Link:* [Open n8n Credentials](${pubUrl}/home/credentials)\\n`\n  : (isCredError ? `\ud83d\udd17 *Refresh Link:* [Open n8n Credentials](${pubUrl}/home/credentials)\\n` : '');\n\nconst alertText =\n  `\ud83d\udea8 *n8n WORKFLOW ERROR & CIRCUIT BREAKER*\\n` +\n  `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n  `\ud83d\udcdb *Failed Workflow:* \\`${failedWfName}\\`\\n` +\n  `\u23f8\ufe0f *Workflow Status:* ${selfPaused ? 'Auto-Paused to prevent loop' : 'Inactive'}\\n` +\n  `\ud83d\udca5 *Failed Node:* \\`${failedNodeName}\\`\\n` +\n  `\ud83d\udd22 *Execution ID:* \\`#${execId}\\`\\n` +\n  `\u274c *Error:* \\`${errorMessage}\\`\\n` +\n  credLine +\n  depSection +\n  `\\n\ud83e\ude7a *AI Doctor Diagnosis & Fix:*\\n${aiDiagnosis.trim()}`;\n\nstaticData.lastPausedGroup[String(failedWfId)] = pausedDepIds;\nconst resumeCallback = `wf:resume_all:${failedWfId}`.slice(0, 64);\nconst keyboard = [];\nif (isCredError) {\n  const credBtnLabel = detCred ? `\ud83d\udd11 Refresh \"${detCred.name}\" in n8n` : '\ud83d\udd11 Refresh Expired Credential in n8n';\n  keyboard.push([{ text: credBtnLabel.slice(0, 60), url: `${pubUrl}/home/credentials` }]);\n}\nkeyboard.push([\n  { text: '\ud83d\udd27 Open Failed Workflow', url: `${pubUrl}/workflow/${failedWfId}` },\n  { text: `\ud83d\udd0d View Exec #${execId}`, url: `${pubUrl}/workflow/${failedWfId}/executions/${execId}` }\n]);\nkeyboard.push([\n  { text: '\ud83d\udd04 Re-Enable All & Reset Breaker', callback_data: resumeCallback }\n]);\nkeyboard.push([\n  { text: '\u23f1\ufe0f Shift Schedule +15m', callback_data: `wf:shift:${failedWfId}:15` },\n  { text: '\u25b6\ufe0f Retry Now', callback_data: `wf:exec:${failedWfId}:0` }\n]);\nkeyboard.push([\n  { text: '\ud83d\uddd3\ufe0f Schedule Advisor', callback_data: 'cmd:schedule' },\n  { text: '\ud83c\udf9b\ufe0f Manager Menu', callback_data: 'cmd:list:0' }\n]);\n\nreturn [{\n  json: {\n    _config: cfg,\n    chatId: cfg.ADMIN_CHAT_ID,\n    messageId: null,\n    callbackQueryId: null,\n    telegramResponse: {\n      text: alertText,\n      parseMode: 'Markdown',\n      inlineKeyboard: keyboard\n    }\n  }\n}];\n"
+      },
+      "id": "node-error-circuit-breaker",
+      "name": "\ud83d\udea8 Error Circuit Breaker & Gemini Doctor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udcbe LANE 3: DAILY COMMERCIAL-GRADE SANITIZED GITHUB BACKUP + AUTO-WIRE\n// ============================================================================\nconst payload = $input.first().json;\nconst cfg = payload._config;\nconst n8nHeaders = { 'X-N8N-API-KEY': cfg.N8N_API_KEY };\n\nasync function apiRequest(ctx, opts) {\n  if (ctx && ctx.helpers && typeof ctx.helpers.httpRequest === 'function') {\n    return await ctx.helpers.httpRequest({\n      method: opts.method || 'GET',\n      url: opts.url,\n      headers: opts.headers || {},\n      body: opts.body,\n      json: true,\n    });\n  }\n  const fetchOpts = {\n    method: opts.method || 'GET',\n    headers: {\n      'Accept': 'application/json',\n      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),\n      ...(opts.headers || {}),\n    },\n  };\n  if (opts.body !== undefined) {\n    fetchOpts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);\n  }\n  const res = await fetch(opts.url, fetchOpts);\n  const text = await res.text();\n  let data;\n  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }\n  if (!res.ok) {\n    const err = new Error(`HTTP ${res.status}: ${typeof data === 'object' ? JSON.stringify(data) : text}`);\n    err.statusCode = res.status;\n    throw err;\n  }\n  return data;\n}\n\nfunction sanitizeWorkflowForMarketplace(rawWf) {\n  const wf = JSON.parse(JSON.stringify(rawWf));\n\n  wf.id = 'TEMPLATE_WORKFLOW_ID';\n  wf.active = false;\n  delete wf.pinData;\n  delete wf.staticData;\n  delete wf.shared;\n  delete wf.versionId;\n  delete wf.activeVersionId;\n  delete wf.activeVersion;\n  delete wf.triggerCount;\n  delete wf.tags;\n  if (wf.meta) {\n    delete wf.meta.instanceId;\n    delete wf.meta.templateCredsSetupCompleted;\n  }\n  if (wf.settings?.errorWorkflow) {\n    wf.settings.errorWorkflow = 'YOUR_ERROR_HANDLER_WORKFLOW_ID';\n  }\n\n  function scrubString(str) {\n    if (typeof str !== 'string' || !str) return str;\n    let s = str;\n    s = s.replace(\n      /https:\\/\\/docs\\.google\\.com\\/(spreadsheets|document|presentation)\\/d\\/[a-zA-Z0-9_-]{25,60}(\\/[^\\s\"'\\)]*)?/g,\n      'https://docs.google.com/$1/d/YOUR_GOOGLE_DOCUMENT_ID/edit'\n    );\n    s = s.replace(\n      /https:\\/\\/drive\\.google\\.com\\/(drive\\/folders|file\\/d)\\/[a-zA-Z0-9_-]{25,60}(\\/[^\\s\"'\\)]*)?/g,\n      'https://drive.google.com/$1/YOUR_GOOGLE_DRIVE_ID'\n    );\n    s = s.replace(/https?:\\/\\/[a-zA-Z0-9.-]*sbanerjee\\.cloud/gi, 'http://localhost:11434');\n    s = s.replace(/https?:\\/\\/[a-zA-Z0-9.-]+\\.pinecone\\.io/gi, 'https://YOUR_INDEX_HOST.pinecone.io');\n    s = s.replace(/https?:\\/\\/[a-zA-Z0-9.-]+\\.supabase\\.co/gi, 'https://YOUR_PROJECT_REF.supabase.co');\n    s = s.replace(/http:\\/\\/172\\.(1[6-9]|2[0-9]|3[0-1])\\.[0-9]{1,3}\\.[0-9]{1,3}(:[0-9]+)?/g, 'http://localhost$2');\n    s = s.replace(/http:\\/\\/(192\\.168|10\\.[0-9]{1,3})\\.[0-9]{1,3}\\.[0-9]{1,3}(:[0-9]+)?/g, 'http://localhost$2');\n    s = s.replace(/AIza[0-9A-Za-z_-]{35}/g, 'YOUR_GOOGLE_API_KEY');\n    s = s.replace(/AQ\\.[0-9A-Za-z._-]{25,}/g, 'YOUR_GEMINI_API_KEY');\n    s = s.replace(/eyJ[0-9A-Za-z_-]{10,}\\.[0-9A-Za-z_-]{10,}\\.[0-9A-Za-z_-]{10,}/g, 'YOUR_N8N_JWT_API_KEY');\n    s = s.replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'YOUR_OPENAI_API_KEY');\n    s = s.replace(/gh[pousr]_[A-Za-z0-9_]{30,}/g, 'YOUR_GITHUB_TOKEN');\n    s = s.replace(/github_pat_[A-Za-z0-9_]{30,}/g, 'YOUR_GITHUB_TOKEN');\n    s = s.replace(/\\b[0-9]{8,10}:[a-zA-Z0-9_-]{35}\\b/g, 'YOUR_TELEGRAM_BOT_TOKEN');\n    s = s.replace(/Bearer\\s+[A-Za-z0-9._~+/-]{20,}=*/gi, 'Bearer YOUR_API_TOKEN');\n    s = s.replace(/=?5365295465\\b/g, 'YOUR_TELEGRAM_CHAT_ID');\n    s = s.replace(/\\b1[a-zA-Z0-9_-]{42,44}\\b/g, 'YOUR_GOOGLE_DOC_OR_SHEET_ID');\n    s = s.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g, 'user@example.com');\n    return s;\n  }\n\n  function scrubObject(obj, parentKey = '') {\n    if (Array.isArray(obj)) {\n      return obj.map(item => scrubObject(item, parentKey));\n    }\n    if (obj && typeof obj === 'object') {\n      if (obj.__rl === true && ['documentId', 'folderId', 'fileId'].includes(parentKey)) {\n        return {\n          __rl: true,\n          value: 'YOUR_GOOGLE_DOC_OR_SHEET_ID',\n          mode: obj.mode || 'id',\n          ...(obj.cachedResultName ? { cachedResultName: obj.cachedResultName } : {})\n        };\n      }\n      if (obj.__rl === true && parentKey === 'sheetName') {\n        return {\n          __rl: true,\n          value: obj.value,\n          mode: obj.mode || 'name',\n          ...(obj.cachedResultName ? { cachedResultName: obj.cachedResultName } : {})\n        };\n      }\n\n      const out = {};\n      for (const [k, v] of Object.entries(obj)) {\n        if (k === 'cachedResultUrl') continue;\n        if (k === 'chatId') {\n          const strVal = String(v || '');\n          out[k] = (strVal.includes('$json') || strVal.includes('$('))\n            ? scrubString(strVal)\n            : 'YOUR_TELEGRAM_CHAT_ID';\n        } else if (\n          ['apiKey', 'accessToken', 'refreshToken', 'password', 'secret', 'clientSecret', 'privateKey', 'botToken'].includes(k) ||\n          k.toUpperCase().endsWith('_API_KEY') ||\n          k.toUpperCase().endsWith('_TOKEN')\n        ) {\n          out[k] = `YOUR_${k.toUpperCase()}`;\n        } else if (['documentId', 'folderId', 'fileId'].includes(k) && typeof v === 'string') {\n          out[k] = 'YOUR_GOOGLE_DOC_OR_SHEET_ID';\n        } else {\n          out[k] = scrubObject(v, k);\n        }\n      }\n      return out;\n    }\n    if (typeof obj === 'string') {\n      return scrubString(obj);\n    }\n    return obj;\n  }\n\n  wf.nodes = (wf.nodes || []).map(node => {\n    const cleanNode = { ...node };\n    if (cleanNode.webhookId) {\n      cleanNode.webhookId = 'YOUR_WEBHOOK_UUID';\n    }\n    if (cleanNode.credentials && typeof cleanNode.credentials === 'object') {\n      const cleanCreds = {};\n      for (const [credType, credObj] of Object.entries(cleanNode.credentials)) {\n        cleanCreds[credType] = {\n          id: 'YOUR_CREDENTIAL_ID',\n          name: `${credType} Credential`\n        };\n      }\n      cleanNode.credentials = cleanCreds;\n    }\n    cleanNode.parameters = scrubObject(cleanNode.parameters || {});\n    return cleanNode;\n  });\n\n  return wf;\n}\n\nfunction normalizeForDiff(wfObj) {\n  const copy = JSON.parse(JSON.stringify(wfObj));\n  delete copy.updatedAt;\n  delete copy.createdAt;\n  return JSON.stringify(copy);\n}\n\nconst now = new Date();\nconst year = String(now.getUTCFullYear());\nconst month = String(now.getUTCMonth() + 1).padStart(2, '0');\nconst ghHeaders = {\n  'Authorization': `Bearer ${cfg.GITHUB_TOKEN}`,\n  'Accept': 'application/vnd.github+json',\n  'X-GitHub-Api-Version': '2022-11-28',\n  'User-Agent': 'n8n-Master-Manager-Backup'\n};\n\nlet backedUp = [];\nlet skippedUnchanged = 0;\nlet autoWired = 0;\nlet errors = [];\n\ntry {\n  const wfRes = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows?limit=250`,\n    headers: n8nHeaders\n  });\n  const workflows = (wfRes.data || []).filter(w => !w.isArchived);\n\n  for (const wfSummary of workflows) {\n    try {\n      const fullWf = await apiRequest(this, {\n        method: 'GET',\n        url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${wfSummary.id}`,\n        headers: n8nHeaders\n      });\n\n      if (cfg.AUTO_WIRE_ON_BACKUP && String(fullWf.id) !== String(cfg.MASTER_WORKFLOW_ID)) {\n        const nodes = Array.isArray(fullWf.nodes) ? [...fullWf.nodes] : [];\n        const connections = fullWf.connections ? JSON.parse(JSON.stringify(fullWf.connections)) : {};\n        const settings = fullWf.settings ? { ...fullWf.settings } : { executionOrder: 'v1' };\n        let needsWire = false;\n\n        if (cfg.MASTER_WORKFLOW_ID && settings.errorWorkflow !== cfg.MASTER_WORKFLOW_ID) {\n          settings.errorWorkflow = cfg.MASTER_WORKFLOW_ID;\n          needsWire = true;\n        }\n        const hasSubTrigger = nodes.some(n => n.type === 'n8n-nodes-base.executeWorkflowTrigger');\n        if (!hasSubTrigger) {\n          const primaryTrigger = nodes.find(n =>\n            n.type === 'n8n-nodes-base.scheduleTrigger' ||\n            n.type === 'n8n-nodes-base.manualTrigger'\n          );\n          if (primaryTrigger) {\n            const triggerName = 'On-Demand Telegram Trigger';\n            nodes.push({\n              parameters: { inputSource: 'passthrough' },\n              id: 'ondemand-tg-trigger-' + String(fullWf.id).slice(0, 8),\n              name: triggerName,\n              type: 'n8n-nodes-base.executeWorkflowTrigger',\n              typeVersion: 1.1,\n              position: [primaryTrigger.position[0], primaryTrigger.position[1] + 180]\n            });\n            if (connections[primaryTrigger.name]) {\n              connections[triggerName] = JSON.parse(JSON.stringify(connections[primaryTrigger.name]));\n            }\n            needsWire = true;\n          }\n        }\n        if (needsWire) {\n          await apiRequest(this, {\n            method: 'PUT',\n            url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${fullWf.id}`,\n            headers: n8nHeaders,\n            body: {\n              name: fullWf.name,\n              nodes,\n              connections,\n              settings,\n              ...(fullWf.staticData ? { staticData: fullWf.staticData } : {})\n            }\n          });\n          autoWired++;\n        }\n      }\n\n      const sanitized = sanitizeWorkflowForMarketplace(fullWf);\n      const prettyJson = JSON.stringify(sanitized, null, 2) + '\\n';\n      const slug = (fullWf.name || 'workflow')\n        .toLowerCase()\n        .replace(/[^a-z0-9]+/g, '_')\n        .replace(/^_+|_+$/g, '');\n      const filePath = `${cfg.BACKUP_BASE_DIR}/${year}/${month}/${slug}.json`;\n      const ghUrl = `https://api.github.com/repos/${cfg.GITHUB_REPO}/contents/${filePath}`;\n\n      let existingSha = null;\n      let isIdentical = false;\n      try {\n        const existingFile = await apiRequest(this, {\n          method: 'GET',\n          url: `${ghUrl}?ref=${cfg.GITHUB_BRANCH}`,\n          headers: ghHeaders\n        });\n        if (existingFile && existingFile.sha) {\n          existingSha = existingFile.sha;\n          const decoded = Buffer.from(existingFile.content || '', 'base64').toString('utf8');\n          const existingObj = JSON.parse(decoded);\n          if (normalizeForDiff(existingObj) === normalizeForDiff(sanitized)) {\n            isIdentical = true;\n          }\n        }\n      } catch (e) {}\n\n      if (isIdentical) {\n        skippedUnchanged++;\n        continue;\n      }\n\n      const contentBase64 = Buffer.from(prettyJson, 'utf8').toString('base64');\n      await apiRequest(this, {\n        method: 'PUT',\n        url: ghUrl,\n        headers: ghHeaders,\n        body: {\n          message: `Backup sanitized workflow: ${fullWf.name} - ${now.toISOString()}`,\n          content: contentBase64,\n          branch: cfg.GITHUB_BRANCH,\n          ...(existingSha ? { sha: existingSha } : {})\n        }\n      });\n      backedUp.push(`\u2022 \\`${filePath}\\``);\n    } catch (wfErr) {\n      errors.push(`\u2022 \\`${wfSummary.name}\\`: ${wfErr.message}`);\n    }\n  }\n} catch (err) {\n  errors.push(`Global Backup Error: ${err.message}`);\n}\n\nconst summaryText =\n  `\ud83d\udcbe *GitHub Sanitized Backup & Auto-Wire Report*\\n` +\n  `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n  `\ud83d\udcc2 *Repo:* \\`${cfg.GITHUB_REPO}\\` (\\`${cfg.BACKUP_BASE_DIR}/${year}/${month}\\`)\\n` +\n  `\u2705 *Updated / New Commits:* ${backedUp.length}\\n` +\n  `\u23ed\ufe0f *Unchanged (Skipped):* ${skippedUnchanged}\\n` +\n  `\ud83d\udd27 *Newly Auto-Wired:* ${autoWired}\\n` +\n  `\ud83d\udee1\ufe0f *Sanitization:* PII, API Keys, Sheet IDs, Chat IDs & Cred IDs scrubbed\\n` +\n  (backedUp.length > 0 ? `\\n\ud83d\udcdd *Files Committed:*\\n${backedUp.join('\\n')}\\n` : '') +\n  (errors.length > 0 ? `\\n\u26a0\ufe0f *Warnings:*\\n${errors.join('\\n')}` : '');\n\nreturn [{\n  json: {\n    _config: cfg,\n    chatId: payload.callback_query?.message?.chat?.id || payload.message?.chat?.id || cfg.ADMIN_CHAT_ID,\n    messageId: null,\n    callbackQueryId: payload.callback_query?.id || null,\n    toastText: `\ud83d\udcbe Backed up ${backedUp.length} workflow(s)!`,\n    telegramResponse: {\n      text: summaryText,\n      parseMode: 'Markdown',\n      inlineKeyboard: [[{ text: '\ud83c\udf9b\ufe0f Open Workflow Manager Menu', callback_data: 'cmd:list:0' }]]\n    }\n  }\n}];\n"
+      },
+      "id": "node-github-backup",
+      "name": "\ud83d\udcbe Auto-Wire & Sanitized GitHub Backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udea6 LANE 4: CONCURRENCY OVERLAP WATCHDOG & AUTOMATIC FIFO PIPELINE RUNNER\n// ============================================================================\nconst payload = $input.first().json;\nconst cfg = payload._config;\nconst staticData = $getWorkflowStaticData('global');\nif (!Array.isArray(staticData.pipelineQueue)) staticData.pipelineQueue = [];\nif (!staticData.intentionallyStoppedExecs) staticData.intentionallyStoppedExecs = {};\nif (!staticData.lastPausedGroup) staticData.lastPausedGroup = {};\n\nasync function apiRequest(ctx, opts) {\n  if (ctx && ctx.helpers && typeof ctx.helpers.httpRequest === 'function') {\n    return await ctx.helpers.httpRequest({\n      method: opts.method || 'GET',\n      url: opts.url,\n      headers: opts.headers || {},\n      body: opts.body,\n      json: true,\n    });\n  }\n  const fetchOpts = {\n    method: opts.method || 'GET',\n    headers: {\n      'Accept': 'application/json',\n      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),\n      ...(opts.headers || {}),\n    },\n  };\n  if (opts.body !== undefined) {\n    fetchOpts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);\n  }\n  const res = await fetch(opts.url, fetchOpts);\n  const text = await res.text();\n  let data;\n  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }\n  if (!res.ok) {\n    throw new Error(`HTTP ${res.status}: ${typeof data === 'object' ? JSON.stringify(data) : text}`);\n  }\n  return data;\n}\n\nconst n8nHeaders = { 'X-N8N-API-KEY': cfg.N8N_API_KEY };\n\nif (!cfg.N8N_API_KEY || cfg.N8N_API_KEY.includes('PASTE_YOUR')) {\n  return [{ json: { _config: cfg, shouldExecuteSubworkflow: false, telegramResponse: null } }];\n}\n\ntry {\n  const execRes = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/executions?status=running&limit=50`,\n    headers: n8nHeaders\n  });\n  const wfRes = await apiRequest(this, {\n    method: 'GET',\n    url: `${cfg.N8N_BASE_URL}/api/v1/workflows?limit=250`,\n    headers: n8nHeaders\n  });\n\n  const allWorkflows = wfRes.data || [];\n  const wfMap = {};\n  for (const w of allWorkflows) wfMap[w.id] = w;\n\n  const rawRunning = (execRes.data || [])\n    .filter(e => String(e.workflowId) !== String(cfg.MASTER_WORKFLOW_ID) && String(e.id) !== String(cfg.CURRENT_EXECUTION_ID))\n    .sort((a, b) => new Date(a.startedAt || 0) - new Date(b.startedAt || 0));\n\n  // EDGE CASE GUARD A: Auto-kill hung zombie executions (> MAX_EXECUTION_TIMEOUT_MINS)\n  const runningExecs = [];\n  for (const ex of rawRunning) {\n    const runMins = ex.startedAt ? (Date.now() - new Date(ex.startedAt).getTime()) / 60000 : 0;\n    if (runMins > (cfg.MAX_EXECUTION_TIMEOUT_MINS || 45)) {\n      staticData.intentionallyStoppedExecs[String(ex.id)] = Date.now();\n      try {\n        await apiRequest(this, {\n          method: 'POST',\n          url: `${cfg.N8N_BASE_URL}/api/v1/executions/${ex.id}/stop`,\n          headers: n8nHeaders\n        });\n      } catch (e) {}\n      const zName = wfMap[ex.workflowId]?.name || ex.workflowId;\n      return [{\n        json: {\n          _config: cfg,\n          chatId: cfg.ADMIN_CHAT_ID,\n          shouldExecuteSubworkflow: false,\n          telegramResponse: {\n            text: `\ud83e\udddf *Zombie Execution Auto-Killed!*\\n\ud83d\udccc *Workflow:* \\`${zName}\\`\\n\u23f1\ufe0f *Runtime:* ${Math.round(runMins)} mins (exceeded ${cfg.MAX_EXECUTION_TIMEOUT_MINS}m limit)\\n\ud83d\udee1\ufe0f Killed hung run so the Pipeline Queue doesn't stay blocked forever.`,\n            parseMode: 'Markdown',\n            inlineKeyboard: [[{ text: '\u25b6\ufe0f Retry Workflow', callback_data: `wf:exec:${ex.workflowId}:0` }, { text: '\ud83c\udf9b\ufe0f Menu', callback_data: 'cmd:list:0' }]]\n          }\n        }\n      }];\n    }\n    // EDGE CASE GUARD B: Do not count child sub-workflows (mode === 'integrated') as competing top-level overlaps\n    // if another parent workflow is already running\n    if (ex.mode === 'integrated' && rawRunning.length > 1) {\n      continue;\n    }\n    runningExecs.push(ex);\n  }\n\n  // CASE 1: OVERLAP DETECTED (> MAX_CONCURRENT_WORKFLOWS running at once!)\n  if (runningExecs.length > cfg.MAX_CONCURRENT_WORKFLOWS) {\n    const primaryRun = runningExecs[0];\n    const primaryName = wfMap[primaryRun.workflowId]?.name || `Workflow #${primaryRun.workflowId}`;\n    const overlappedExecs = runningExecs.slice(cfg.MAX_CONCURRENT_WORKFLOWS);\n    const queuedNames = [];\n    const autoShiftedNotes = [];\n    let firstQueuedId = null;\n\n    // Measure primary workflow elapsed/historical runtime to pick a smart shift offset (default 15m)\n    const elapsedMins = primaryRun.startedAt\n      ? Math.max(5, Math.ceil((Date.now() - new Date(primaryRun.startedAt).getTime()) / 60000))\n      : 10;\n    const smartShiftMins = Math.min(45, Math.ceil((elapsedMins + 5) / 5) * 5); // e.g. 15m, 20m, 25m\n\n    for (const ov of overlappedExecs) {\n      const ovName = wfMap[ov.workflowId]?.name || `Workflow #${ov.workflowId}`;\n      staticData.intentionallyStoppedExecs[String(ov.id)] = Date.now();\n      try {\n        await apiRequest(this, {\n          method: 'POST',\n          url: `${cfg.N8N_BASE_URL}/api/v1/executions/${ov.id}/stop`,\n          headers: n8nHeaders\n        });\n      } catch (e) {}\n\n      if (!staticData.pipelineQueue.some(q => String(q.workflowId) === String(ov.workflowId))) {\n        staticData.pipelineQueue.push({\n          workflowId: ov.workflowId,\n          workflowName: ovName,\n          queuedAt: new Date().toISOString(),\n          reason: `Overlapped with running '${primaryName}'`\n        });\n      }\n      queuedNames.push(ovName);\n      if (!firstQueuedId) firstQueuedId = ov.workflowId;\n\n      // AUTONOMOUS SCHEDULE SHIFTING: Automatically adjust the overlapping workflow's Schedule Trigger!\n      if (cfg.AUTO_SHIFT_OVERLAPPING_SCHEDULES) {\n        try {\n          const fullOvWf = await apiRequest(this, {\n            method: 'GET',\n            url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${ov.workflowId}`,\n            headers: n8nHeaders\n          });\n          let shiftedDesc = '';\n          let wfModified = false;\n          const updatedNodes = (fullOvWf.nodes || []).map(node => {\n            if (node.type !== 'n8n-nodes-base.scheduleTrigger') return node;\n            const newNode = JSON.parse(JSON.stringify(node));\n            const intervals = newNode.parameters?.rule?.interval || [{}];\n            for (const rule of intervals) {\n              const field = rule.field || 'hours';\n              if (field === 'hours' || field === 'days' || field === 'weeks') {\n                const curMin = Number(rule.triggerAtMinute || 0);\n                const curHr = Number(rule.triggerAtHour || 0);\n                const totalMins = (curHr * 60 + curMin + smartShiftMins + 1440) % 1440;\n                if (field === 'days' || field === 'weeks') {\n                  rule.triggerAtHour = Math.floor(totalMins / 60);\n                }\n                rule.triggerAtMinute = totalMins % 60;\n                shiftedDesc = `minute :${String(rule.triggerAtMinute).padStart(2, '0')}`;\n                wfModified = true;\n              } else if (field === 'minutes') {\n                const mInt = Number(rule.minutesInterval || 30);\n                const mins = [];\n                for (let m = smartShiftMins % mInt; m < 60; m += mInt) mins.push(m);\n                rule.field = 'cronExpression';\n                rule.expression = `${mins.join(',')} * * * *`;\n                delete rule.minutesInterval;\n                shiftedDesc = `Cron \\`${rule.expression}\\``;\n                wfModified = true;\n              } else if (field === 'cronExpression' && rule.expression) {\n                const parts = rule.expression.trim().split(/\\s+/);\n                const curMin = parseInt(parts[0], 10) || 0;\n                parts[0] = String((curMin + smartShiftMins) % 60);\n                rule.expression = parts.join(' ');\n                shiftedDesc = `Cron \\`${rule.expression}\\``;\n                wfModified = true;\n              }\n            }\n            return newNode;\n          });\n\n          if (wfModified) {\n            await apiRequest(this, {\n              method: 'PUT',\n              url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${fullOvWf.id}`,\n              headers: n8nHeaders,\n              body: {\n                name: fullOvWf.name,\n                nodes: updatedNodes,\n                connections: fullOvWf.connections || {},\n                settings: fullOvWf.settings || { executionOrder: 'v1' },\n                ...(fullOvWf.staticData ? { staticData: fullOvWf.staticData } : {})\n              }\n            });\n            if (fullOvWf.active) {\n              try {\n                await apiRequest(this, {\n                  method: 'POST',\n                  url: `${cfg.N8N_BASE_URL}/api/v1/workflows/${fullOvWf.id}/activate`,\n                  headers: n8nHeaders\n                });\n              } catch (e) {}\n            }\n            autoShiftedNotes.push(`\u2022 \\`${ovName}\\` \u2192 auto-shifted by *+${smartShiftMins}m* (now runs at ${shiftedDesc})`);\n          }\n        } catch (shiftErr) {}\n      }\n    }\n\n    const shiftSection = autoShiftedNotes.length > 0\n      ? `\\n\ud83d\uddd3\ufe0f *Schedule Auto-Adjusted (Hands-Free):*\\n${autoShiftedNotes.join('\\n')}\\n_I automatically updated the schedule in n8n so they won't collide again!_\\n`\n      : `\\n\ud83d\udca1 _Tap a button below to shift its schedule time:_\\n`;\n\n    const alertText =\n      `\ud83d\udea6 *Workflow Overlap Auto-Resolved!*\\n` +\n      `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\\n` +\n      `\u26a1 *Still Running:* \\`${primaryName}\\` _(Run #${primaryRun.id})_\\n` +\n      `\u23f3 *Intercepted & Queued:* ${queuedNames.map(n => `\\`${n}\\``).join(', ')}\\n\\n` +\n      `\ud83d\udee1\ufe0f *Today's Run:* Queued in **Pipeline (#${staticData.pipelineQueue.length})** \u2014 will **automatically execute** as soon as \\`${primaryName}\\` finishes!` +\n      shiftSection;\n\n    const keyboard = [\n      [\n        { text: '\u23f1\ufe0f Shift Overlapped Schedule +15m', callback_data: `wf:shift:${firstQueuedId}:15` },\n        { text: '\ud83e\ude84 Auto-Stagger All', callback_data: 'cmd:stagger' }\n      ],\n      [\n        { text: `\ud83d\udea6 View Queue (${staticData.pipelineQueue.length})`, callback_data: 'cmd:queue' },\n        { text: '\ud83d\uddd3\ufe0f Free Hours Advisor', callback_data: 'cmd:schedule' }\n      ]\n    ];\n\n    return [{\n      json: {\n        _config: cfg,\n        chatId: cfg.ADMIN_CHAT_ID,\n        shouldExecuteSubworkflow: false,\n        telegramResponse: {\n          text: alertText,\n          parseMode: 'Markdown',\n          inlineKeyboard: keyboard\n        }\n      }\n    }];\n  }\n\n  // CASE 2: NO WORKFLOW CURRENTLY RUNNING & PIPELINE QUEUE HAS WAITING ITEMS -> POP & EXECUTE NEXT!\n  if (runningExecs.length === 0 && staticData.pipelineQueue.length > 0) {\n    const nextItem = staticData.pipelineQueue.shift();\n    return [{\n      json: {\n        _config: cfg,\n        chatId: cfg.ADMIN_CHAT_ID,\n        messageId: null,\n        callbackQueryId: null,\n        shouldExecuteSubworkflow: true,\n        targetWorkflowId: nextItem.workflowId,\n        targetWorkflowName: `${nextItem.workflowName} (Auto-Started from Pipeline Queue)`,\n        returnPage: 0\n      }\n    }];\n  }\n} catch (e) {}\n\nreturn [{\n  json: {\n    _config: cfg,\n    chatId: null,\n    shouldExecuteSubworkflow: false,\n    telegramResponse: null\n  }\n}];\n"
+      },
+      "id": "node-watchdog-runner",
+      "name": "\ud83d\udea6 Overlap Watchdog & Pipeline Runner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        920
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// \ud83d\udce4 UNIVERSAL TELEGRAM UI RESPONDER (Answers Callbacks, Edits Menu or Sends Alert)\n// ============================================================================\nconst item = $input.first().json;\nconst cfg = item._config;\nconst tgBase = `https://api.telegram.org/bot${cfg.TELEGRAM_BOT_TOKEN}`;\n\nasync function apiRequest(ctx, opts) {\n  if (ctx && ctx.helpers && typeof ctx.helpers.httpRequest === 'function') {\n    return await ctx.helpers.httpRequest({\n      method: opts.method || 'POST',\n      url: opts.url,\n      headers: opts.headers || {},\n      body: opts.body,\n      json: true,\n    });\n  }\n  const res = await fetch(opts.url, {\n    method: opts.method || 'POST',\n    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },\n    body: JSON.stringify(opts.body || {})\n  });\n  return await res.json();\n}\n\nif (item.callbackQueryId) {\n  try {\n    await apiRequest(this, {\n      method: 'POST',\n      url: `${tgBase}/answerCallbackQuery`,\n      body: {\n        callback_query_id: item.callbackQueryId,\n        text: item.toastText || '\u2705 Done'\n      }\n    });\n  } catch (e) {}\n}\n\nconst resp = item.telegramResponse;\nif (!resp || !item.chatId) {\n  return [{ json: { ok: true, skipped: true } }];\n}\n\nconst safeText = String(resp.text || '').length > 4000\n  ? String(resp.text).slice(0, 3990) + '\\n...(truncated)'\n  : String(resp.text || '');\nresp.text = safeText;\n\nconst replyMarkup = resp.inlineKeyboard\n  ? { inline_keyboard: resp.inlineKeyboard }\n  : undefined;\n\nlet result = {};\nif (item.messageId) {\n  try {\n    result = await apiRequest(this, {\n      method: 'POST',\n      url: `${tgBase}/editMessageText`,\n      body: {\n        chat_id: item.chatId,\n        message_id: item.messageId,\n        text: resp.text,\n        parse_mode: resp.parseMode || 'Markdown',\n        ...(replyMarkup ? { reply_markup: replyMarkup } : {})\n      }\n    });\n    return [{ json: { ok: true, mode: 'edited', result } }];\n  } catch (editErr) {\n    if (String(editErr.message || '').includes('message is not modified')) {\n      return [{ json: { ok: true, mode: 'unchanged' } }];\n    }\n  }\n}\n\ntry {\n  result = await apiRequest(this, {\n    method: 'POST',\n    url: `${tgBase}/sendMessage`,\n    body: {\n      chat_id: item.chatId,\n      text: resp.text,\n      parse_mode: resp.parseMode || 'Markdown',\n      ...(replyMarkup ? { reply_markup: replyMarkup } : {})\n    }\n  });\n} catch (sendErr) {\n  result = await apiRequest(this, {\n    method: 'POST',\n    url: `${tgBase}/sendMessage`,\n    body: {\n      chat_id: item.chatId,\n      text: resp.text,\n      ...(replyMarkup ? { reply_markup: replyMarkup } : {})\n    }\n  });\n}\n\nreturn [{ json: { ok: true, mode: 'sent', result } }];\n"
+      },
+      "id": "node-telegram-responder",
+      "name": "\ud83d\udce4 Send / Update Telegram UI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Master Config (Edit Here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Master Config (Edit Here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Backup Schedule (00:00 IST)": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Master Config (Edit Here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Overlap & Queue Watchdog (Every 1m)": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Master Config (Edit Here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u2699\ufe0f Master Config (Edit Here)": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd00 Route by Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd00 Route by Event Type": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcf1 Telegram Bot Controller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "\ud83d\udea8 Error Circuit Breaker & Gemini Doctor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "\ud83d\udcbe Auto-Wire & Sanitized GitHub Backup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "\ud83d\udea6 Overlap Watchdog & Pipeline Runner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcf1 Telegram Bot Controller": {
+      "main": [
+        [
+          {
+            "node": "\u26a1 Needs On-Demand Execution?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udea6 Overlap Watchdog & Pipeline Runner": {
+      "main": [
+        [
+          {
+            "node": "\u26a1 Needs On-Demand Execution?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u26a1 Needs On-Demand Execution?": {
+      "main": [
+        [
+          {
+            "node": "\u25b6\ufe0f Execute Target Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "\ud83d\udce4 Send / Update Telegram UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u25b6\ufe0f Execute Target Workflow": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcec Format Execution Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcec Format Execution Result": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce4 Send / Update Telegram UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udea8 Error Circuit Breaker & Gemini Doctor": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce4 Send / Update Telegram UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcbe Auto-Wire & Sanitized GitHub Backup": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce4 Send / Update Telegram UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Master Config (Edit Here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": false
+  }
+}

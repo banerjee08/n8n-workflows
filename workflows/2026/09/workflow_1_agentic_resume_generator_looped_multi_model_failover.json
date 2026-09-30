@@ -1,0 +1,1310 @@
+{
+  "name": "Workflow 1 - Agentic Resume Generator (Looped + Multi-Model Failover)",
+  "nodes": [
+    {
+      "id": "c7d89fce-0c62-4503-a33b-f3afe6650431",
+      "name": "Every 15 Mins (Or Manual Run)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        976,
+        1472
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0,15,30,45 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9b46415b-b741-43a3-9d7c-930b7c17117c",
+      "name": "1. Read Master Skills Tab (Once)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        1200,
+        1472
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 508172665,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "12a484ac-0c13-482c-9a2e-627b39a05312",
+      "name": "2. Read Master Certifications Tab (Once)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        1424,
+        1472
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1168672325,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "21ae1741-6186-411e-af16-4a442eb58a6a",
+      "name": "3. Get All Rows Where Resume Status = Generate",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "position": [
+        1648,
+        1472
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Resume Status",
+              "lookupValue": "Create one"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "85c6e3d9-0e77-4edf-8bb0-6af3984d5d04",
+      "name": "Loop Over Job Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1872,
+        1472
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "a9e67374-714c-4bcd-b0c4-0834ceffcbc3",
+      "name": "Sanitize Fields & Check Edge Cases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "const jobRow = $input.first().json || {};\n\nconst toTitleCase = (str) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  return String(str || '').replace(/\\b([A-Za-z0-9&/+-]+)\\b/g, (word, _, offset) => {\n    if (word.toLowerCase() === 'n8n') return 'n8n';\n    const upper = word.toUpperCase();\n    if (acronyms.has(upper)) return upper;\n    if (minor.has(word.toLowerCase()) && offset > 0) return word.toLowerCase();\n    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n  });\n};\n\nconst uniqueSkillsMap = new Map();\nfor (const item of $('1. Read Master Skills Tab (Once)').all()) {\n  const category = toTitleCase(String(item.json['Category'] || 'Core Competencies').trim());\n  const skill = toTitleCase(String(item.json['Skill Name'] || '').trim());\n  if (skill !== '') {\n    uniqueSkillsMap.set(`${category}::${skill}`, { category, skill });\n  }\n}\nconst skillsRows = Array.from(uniqueSkillsMap.values());\n\nconst uniqueCertsMap = new Map();\nfor (const item of $('2. Read Master Certifications Tab (Once)').all()) {\n  const provider = String(item.json['Provider'] || 'Coursera').trim();\n  const name = String(item.json['Name of the Certification'] || '').trim();\n  const completionDate = String(item.json['Date/Month of Completion'] || 'Completed').trim();\n  if (name !== '') {\n    uniqueCertsMap.set(`${provider}::${name}`, { provider, name, completionDate });\n  }\n}\nconst certsRows = Array.from(uniqueCertsMap.values());\n\nconst rawCompany = String(jobRow['Company'] || '').trim();\nconst company = rawCompany !== '' ? rawCompany : 'Hiring_Organization';\nconst cleanCompany = company.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'Company';\n\nconst positionTitle = String(jobRow['Position - Title'] || '').trim();\nconst rawJd = String(jobRow['Position - Description'] || '').trim();\nconst industry = String(jobRow['Industry'] || '').trim() || 'Technology & Enterprise Operations';\nconst aboutCompany = String(jobRow['About Company'] || '').trim() || `Organization operating in ${industry}`;\nconst notesForResume = String(jobRow['Notes for Resume'] || '').trim() || 'None provided';\n\nconst isMissingBothTitleAndJd = (positionTitle === '' && rawJd === '');\n\nconst effectiveJobDescription = rawJd.length >= 40\n  ? rawJd\n  : `Target Role: ${positionTitle || 'Data & Business Analyst'} at ${company} (${industry}). About Company: ${aboutCompany}. Notes: ${notesForResume}. (Note: Full JD text was not provided in the sheet; infer the top 5-10 industry-standard skills and responsibilities for a ${positionTitle || 'Data Analyst'} in ${industry}.)`;\n\nconst effectivePositionTitle = positionTitle !== ''\n  ? positionTitle\n  : 'Senior Analyst (Inferred from Job Description)';\n\nconst resumeId = jobRow['Resume_id'] && String(jobRow['Resume_id']).trim() !== ''\n  ? String(jobRow['Resume_id']).trim()\n  : `RES-${jobRow['S. No.'] || Date.now()}`;\n\nreturn [{\n  json: {\n    sNo: jobRow['S. No.'],\n    resumeId,\n    company,\n    cleanCompany,\n    industry,\n    jobId: String(jobRow['Job ID'] || 'N/A').trim(),\n    positionTitle: effectivePositionTitle,\n    jobDescription: effectiveJobDescription,\n    notesForResume,\n    aboutCompany,\n    isMissingBothTitleAndJd,\n    masterSkills: skillsRows,\n    masterCertifications: certsRows,\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "d3f2b711-d25a-44f6-887f-fc03875dbb03",
+      "name": "IF Row Has Title or JD",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2320,
+        1328
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-has-input",
+              "leftValue": "={{ $json.isMissingBothTitleAndJd }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "db45e9bf-3601-42df-a7ca-1a484bf4793f",
+      "name": "Mark Row Blocked (Missing Title & JD)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        6576,
+        1328
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $json.sNo }}",
+            "Resume Status": "Blocked - Missing Title & JD"
+          },
+          "matchingColumns": [
+            "S. No."
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "202d33cf-3893-41fc-bac1-57e97cdc4afc",
+      "name": "Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        2544,
+        1104
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are an expert ATS Resume Strategist. Analyze this Job Description and classify the position into BOTH an exact role slug (exact_role_slug) and the closest base archetype (closest_base_archetype) from our database, and extract the top 5-10 core skills/keywords to build Sumanto Banerjee's resume around.\n\nCOMPANY: ${$json.company} (${$json.industry})\nPOSITION TITLE: ${$json.positionTitle}\nABOUT COMPANY: ${$json.aboutCompany}\nSPECIAL NOTES FOR RESUME: ${$json.notesForResume}\nJOB DESCRIPTION:\n${$json.jobDescription}\n\nBASE ARCHETYPES SEEDED IN POSTGRESQL:\n1. \"data_engineering_modelling\" -> Technical Data Analyst, SQL/Python Data Modelling, ETL, Data Profiling & Governance\n2. \"bi_data_analyst\" -> Strategic Senior Data Analyst, Tableau BI, Executive Decision Support\n3. \"product_manager\" -> Product Manager (PM), Technical Program/Project Manager, Release & A/B Experimentation\n4. \"fpa_financial_analyst\" -> FP&A Analyst, Financial Analyst, Revenue Operations, Commercial & Variance Modeling (leverages Sumanto's B.Comm(Hons.) + Finance/Operations BI + P&L agency ownership)\n5. \"business_operations_analyst\" -> Business Analyst, Strategy & Operations Analyst, HR/Workforce Process Analytics\n6. \"marketing_growth_leadership\" -> Marketing Analyst, Brand/Campaign Manager, Growth & Customer Acquisition\n\nReturn STRICT JSON only (no markdown fences) matching this schema:\n{\n  \"exact_role_slug\": \"snake_case role slug (e.g., 'fpa_financial_analyst', 'product_manager', 'bi_data_analyst', or a specific slug like 'revops_analyst' if new)\",\n  \"closest_base_archetype\": \"data_engineering_modelling\" | \"bi_data_analyst\" | \"product_manager\" | \"fpa_financial_analyst\" | \"business_operations_analyst\" | \"marketing_growth_leadership\",\n  \"custom_role_framing_guide\": \"1-2 sentences explaining how to angle Sumanto's Highspring (Google), Concentrix, Maerke Stratcomm, and B.Comm(Hons.) background specifically for this role\",\n  \"top_hard_skills\": [\"5 to 7 exact technical/analytical/domain skills from JD\"],\n  \"top_domain_and_soft_keywords\": [\"3 to 4 domain, financial, product, or stakeholder keywords from JD\"],\n  \"core_company_contribution\": \"1 crisp phrase on how Sumanto will drive impact for this company\",\n  \"include_maerke_stratcomm\": true or false,\n  \"include_marketing_projects\": true or false\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.2 }\n    : { temperature: 0.2, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "ec74b3cd-43f3-42f7-9fdb-e687b239a906",
+      "name": "Switch Model (Step 0)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2768,
+        1056
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Sanitize Fields & Check Edge Cases').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Step 0 after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "d5a81b32-a835-4d40-bb3f-4d7d97c19642",
+      "name": "Wait 7s (Switch Model #0)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2992,
+        1184
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "a9f24255-93e5-469f-b17b-31a91d2a7202",
+      "name": "Wait 5s (Gemini RPM Guard #1)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2768,
+        864
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "fdcf34a2-12a5-42b1-8a91-f77868231342",
+      "name": "Parse 5-10 Keywords & Role Blueprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        864
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Sanitize Fields & Check Edge Cases').last().json;\nconst rawText = $('Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)').last().json.candidates[0].content.parts[0].text;\nconst cleanJson = String(rawText || '{}').replace(/```json|```/gi, '').trim();\nconst blueprint = JSON.parse(cleanJson);\n\nconst exactRoleSlug = blueprint.exact_role_slug || blueprint.closest_base_archetype || 'bi_data_analyst';\nconst closestBaseArchetype = blueprint.closest_base_archetype || 'bi_data_analyst';\n\nreturn [{\n  json: {\n    ...prev,\n    roleCategory: exactRoleSlug,\n    closestBaseArchetype,\n    customRoleFramingGuide: blueprint.custom_role_framing_guide || '',\n    jdKeywords: [\n      ...(blueprint.top_hard_skills || []),\n      ...(blueprint.top_domain_and_soft_keywords || [])\n    ],\n    jdBlueprint: blueprint,\n    includeMaerke: Boolean(blueprint.include_maerke_stratcomm),\n    includeMarketingProjects: Boolean(blueprint.include_marketing_projects),\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "4cd3b933-c120-41bc-b621-882e9eec85ed",
+      "name": "Postgres: Fetch Role-Specific Reference & Learned Rules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "position": [
+        3216,
+        864
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  COALESCE(\n    (SELECT row_to_json(r1) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.roleCategory }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r1),\n    (SELECT row_to_json(r2) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.closestBaseArchetype }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r2)\n  ) AS role_reference,\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (\n     SELECT section_name, rule_instruction\n     FROM learned_rules\n     WHERE is_active = TRUE AND UPPER(COALESCE(role_category, 'ALL')) IN ('ALL', 'GLOBAL', UPPER('{{ $json.roleCategory }}'), UPPER('{{ $json.closestBaseArchetype }}'))\n     ORDER BY id ASC\n  ) l) AS active_rules;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "bbf7ed53-5259-4770-aef9-15b9c39013d9",
+      "name": "Prepare Role-Scoped Few-Shot & Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        864
+      ],
+      "parameters": {
+        "jsCode": "const base = $('Parse 5-10 Keywords & Role Blueprint').last().json;\nconst pg = $input.first().json || {};\nconst ref = pg.role_reference || {};\nconst rules = pg.active_rules || [];\n\nconst rulesBySection = (sec) => rules\n  .filter(r => {\n    const s = String(r.section_name || '').toLowerCase().trim();\n    return s === sec || s === 'global' || s === 'all' || s.includes(sec);\n  })\n  .map((r, i) => `${i + 1}. ${r.rule_instruction}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    ...base,\n    roleReference: ref,\n    allActiveRulesCount: rules.length,\n    summaryRules: rulesBySection('summary'),\n    skillsRules: rulesBySection('skill'),\n    experienceRules: rulesBySection('experience'),\n    certificationsRules: rulesBySection('certification'),\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "ee0fed32-72c5-4da0-a6f1-15d816f7f2df",
+      "name": "Section 1: Generate Summary (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        3664,
+        864
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Write ONLY the HTML <p>...</p> for the Summary section of Sumanto Banerjee's resume.\n\nTARGET ROLE: ${$json.positionTitle} at ${$json.company}\nCUSTOM ROLE FRAMING GUIDE: ${$json.customRoleFramingGuide}\nEXTRACTED 5-10 JD KEYWORDS TO WEAVE IN NATURALLY: ${$json.jdKeywords.join(', ')}\nHOW SUMANTO CONTRIBUTES TO COMPANY SUCCESS: ${$json.jdBlueprint.core_company_contribution}\nUSER NOTES FOR RESUME: ${$json.notesForResume}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (HIGHEST PRIORITY):\n${$json.summaryRules || 'None'}\n\nROLE-SPECIFIC FEW-SHOT REFERENCE (${$json.roleCategory}):\n${$json.roleReference.sample_summary_html}\n\nSTRICT CONSTRAINTS:\n1. NEVER start with cliches or buzzwords like 'Results-oriented', 'Dynamic', 'Seasoned', 'Dedicated', 'Passionate', or 'Proven capability'. Always start directly with the Role Title + Domain Bridge (e.g., '${$json.positionTitle} combining...').\n2. Keep strictly to 3 sentences (~50-60 words max).\n3. MINIMAL HIGHLIGHTING: Wrap ONLY 2 to 3 short, 2-to-3-word impactful terms in <strong>...</strong> tags across the ENTIRE Summary (never bold full clauses or long phrases).\n4. Return ONLY valid HTML inside a single <p>...</p> tag (no markdown backticks).`\n    }]\n  }],\n  generationConfig: { temperature: 0.25 }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "bb3c100b-14e2-4272-b5bb-cae945bc8d5f",
+      "name": "Switch Model (Summary)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3888,
+        960
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Section 1 after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "07065964-c94c-483f-bbcb-b065451e6848",
+      "name": "Wait 7s (Switch Model #1)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4112,
+        1040
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "ce1b0405-56e7-4bdb-be1a-8b1190612c3b",
+      "name": "Wait 5s (Gemini RPM Guard #2)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3888,
+        768
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "6890109e-f7d1-4a73-b345-560505381b9c",
+      "name": "Section 2: Filter & Reorder Core Skills (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        4112,
+        768
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Generate ONLY the HTML <ul>...</ul> for the Core Skills section of Sumanto Banerjee's resume.\n\nTARGET ROLE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.positionTitle} (${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleCategory})\nEXTRACTED 5-10 JD KEYWORDS: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.jdKeywords.join(', ')}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (HIGHEST PRIORITY):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.skillsRules || '1. All skill names and category names MUST be in Title Case.'}\n\nMASTER SKILLS FROM GOOGLE SHEET:\n${JSON.stringify($('Prepare Role-Scoped Few-Shot & Rules').last().json.masterSkills)}\n\nSTRICT CONSTRAINTS:\n1. STRICT TITLE CASE FOR ALL SKILLS: Every single skill name and category name MUST be capitalized in Title Case (e.g., 'Data Profiling', 'Requirement Gathering', 'Stakeholder Collaboration', 'Process Mapping', preserving uppercase acronyms like SQL, BI, ETL, KPI, UAT, and keeping 'n8n'). NEVER output lowercase skill names.\n2. STRICT CATEGORY ORDERING PER JD:\n   - Bullet #1 & Bullet #2 MUST be the core Technical / Data / Functional categories most critical to the Job Description (e.g., Data Analysis & Database Management, Process Optimization & Governance).\n   - Bullet #3: Reporting / BI / Domain category.\n   - Bullet #4 (ALWAYS LAST): Soft Skills / Stakeholder Collaboration MUST always be placed at the very bottom.\n3. Within each category, order the skills so those matching the JD appear first.\n4. Format as <ul><li><strong>Category Name:</strong> Skill 1, Skill 2, Skill 3</li>...</ul> (strictly 4 categories).\n5. Return ONLY the raw HTML <ul>...</ul> (no markdown fences).`\n    }]\n  }],\n  generationConfig: { temperature: 0.2 }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "d7b5a64c-e250-4cf7-b469-f9b793176e8a",
+      "name": "Switch Model (Core Skills)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4336,
+        864
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Section 2 after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "e7f60199-db86-45d8-b50f-9b5edb6aaaab",
+      "name": "Wait 7s (Switch Model #2)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4560,
+        944
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "3aa3d9c4-57e3-40f9-ba0d-e73b683307b1",
+      "name": "Wait 5s (Gemini RPM Guard #3)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4336,
+        672
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "da642195-d9a3-4eea-819f-382e884ea4cb",
+      "name": "Section 3: Tailor Experience Wireframe (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        4560,
+        672
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Generate ONLY the HTML for the Experience section of Sumanto Banerjee's resume.\n\nTARGET ROLE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.positionTitle} at ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.company}\nCUSTOM ROLE FRAMING GUIDE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.customRoleFramingGuide}\n5-10 JD KEYWORDS TO PARTITION ACROSS ROLES: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.jdKeywords.join(', ')}\nINCLUDE MAERKE STRATCOMM (2010-2020)?: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.includeMaerke}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (HIGHEST PRIORITY):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.experienceRules || 'None'}\n\nROLE-SPECIFIC REFERENCE WIREFRAME (${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleCategory}):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleReference.sample_experience_html}\n\nSummary already generated (DO NOT repeat the same highlighted terms from Summary):\n${$('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text}\n\nSTRICT CONSTRAINTS:\n1. STRICT 1-PAGE BULLET COUNT BUDGET:\n   - If INCLUDE MAERKE STRATCOMM is true:\n     * Sr. Data Analyst, Highspring India \u2013 Gurugram, India: STRICTLY 3 bullets.\n     * Lead Trainer, Concentrix Daksh \u2013 Gurugram, India: STRICTLY 3 bullets.\n     * Founder | Creative Director, Maerke Stratcomm \u2013 New Delhi, India: STRICTLY 2 bullets.\n     (Total = 8 bullets; keep each bullet 20-25 words max so it never wraps to 3 lines).\n   - If INCLUDE MAERKE STRATCOMM is false:\n     * Sr. Data Analyst, Highspring India \u2013 Gurugram, India: 4 bullets.\n     * Lead Trainer, Concentrix Daksh \u2013 Gurugram, India: 3 bullets.\n2. BOLD POSITION, COMPANY & TENURE:\n   <div class=\"job-header\"><span class=\"job-title\"><strong>Sr. Data Analyst, Highspring India \u2013 Gurugram, India</strong></span><span class=\"job-date\"><strong>Oct 2025 - Present</strong></span></div>\n3. 'DID X USING Y TO ACHIEVE Z%' STRUCTURE & UNBOLDED METRICS:\n   Write every bullet in the Action + Method/Competency + Quantifiable Result format, preserving the real percentages/numbers from the wireframe (e.g. 1M+ monthly records, 40% overhead reduction, 95% delivery quality, 15+ launches, 84% hire quality, 30% knowledge gaps, 25% output, 25% HORECA sales, 30% customer acquisition).\n   CRITICAL HIGHLIGHTING RULE: DO NOT bold numbers, percentages, or percentage phrases (keep 'cutting manual overhead by 40%', 'boosted hire quality by 84%', '1M+ monthly records' in plain unbolded text!). Instead, wrap ONLY 1 to 2 short, high-impact competency/action words per bullet in <strong>...</strong> tags (e.g., <strong>requirements gathering</strong>, <strong>process mapping</strong>, <strong>SQL-based data profiling</strong>, <strong>Tableau analytics dashboards</strong>) that grab HR's attention.\n4. ZERO REPETITIVE HIGHLIGHTED WORDS ACROSS BULLETS.\n5. Return ONLY raw HTML (<div class=\"job-block\">...</div> elements, no markdown fences).`\n    }]\n  }],\n  generationConfig: { temperature: 0.25 }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "6f175cc5-275b-4f1f-9141-51b8cb3e4f3c",
+      "name": "Switch Model (Experience)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4784,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Section 3 after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "53d28244-26e7-4092-9a6e-c52b5b1da48e",
+      "name": "Wait 7s (Switch Model #3)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5008,
+        848
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "7ec31bd1-f119-45f6-be19-85b40115fcd6",
+      "name": "Wait 5s (Gemini RPM Guard #4)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4784,
+        576
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "76235325-a5a4-423b-be4e-0424d653cd2b",
+      "name": "Section 4: Select Top 2-3 Certifications (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        5008,
+        576
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Select the TOP 2 to 3 most relevant certifications for this Job Description from Sumanto's Certifications Google Sheet.\n\nTARGET ROLE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.positionTitle}\n5-10 JD KEYWORDS: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.jdKeywords.join(', ')}\n\nCERTIFICATIONS SHEET ROWS:\n${JSON.stringify($('Prepare Role-Scoped Few-Shot & Rules').last().json.masterCertifications)}\n\nLEARNED RULES:\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.certificationsRules}\n\nFormat each selected certification as a row inside a container:\n<div class=\"cert-row\"><span class=\"cert-name\">Provider - Name of the Certification</span><span class=\"cert-date\">Date/Month of Completion</span></div>\n\nReturn ONLY raw HTML (2 to 3 <div class=\"cert-row\">...</div> elements, no markdown fences).`\n    }]\n  }],\n  generationConfig: { temperature: 0.1 }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "394a9bfd-469a-4d6e-b527-240c6aea144a",
+      "name": "Switch Model (Certifications)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5232,
+        672
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Section 4 after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "2e1986dc-4cad-4bc2-afde-90f35ad0f898",
+      "name": "Wait 7s (Switch Model #4)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5456,
+        752
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "b4c21a46-664b-4238-be1a-6d5ceecbe97e",
+      "name": "CSS Style Window (Edit Anytime)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5232,
+        480
+      ],
+      "parameters": {
+        "jsCode": "const customCss = `\n  @page {\n    size: A4;\n    margin: 0.44in 0.50in;\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: 10.1pt;\n    line-height: 1.35;\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .resume-header {\n    text-align: center;\n    margin-bottom: 9px;\n  }\n  .resume-header h1 {\n    font-size: 24pt;\n    font-weight: normal;\n    margin: 0 0 3px 0;\n    letter-spacing: 0.3px;\n  }\n  .contact-line {\n    font-size: 9.8pt;\n    color: #222222;\n  }\n  .contact-line a {\n    color: #111111;\n    text-decoration: none;\n  }\n  .section-block {\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .section-title {\n    font-size: 11.8pt;\n    font-weight: bold;\n    border-bottom: 1px solid #1A365D;\n    padding-bottom: 2px;\n    margin-top: 9px;\n    margin-bottom: 5px;\n    color: #1A365D\n  }\n  p {\n    margin: 0 0 5px 0;\n    text-align: left;\n  }\n  ul {\n    margin: 2px 0 6px 0;\n    padding-left: 18px;\n  }\n  li {\n    margin-bottom: 3px;\n  }\n  strong, .highlight {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-block {\n    margin-bottom: 7px;\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .job-header, .cert-row, .edu-row {\n    display: flex;\n    justify-content: space-between;\n    align-items: baseline;\n    margin-bottom: 2px;\n  }\n  .job-header, .job-title, .job-date {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-date, .cert-date, .edu-date {\n    white-space: nowrap;\n    font-size: 9.8pt;\n  }\n  .hobbies-line {\n    margin-top: 3px;\n    font-size: 10pt;\n  }\n`;\n\nreturn [{ json: { cssStyles: customCss } }];"
+      }
+    },
+    {
+      "id": "f64d2988-3a39-41a8-9c16-be2c7e2afdda",
+      "name": "Compile Sections + CSS into index.html",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5456,
+        480
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst cleanHtml = (raw) => String(raw || '').replace(/```html|```/gi, '').trim();\n\nconst toTitleCaseSkillsHtml = (html) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  return String(html || '').replace(/(>[^<]+<)/g, (segment) => {\n    return segment.replace(/\\b([A-Za-z0-9&/+-]+)\\b/g, (word, _, offset) => {\n      if (word.toLowerCase() === 'n8n') return 'n8n';\n      const upper = word.toUpperCase();\n      if (acronyms.has(upper)) return upper;\n      if (minor.has(word.toLowerCase()) && offset > 1) return word.toLowerCase();\n      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n    });\n  });\n};\n\nconst summaryHtml = cleanHtml($('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst skillsHtml = toTitleCaseSkillsHtml(cleanHtml($('Section 2: Filter & Reorder Core Skills (Gemini)').last().json.candidates[0].content.parts[0].text));\nconst experienceHtml = cleanHtml($('Section 3: Tailor Experience Wireframe (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst certificationsHtml = cleanHtml($('Section 4: Select Top 2-3 Certifications (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst cssStyles = $('CSS Style Window (Edit Anytime)').last().json.cssStyles;\n\nconst educationHtml = `<div class=\"edu-row\"><span>University of Delhi, B.Comm(Hons.)</span><span class=\"edu-date\">2013 \u2013 2016</span></div>`;\nconst hobbiesHtml = `<div class=\"hobbies-line\">Practicing Buddhism &nbsp;|&nbsp; Automating life with n8n &nbsp;|&nbsp; Growing Mushrooms</div>`;\n\nconst marketingProjectsHtml = ctx.includeMarketingProjects\n  ? `<div class=\"section-title\">Marketing Projects</div>\n     <div><strong>Grofers</strong> - 2018 Mother\u2019s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2018\">Link</a></div>\n     <div><strong>Grofers</strong> - 2017 Mother\u2019s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2017\">Link</a></div>\n     <div><strong>DIDA sportswear</strong> - TVC - <a href=\"https://www.youtube.com/results?search_query=DIDA+sportswear+TVC\">Link</a></div>`\n  : '';\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Resume-${ctx.cleanCompany}</title>\n  <style>${cssStyles}</style>\n</head>\n<body>\n  <div class=\"resume-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"contact-line\">REDACTED_EMAIL@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">Linkedin Profile</a></div>\n  </div>\n\n  <div class=\"section-title\">Summary</div>\n  ${summaryHtml}\n\n  <div class=\"section-title\">Core Skills</div>\n  ${skillsHtml}\n\n  <div class=\"section-title\">Experience</div>\n  ${experienceHtml}\n\n  <div class=\"section-title\">Certifications</div>\n  ${certificationsHtml}\n\n  ${marketingProjectsHtml}\n\n  <div class=\"section-title\">Education</div>\n  ${educationHtml}\n\n  <div class=\"section-title\">When I am not analysing...</div>\n  ${hobbiesHtml}\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Resume-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    summaryHtml,\n    skillsHtml,\n    experienceHtml,\n    marketingProjectsHtml,\n    certificationsHtml,\n    educationHtml,\n    hobbiesHtml,\n    fullHtml,\n    pdfFileName: fileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+      }
+    },
+    {
+      "id": "c16a04d9-bb95-4883-8f15-6fef101ec8a5",
+      "name": "Wait 2s (KVM2 CPU Guard Before Gotenberg)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5680,
+        480
+      ],
+      "parameters": {
+        "amount": 2
+      }
+    },
+    {
+      "id": "e63bb501-c7ce-42aa-bad1-db030fdad38f",
+      "name": "Gotenberg: Convert HTML to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5904,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "index_html"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "162f0176-4e01-44d9-8508-50f14f4700ae",
+      "name": "Upload PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        6128,
+        480
+      ],
+      "parameters": {
+        "name": "={{ $('Compile Sections + CSS into index.html').last().json.pdfFileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "44ea3a86-b84f-431d-9526-f7691b6f497f",
+      "name": "Postgres: INSERT Cached Sections & Drive ID (No Upsert)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "position": [
+        6352,
+        480
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM resume_generations\nWHERE resume_id = '{{ $('Compile Sections + CSS into index.html').last().json.resumeId }}'\n   OR (s_no = '{{ $('Compile Sections + CSS into index.html').last().json.sNo }}' AND '{{ $('Compile Sections + CSS into index.html').last().json.sNo }}' <> '')\n   OR (LOWER(TRIM(company_name)) = LOWER(TRIM($1)) AND LOWER(TRIM(position_title)) = LOWER(TRIM($2)));\n\nINSERT INTO resume_generations (\n  resume_id, s_no, job_id, company_name, position_title, role_category,\n  extracted_jd_keywords, summary_html, skills_html, experience_html,\n  marketing_projects_html, certifications_html, education_html, hobbies_html,\n  drive_file_id, drive_web_link, resume_status\n) VALUES (\n  '{{ $('Compile Sections + CSS into index.html').last().json.resumeId }}',\n  '{{ $('Compile Sections + CSS into index.html').last().json.sNo }}',\n  '{{ $('Compile Sections + CSS into index.html').last().json.jobId }}',\n  $1, $2,\n  '{{ $('Compile Sections + CSS into index.html').last().json.roleCategory }}',\n  $3::jsonb,\n  $4, $5, $6, $7, $8, $9, $10,\n  '{{ $json.id }}',\n  '{{ $json.webViewLink }}',\n  'Generated'\n);",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Compile Sections + CSS into index.html').last().json.company,\n  $('Compile Sections + CSS into index.html').last().json.positionTitle,\n  JSON.stringify($('Compile Sections + CSS into index.html').last().json.jdBlueprint),\n  $('Compile Sections + CSS into index.html').last().json.summaryHtml,\n  $('Compile Sections + CSS into index.html').last().json.skillsHtml,\n  $('Compile Sections + CSS into index.html').last().json.experienceHtml,\n  $('Compile Sections + CSS into index.html').last().json.marketingProjectsHtml,\n  $('Compile Sections + CSS into index.html').last().json.certificationsHtml,\n  $('Compile Sections + CSS into index.html').last().json.educationHtml,\n  $('Compile Sections + CSS into index.html').last().json.hobbiesHtml\n] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_postgres_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "da007be4-1741-47bb-ab79-117cee9252c2",
+      "name": "Google Sheets: Update Row with Link & Status (No Upsert)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "alwaysOutputData": true,
+      "position": [
+        6576,
+        480
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REDACTED_RESOURCE_ID",
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "REDACTED_RESOURCE_NAME",
+          "cachedResultUrl": "https://docs.google.com/REDACTED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Compile Sections + CSS into index.html').last().json.sNo }}",
+            "Resume_id": "={{ $('Compile Sections + CSS into index.html').last().json.resumeId }}",
+            "Resume": "={{ $('Upload PDF to Google Drive').last().json.webViewLink }}",
+            "Resume Status": "Ready for Review"
+          },
+          "matchingColumns": [
+            "S. No."
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REDACTED_CREDENTIAL_ID",
+          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "id": "73091c22-9dcd-4d9c-8bb7-e786cf41d670",
+      "name": "Wait 6s (Cooldown Before Next Row in Loop)",
+      "webhookId": "REDACTED_WEBHOOKID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6800,
+        1328
+      ],
+      "parameters": {
+        "amount": 6
+      }
+    },
+    {
+      "id": "auto-tg-trig-OH96b2tH",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        1652
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 Mins (Or Manual Run)": {
+      "main": [
+        [
+          {
+            "node": "1. Read Master Skills Tab (Once)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Read Master Skills Tab (Once)": {
+      "main": [
+        [
+          {
+            "node": "2. Read Master Certifications Tab (Once)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Read Master Certifications Tab (Once)": {
+      "main": [
+        [
+          {
+            "node": "3. Get All Rows Where Resume Status = Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Get All Rows Where Resume Status = Generate": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Job Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Job Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Sanitize Fields & Check Edge Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Fields & Check Edge Cases": {
+      "main": [
+        [
+          {
+            "node": "IF Row Has Title or JD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Row Has Title or JD": {
+      "main": [
+        [
+          {
+            "node": "Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Row Blocked (Missing Title & JD)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Row Blocked (Missing Title & JD)": {
+      "main": [
+        [
+          {
+            "node": "Wait 6s (Cooldown Before Next Row in Loop)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Step 0)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Step 0)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Model #0)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Model #0)": {
+      "main": [
+        [
+          {
+            "node": "Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #1)": {
+      "main": [
+        [
+          {
+            "node": "Parse 5-10 Keywords & Role Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse 5-10 Keywords & Role Blueprint": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Fetch Role-Specific Reference & Learned Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Fetch Role-Specific Reference & Learned Rules": {
+      "main": [
+        [
+          {
+            "node": "Prepare Role-Scoped Few-Shot & Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Role-Scoped Few-Shot & Rules": {
+      "main": [
+        [
+          {
+            "node": "Section 1: Generate Summary (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section 1: Generate Summary (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Summary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Summary)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Model #1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Model #1)": {
+      "main": [
+        [
+          {
+            "node": "Section 1: Generate Summary (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #2)": {
+      "main": [
+        [
+          {
+            "node": "Section 2: Filter & Reorder Core Skills (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section 2: Filter & Reorder Core Skills (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #3)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Core Skills)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Core Skills)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Model #2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Model #2)": {
+      "main": [
+        [
+          {
+            "node": "Section 2: Filter & Reorder Core Skills (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #3)": {
+      "main": [
+        [
+          {
+            "node": "Section 3: Tailor Experience Wireframe (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section 3: Tailor Experience Wireframe (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #4)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Experience)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Experience)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Model #3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Model #3)": {
+      "main": [
+        [
+          {
+            "node": "Section 3: Tailor Experience Wireframe (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #4)": {
+      "main": [
+        [
+          {
+            "node": "Section 4: Select Top 2-3 Certifications (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section 4: Select Top 2-3 Certifications (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "CSS Style Window (Edit Anytime)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Certifications)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Certifications)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Model #4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Model #4)": {
+      "main": [
+        [
+          {
+            "node": "Section 4: Select Top 2-3 Certifications (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSS Style Window (Edit Anytime)": {
+      "main": [
+        [
+          {
+            "node": "Compile Sections + CSS into index.html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Sections + CSS into index.html": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s (KVM2 CPU Guard Before Gotenberg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s (KVM2 CPU Guard Before Gotenberg)": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: Convert HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Postgres: INSERT Cached Sections & Drive ID (No Upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: INSERT Cached Sections & Drive ID (No Upsert)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Row with Link & Status (No Upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Update Row with Link & Status (No Upsert)": {
+      "main": [
+        [
+          {
+            "node": "Wait 6s (Cooldown Before Next Row in Loop)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 6s (Cooldown Before Next Row in Loop)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Job Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Read Master Skills Tab (Once)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "62KRhAtxxyJdhxhd"
+  }
+}
