@@ -1,5 +1,13 @@
 {
+  "id": "TEMPLATE_WORKFLOW_ID",
   "name": "Workflow 3 - 1-Page Grounded Cover Letter Generator & Self-Learning Reviewer",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-09-28T08:48:53.855Z",
+  "updatedAt": "2026-09-30T06:36:07.113Z",
+  "isArchived": false,
+  "versionCounter": 11,
+  "sourceWorkflowId": null,
   "nodes": [
     {
       "id": "dbdec60d-8778-4642-8f13-ed73d645590c",
@@ -34,13 +42,13 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "CREATE TABLE IF NOT EXISTS cover_letter_few_shot_library (\n    id SERIAL PRIMARY KEY,\n    role_category VARCHAR(64) DEFAULT 'ALL',\n    company_example VARCHAR(120) NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    is_active BOOLEAN DEFAULT TRUE,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS cover_letter_generations (\n    resume_id VARCHAR(100) PRIMARY KEY,\n    s_no VARCHAR(50),\n    company_name VARCHAR(200) NOT NULL,\n    position_title VARCHAR(200) NOT NULL,\n    salutation_html TEXT NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    cl_drive_file_id VARCHAR(200),\n    cl_drive_web_link TEXT,\n    cl_status VARCHAR(64) DEFAULT 'Generated',\n    revision_count INTEGER DEFAULT 1,\n    last_reviewer_note TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- 1. Remove old duplicate Sept 23 cover_letter rules\nDELETE FROM learned_rules WHERE id IN (5, 10);\n\n-- 2. Clean up Rule #12 so it is a pure global Title Case & Tableau rule (without Damco's 'LLM over SQL')\nUPDATE learned_rules\nSET section_name = 'skills',\n    role_category = 'ALL',\n    rule_instruction = 'All skill names and category names in Core Skills MUST be in Title Case (e.g., Consulting, Stakeholder Management, Data Profiling). Prefer Tableau over Power BI unless Power BI is explicitly required.'\nWHERE id = 12;\n\n-- 3. Replace cover letter sample with the Short-Sentence, HR-Aware Industry-Standard sample\nDELETE FROM cover_letter_few_shot_library;\n\nINSERT INTO cover_letter_few_shot_library (\n    role_category, company_example, para1_hook_html, para2_stewardship_html,\n    para3_impact_story_html, para4_resilience_html, para5_closing_html, is_active\n) VALUES (\n    'ALL',\n    'Grounded Enterprise & Operations Analytics (Gold Standard Sample)',\n    '<p>I am writing to apply for the Technical Business Analyst role at Turing. What stood out to me in the job description is the focus on turning messy day-to-day operations into clean data models and clear reports. Before spending the last five years in data analytics, I ran my own small marketing agency for ten years. That mix taught me how much time teams lose when numbers do not match across different tools. Fixing those gaps between business teams and engineering is the part of the job I enjoy most.</p>',\n    '<p>Outside of writing SQL queries and building Tableau dashboards, I spend my free time on my terrace in Gurugram growing mushrooms and automating small daily tasks with n8n. Growing mushrooms in North India''s weather is not a fancy hobby. It comes down to watching basic details closely. If moisture or airflow slips even a little, the whole batch fails. I bring that same habit to my work when I check data quality, map workflows, or build reports that leaders rely on.</p>',\n    '<p>I also believe analysis is only useful when it solves a real problem on the ground. At Concentrix, our hiring data showed that new joiners were struggling once they started work. Sending another dashboard to management was not fixing the issue. I looked closely at the hiring steps and worked with leadership to bring our training team directly into the interview stage. That simple change improved hire quality by 84%. In my current role at Highspring India, I use the same practical approach across four engineering teams to automate recurring reports and cut manual work by 40%.</p>',\n    '<p>My day-to-day work covers SQL, Python, Tableau, and working closely with business and tech teams. If the team at Turing uses an internal tool I have not worked with yet, I learn new systems quickly. Practical challenges early in my career taught me how to stay resourceful, focus on the basics, and get things done without hand-holding. When I take ownership of a task, nobody has to follow up twice.</p>',\n    '<p>I would welcome the chance to bring this steady, practical approach to Turing. Thank you for your time and consideration, and I look forward to speaking with you soon.</p>',\n    TRUE\n);\n\n-- 4. Update or seed the Grounded 1-Page Cover Letter rule with HR-aware & short-sentence enforcement\nDELETE FROM learned_rules WHERE section_name = 'cover_letter' AND triggered_by_comment = 'System Grounded CL Rule';\n\nINSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nVALUES (\n    'cover_letter',\n    'ALL',\n    'Keep the Cover Letter strictly to 1 A4 page (260-320 words total across 5 paragraphs) in standard justified business letter format. Write in short, simple, human-like sentences (12-18 words per sentence, max 20 words). Address the company or functional department by name (never say \"your team\" since the recipient is often HR/Talent Acquisition). NEVER use em-dashes (\u2014), semicolons, mid-paragraph bolding, or fancy/AI words like disparate, stewardship, rigorous, multifaceted, synergetic, leverage, orchestrate, intersection, friction, cohort, or paradigm.',\n    'System Grounded CL Rule',\n    TRUE\n);\n\n-- 5. Return full audit summary\nSELECT\n  (SELECT COUNT(*) FROM cover_letter_generations) AS total_cover_letters_stored,\n  (SELECT COUNT(*) FROM cover_letter_generations WHERE cl_status IN ('LGTM', 'Approved', 'Approved & Learned')) AS approved_cover_letters,\n  (SELECT COUNT(*) FROM learned_rules WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl')) AS total_cl_learned_rules,\n  (SELECT COUNT(*) FROM cover_letter_few_shot_library WHERE is_active = TRUE) AS total_cl_few_shot_examples,\n  (SELECT COALESCE(json_agg(c), '[]'::json) FROM (\n    SELECT resume_id, s_no, company_name, position_title, revision_count, cl_status, last_reviewer_note, updated_at\n    FROM cover_letter_generations\n    ORDER BY updated_at DESC\n    LIMIT 5\n  ) c) AS latest_cover_letters,\n  (SELECT COALESCE(json_agg(l), '[]'::json) FROM (\n    SELECT id, section_name, role_category, rule_instruction, triggered_by_comment, company_context, created_at\n    FROM learned_rules\n    WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl', 'skills', 'global', 'all')\n    ORDER BY created_at DESC\n    LIMIT 10\n  ) l) AS latest_cl_learned_rules;",
+        "query": "CREATE TABLE IF NOT EXISTS cover_letter_few_shot_library (\n    id SERIAL PRIMARY KEY,\n    role_category VARCHAR(64) DEFAULT 'ALL',\n    company_example VARCHAR(120) NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    is_active BOOLEAN DEFAULT TRUE,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS cover_letter_generations (\n    resume_id VARCHAR(100) PRIMARY KEY,\n    s_no VARCHAR(50),\n    company_name VARCHAR(200) NOT NULL,\n    position_title VARCHAR(200) NOT NULL,\n    salutation_html TEXT NOT NULL,\n    para1_hook_html TEXT NOT NULL,\n    para2_stewardship_html TEXT NOT NULL,\n    para3_impact_story_html TEXT NOT NULL,\n    para4_resilience_html TEXT NOT NULL,\n    para5_closing_html TEXT NOT NULL,\n    cl_drive_file_id VARCHAR(200),\n    cl_drive_web_link TEXT,\n    cl_status VARCHAR(64) DEFAULT 'Generated',\n    revision_count INTEGER DEFAULT 1,\n    last_reviewer_note TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- 1. Remove old duplicate Sept 23 cover_letter rules\nDELETE FROM learned_rules WHERE id IN (5, 10);\n\n-- 2. Clean up Rule #12 so it is a pure global Title Case & Tableau rule (without Damco's 'LLM over SQL')\nUPDATE learned_rules\nSET section_name = 'skills',\n    role_category = 'ALL',\n    rule_instruction = 'All skill names and category names in Core Skills MUST be in Title Case (e.g., Consulting, Stakeholder Management, Data Profiling). Prefer Tableau over Power BI unless Power BI is explicitly required.'\nWHERE id = 12;\n\n-- 3. Replace cover letter sample with the Short-Sentence, HR-Aware Industry-Standard sample\nDELETE FROM cover_letter_few_shot_library;\n\nINSERT INTO cover_letter_few_shot_library (\n    role_category, company_example, para1_hook_html, para2_stewardship_html,\n    para3_impact_story_html, para4_resilience_html, para5_closing_html, is_active\n) VALUES (\n    'ALL',\n    'Grounded Enterprise & Operations Analytics (Gold Standard Sample)',\n    '<p>I am writing to apply for the Technical Business Analyst role at Turing. What stood out to me in the job description is the focus on turning messy day-to-day operations into clean data models and clear reports. Before spending the last five years in data analytics, I ran my own small marketing agency for ten years. That mix taught me how much time teams lose when numbers do not match across different tools. Fixing those gaps between business teams and engineering is the part of the job I enjoy most.</p>',\n    '<p>Outside of writing SQL queries and building Tableau dashboards, I spend my free time on my terrace in Gurugram growing mushrooms and automating small daily tasks with n8n. Growing mushrooms in North India''s weather is not a fancy hobby. It comes down to watching basic details closely. If moisture or airflow slips even a little, the whole batch fails. I bring that same habit to my work when I check data quality, map workflows, or build reports that leaders rely on.</p>',\n    '<p>I also believe analysis is only useful when it solves a real problem on the ground. At Concentrix, our hiring data showed that new joiners were struggling once they started work. Sending another dashboard to management was not fixing the issue. I looked closely at the hiring steps and worked with leadership to bring our training team directly into the interview stage. That simple change improved hire quality by 84%. In my current role at Highspring India, I use the same practical approach across four engineering teams to automate recurring reports and cut manual work by 40%.</p>',\n    '<p>My day-to-day work covers SQL, Python, Tableau, and working closely with business and tech teams. If the team at Turing uses an internal tool I have not worked with yet, I learn new systems quickly. Practical challenges early in my career taught me how to stay resourceful, focus on the basics, and get things done without hand-holding. When I take ownership of a task, nobody has to follow up twice.</p>',\n    '<p>I would welcome the chance to bring this steady, practical approach to Turing. Thank you for your time and consideration, and I look forward to speaking with you soon.</p>',\n    TRUE\n);\n\n-- 4. Update or seed the Grounded 1-Page Cover Letter rule with HR-aware & short-sentence enforcement\nDELETE FROM learned_rules WHERE section_name = 'cover_letter' AND triggered_by_comment = 'System Grounded CL Rule';\n\nINSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nVALUES (\n    'cover_letter',\n    'ALL',\n    'Keep the Cover Letter strictly to 1 A4 page (260-320 words total across 5 paragraphs) in standard justified business letter format. Write in short, simple, human-like sentences (12-18 words per sentence, max 20 words). Address the company or functional department by name (never say \"your team\" since the recipient is often HR/Talent Acquisition). NEVER use em-dashes (—), semicolons, mid-paragraph bolding, or fancy/AI words like disparate, stewardship, rigorous, multifaceted, synergetic, leverage, orchestrate, intersection, friction, cohort, or paradigm.',\n    'System Grounded CL Rule',\n    TRUE\n);\n\n-- 5. Return full audit summary\nSELECT\n  (SELECT COUNT(*) FROM cover_letter_generations) AS total_cover_letters_stored,\n  (SELECT COUNT(*) FROM cover_letter_generations WHERE cl_status IN ('LGTM', 'Approved', 'Approved & Learned')) AS approved_cover_letters,\n  (SELECT COUNT(*) FROM learned_rules WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl')) AS total_cl_learned_rules,\n  (SELECT COUNT(*) FROM cover_letter_few_shot_library WHERE is_active = TRUE) AS total_cl_few_shot_examples,\n  (SELECT COALESCE(json_agg(c), '[]'::json) FROM (\n    SELECT resume_id, s_no, company_name, position_title, revision_count, cl_status, last_reviewer_note, updated_at\n    FROM cover_letter_generations\n    ORDER BY updated_at DESC\n    LIMIT 5\n  ) c) AS latest_cover_letters,\n  (SELECT COALESCE(json_agg(l), '[]'::json) FROM (\n    SELECT id, section_name, role_category, rule_instruction, triggered_by_comment, company_context, created_at\n    FROM learned_rules\n    WHERE is_active = TRUE AND LOWER(section_name) IN ('cover_letter', 'cl', 'skills', 'global', 'all')\n    ORDER BY created_at DESC\n    LIMIT 10\n  ) l) AS latest_cl_learned_rules;",
         "options": {}
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -57,17 +65,15 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "filtersUI": {
           "values": [
@@ -81,8 +87,8 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
@@ -99,17 +105,15 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "filtersUI": {
           "values": [
@@ -123,8 +127,8 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
@@ -141,17 +145,15 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "filtersUI": {
           "values": [
@@ -165,8 +167,8 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
@@ -201,8 +203,8 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -239,13 +241,13 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are writing a 1-page, plain-English, human-sounding Cover Letter for Sumanto Banerjee applying for ${$json.positionTitle} at ${$json.company} (${$json.industry}).\n\nCANDIDATE REAL BACKGROUND (GROUND TRUTH \u2014 DO NOT INVENT FAKE FACTS):\n- Current Role (Oct 2025 \u2013 Present): Sr. Data Analyst at Highspring India (On-site Google, Gurugram). Leads 3+ automation projects (cutting manual work by 40%), validates A/B tests across 15+ product launches, works across 4+ engineering and business teams, and works with 1M+ monthly records in SQL, Python, and Tableau.\n- Prior Role (Apr 2022 \u2013 Aug 2025): Lead Trainer at Concentrix Daksh (Gurugram). Analyzed hiring and workforce data; instead of just sending management another dashboard, worked with leadership to bring the training team directly into the interview stage, improving hire quality by 84% and boosting team productivity by 25%.\n- Earlier Career (2010 \u2013 2020): Founder at Maerke Stratcomm (Delhi) for 10 years, running client projects and growing HORECA sales by 25% for Wild Vitamin Drink. B.Comm (Hons.) from University of Delhi.\n- Real Hobbies Outside Work: Growing mushrooms on his terrace in Gurugram (watching basic details like moisture and airflow closely) and automating small daily tasks with n8n.\n\nSTUDY THIS GOLD-STANDARD HUMAN-WRITTEN SAMPLE (MATCH ITS SHORT SENTENCES & SIMPLE VOCABULARY):\n- Paragraph 1: ${$json.clReference.para1_hook_html}\n- Paragraph 2: ${$json.clReference.para2_stewardship_html}\n- Paragraph 3: ${$json.clReference.para3_impact_story_html}\n- Paragraph 4: ${$json.clReference.para4_resilience_html}\n- Paragraph 5: ${$json.clReference.para5_closing_html}\n\nINPUTS FOR THIS APPLICATION:\n- COMPANY: ${$json.company} (${$json.industry})\n- ABOUT COMPANY: ${$json.aboutCompany}\n- POSITION TITLE: ${$json.positionTitle}\n- USER NOTES FOR COVER LETTER ('Notes for CL'): ${$json.notesForCl || 'None provided \u2014 open plainly with why the day-to-day work in the Job Description fits Sumanto.'}\n- JOB DESCRIPTION:\n${String($json.jobDescription || '').slice(0, 2500)}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.clRules}\n\nSTRICT HUMAN-WRITING & SHORT-SENTENCE RULES (CRITICAL):\n1. KEEP SENTENCES SHORT (12 TO 18 WORDS PER SENTENCE, MAX 20 WORDS):\n   - Never write long, winding 30+ word sentences.\n   - If a sentence has more than one comma, break it into two separate sentences with a period.\n   - NEVER use em-dashes (\u2014) or semicolons (;) to chain clauses together. Use a period and start a new sentence.\n2. NEVER SAY 'YOUR TEAM' (HR-AWARE RECIPIENT RULE):\n   - The letter is often read first by HR / Talent Acquisition, NOT the hiring manager you will report to.\n   - Therefore, NEVER write 'your team' (e.g., do NOT write 'bring this approach to your team' or 'if your team uses').\n   - Instead, always refer to the company by name ('${$json.company}') or 'the analytics team at ${$json.company}' (e.g., 'bring this steady, practical approach to ${$json.company}' and 'If the team at ${$json.company} uses an internal tool...').\n3. USE SIMPLE, EVERYDAY SPOKEN WORDS (NO FANCY OR AI WORDS):\n   - BANNED WORDS: NEVER use words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'delve', 'testament', 'orchestrate', 'leverage', 'paradigm', 'overarching', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', 'proprietary', 'hygiene', 'ecosystem', 'spearhead', 'unwavering', 'landscape', 'tapestry', 'seamless', or 'catalyze'.\n   - Use plain human words instead: say 'different tools' (not 'disparate systems'), 'close attention' or 'habit' (not 'rigorous stewardship'), 'new joiners' (not 'cohorts'), 'hiring steps' (not 'operational funnel'), 'simple change' (not 'structural adjustment').\n4. STRICT 1-PAGE WORD BUDGET (260 TO 320 WORDS TOTAL ACROSS 5 PARAGRAPHS):\n   - Paragraph 1 (para1_hook_html, 4-5 short sentences, ~65 words): State what stood out in the ${$json.positionTitle} JD at ${$json.company}. Mention his 5 years in data analytics after 10 years running his own small agency. Explain simply that he likes fixing data gaps between business and tech teams.\n   - Paragraph 2 (para2_stewardship_html, 4-5 short sentences, ~65 words): Mention his terrace mushroom growing in Gurugram and n8n automation hobby in plain, humble terms (watching moisture and airflow closely so the batch does not fail), and connect that habit to the day-to-day responsibilities in this JD.\n   - Paragraph 3 (para3_impact_story_html, 4-5 short sentences, ~75 words): Tell the Concentrix story (bringing the training team into interviews to improve hire quality by 84%) and/or the Highspring India work (automating recurring reports across four engineering teams to cut manual work by 40%) in short, clear sentences.\n   - Paragraph 4 (para4_resilience_html, 3-4 short sentences, ~55 words): Mention his core stack (SQL, Python, Tableau) and state honestly that if the team at ${$json.company} uses an internal tool he has not worked with yet, he learns fast, stays resourceful, and is dependable.\n   - Paragraph 5 (para5_closing_html, ONE single <p> tag with 2 short sentences, ~30 words): 'I would welcome the chance to bring this steady, practical approach to ${$json.company}. Thank you for your time and consideration, and I look forward to speaking with you soon.'\n5. NO BOLD TAGS IN BODY PARAGRAPHS: Do NOT put <strong> or <b> tags inside the paragraphs.\n\nReturn STRICT JSON only (no markdown fences) matching this exact schema:\n{\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are writing a 1-page, plain-English, human-sounding Cover Letter for Sumanto Banerjee applying for ${$json.positionTitle} at ${$json.company} (${$json.industry}).\n\nCANDIDATE REAL BACKGROUND (GROUND TRUTH — DO NOT INVENT FAKE FACTS):\n- Current Role (Oct 2025 – Present): Sr. Data Analyst at Highspring India (On-site Google, Gurugram). Leads 3+ automation projects (cutting manual work by 40%), validates A/B tests across 15+ product launches, works across 4+ engineering and business teams, and works with 1M+ monthly records in SQL, Python, and Tableau.\n- Prior Role (Apr 2022 – Aug 2025): Lead Trainer at Concentrix Daksh (Gurugram). Analyzed hiring and workforce data; instead of just sending management another dashboard, worked with leadership to bring the training team directly into the interview stage, improving hire quality by 84% and boosting team productivity by 25%.\n- Earlier Career (2010 – 2020): Founder at Maerke Stratcomm (Delhi) for 10 years, running client projects and growing HORECA sales by 25% for Wild Vitamin Drink. B.Comm (Hons.) from University of Delhi.\n- Real Hobbies Outside Work: Growing mushrooms on his terrace in Gurugram (watching basic details like moisture and airflow closely) and automating small daily tasks with n8n.\n\nSTUDY THIS GOLD-STANDARD HUMAN-WRITTEN SAMPLE (MATCH ITS SHORT SENTENCES & SIMPLE VOCABULARY):\n- Paragraph 1: ${$json.clReference.para1_hook_html}\n- Paragraph 2: ${$json.clReference.para2_stewardship_html}\n- Paragraph 3: ${$json.clReference.para3_impact_story_html}\n- Paragraph 4: ${$json.clReference.para4_resilience_html}\n- Paragraph 5: ${$json.clReference.para5_closing_html}\n\nINPUTS FOR THIS APPLICATION:\n- COMPANY: ${$json.company} (${$json.industry})\n- ABOUT COMPANY: ${$json.aboutCompany}\n- POSITION TITLE: ${$json.positionTitle}\n- USER NOTES FOR COVER LETTER ('Notes for CL'): ${$json.notesForCl || 'None provided — open plainly with why the day-to-day work in the Job Description fits Sumanto.'}\n- JOB DESCRIPTION:\n${String($json.jobDescription || '').slice(0, 2500)}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.clRules}\n\nSTRICT HUMAN-WRITING & SHORT-SENTENCE RULES (CRITICAL):\n1. KEEP SENTENCES SHORT (12 TO 18 WORDS PER SENTENCE, MAX 20 WORDS):\n   - Never write long, winding 30+ word sentences.\n   - If a sentence has more than one comma, break it into two separate sentences with a period.\n   - NEVER use em-dashes (—) or semicolons (;) to chain clauses together. Use a period and start a new sentence.\n2. NEVER SAY 'YOUR TEAM' (HR-AWARE RECIPIENT RULE):\n   - The letter is often read first by HR / Talent Acquisition, NOT the hiring manager you will report to.\n   - Therefore, NEVER write 'your team' (e.g., do NOT write 'bring this approach to your team' or 'if your team uses').\n   - Instead, always refer to the company by name ('${$json.company}') or 'the analytics team at ${$json.company}' (e.g., 'bring this steady, practical approach to ${$json.company}' and 'If the team at ${$json.company} uses an internal tool...').\n3. USE SIMPLE, EVERYDAY SPOKEN WORDS (NO FANCY OR AI WORDS):\n   - BANNED WORDS: NEVER use words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'delve', 'testament', 'orchestrate', 'leverage', 'paradigm', 'overarching', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', 'proprietary', 'hygiene', 'ecosystem', 'spearhead', 'unwavering', 'landscape', 'tapestry', 'seamless', or 'catalyze'.\n   - Use plain human words instead: say 'different tools' (not 'disparate systems'), 'close attention' or 'habit' (not 'rigorous stewardship'), 'new joiners' (not 'cohorts'), 'hiring steps' (not 'operational funnel'), 'simple change' (not 'structural adjustment').\n4. STRICT 1-PAGE WORD BUDGET (260 TO 320 WORDS TOTAL ACROSS 5 PARAGRAPHS):\n   - Paragraph 1 (para1_hook_html, 4-5 short sentences, ~65 words): State what stood out in the ${$json.positionTitle} JD at ${$json.company}. Mention his 5 years in data analytics after 10 years running his own small agency. Explain simply that he likes fixing data gaps between business and tech teams.\n   - Paragraph 2 (para2_stewardship_html, 4-5 short sentences, ~65 words): Mention his terrace mushroom growing in Gurugram and n8n automation hobby in plain, humble terms (watching moisture and airflow closely so the batch does not fail), and connect that habit to the day-to-day responsibilities in this JD.\n   - Paragraph 3 (para3_impact_story_html, 4-5 short sentences, ~75 words): Tell the Concentrix story (bringing the training team into interviews to improve hire quality by 84%) and/or the Highspring India work (automating recurring reports across four engineering teams to cut manual work by 40%) in short, clear sentences.\n   - Paragraph 4 (para4_resilience_html, 3-4 short sentences, ~55 words): Mention his core stack (SQL, Python, Tableau) and state honestly that if the team at ${$json.company} uses an internal tool he has not worked with yet, he learns fast, stays resourceful, and is dependable.\n   - Paragraph 5 (para5_closing_html, ONE single <p> tag with 2 short sentences, ~30 words): 'I would welcome the chance to bring this steady, practical approach to ${$json.company}. Thank you for your time and consideration, and I look forward to speaking with you soon.'\n5. NO BOLD TAGS IN BODY PARAGRAPHS: Do NOT put <strong> or <b> tags inside the paragraphs.\n\nReturn STRICT JSON only (no markdown fences) matching this exact schema:\n{\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
         "options": {}
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
         }
       }
     },
@@ -265,7 +267,7 @@
     {
       "id": "46c883b7-b2ca-4815-8ea6-bf62361e1e4a",
       "name": "Wait 7s (Switch CL Gen Model)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -279,7 +281,7 @@
     {
       "id": "9e1ca038-2c8e-441a-bc85-a5a4386139d1",
       "name": "Wait 5s (Gemini RPM Guard)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -298,13 +300,13 @@
         2400
       ],
       "parameters": {
-        "jsCode": "const ctx = $('Prepare Grounded Cover Letter Context').last().json;\nconst rawText = $('Gemini: Generate 1-Page Grounded Cover Letter').last().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\n// Post-processor to enforce human-like plain English, HR-aware phrasing, no mid-sentence bolding, no em-dashes, and 1 <p> per paragraph\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  // Merge any split </p><p> inside a single paragraph slot\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  // Remove mid-paragraph <strong> and <b> tags so body text looks human-written\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  // Replace em-dashes with clean punctuation\n  s = s.replace(/\\s*\u2014\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  // Replace 'your team' with HR-aware company phrasing\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  // Replace common fancy AI words if any slipped through\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst paras = {\n  para1_hook_html: cleanHumanParagraph(parsed.para1_hook_html, ctx.clReference.para1_hook_html),\n  para2_stewardship_html: cleanHumanParagraph(parsed.para2_stewardship_html, ctx.clReference.para2_stewardship_html),\n  para3_impact_story_html: cleanHumanParagraph(parsed.para3_impact_story_html, ctx.clReference.para3_impact_story_html),\n  para4_resilience_html: cleanHumanParagraph(parsed.para4_resilience_html, ctx.clReference.para4_resilience_html),\n  para5_closing_html: cleanHumanParagraph(parsed.para5_closing_html, ctx.clReference.para5_closing_html)\n};\n\n// Calculate plain-text character count to dynamically auto-fit CSS so the PDF is GUARANTEED 1 Page\nconst combinedHtml = `${paras.para1_hook_html}${paras.para2_stewardship_html}${paras.para3_impact_story_html}${paras.para4_resilience_html}${paras.para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page {\n    size: A4;\n    margin: ${pageMargin};\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: ${bodyFontSize};\n    line-height: ${bodyLineHeight};\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .cl-header {\n    text-align: center;\n    margin-bottom: ${headerMarginBottom};\n    border-bottom: 1px solid #222222;\n    padding-bottom: 10px;\n  }\n  .cl-header h1 {\n    font-size: 22pt;\n    font-weight: normal;\n    margin: 0 0 4px 0;\n    letter-spacing: 0.3px;\n    color: #111111;\n  }\n  .cl-contact {\n    font-size: 9.6pt;\n    color: #222222;\n    margin-bottom: 2px;\n  }\n  .cl-contact a {\n    color: #1155cc;\n    text-decoration: none;\n  }\n  .cl-location {\n    font-size: 9.6pt;\n    color: #333333;\n  }\n  .letter-meta {\n    margin-bottom: 12px;\n    line-height: 1.38;\n    text-align: left;\n  }\n  .letter-date {\n    margin-bottom: 10px;\n    color: #222222;\n  }\n  .recipient-block {\n    margin-bottom: 10px;\n    color: #111111;\n  }\n  .subject-line {\n    margin-bottom: 12px;\n    color: #111111;\n  }\n  p {\n    margin: 0 0 ${paraMarginBottom} 0;\n    text-align: justify;\n  }\n  p.salutation {\n    margin-bottom: 11px;\n    text-align: left;\n  }\n  strong {\n    font-weight: bold;\n    color: #000000;\n  }\n  .sign-off {\n    margin-top: ${signOffMarginTop};\n    page-break-inside: avoid;\n    break-inside: avoid;\n    text-align: left;\n  }\n  .sign-off p {\n    text-align: left;\n  }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}</title>\n  <style>${clCss}</style>\n</head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">REDACTED_EMAIL@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n\n  ${ctx.salutationHtml}\n  ${paras.para1_hook_html}\n  ${paras.para2_stewardship_html}\n  ${paras.para3_impact_story_html}\n  ${paras.para4_resilience_html}\n  ${paras.para5_closing_html}\n\n  <div class=\"sign-off\">\n    <p style=\"margin-bottom: 6px;\">Sincerely,</p>\n    <p><strong>Sumanto Banerjee</strong></p>\n  </div>\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    paras,\n    plainTextLen,\n    pdfFileName: fileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+        "jsCode": "const ctx = $('Prepare Grounded Cover Letter Context').last().json;\nconst rawText = $('Gemini: Generate 1-Page Grounded Cover Letter').last().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\n// Post-processor to enforce human-like plain English, HR-aware phrasing, no mid-sentence bolding, no em-dashes, and 1 <p> per paragraph\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  // Merge any split </p><p> inside a single paragraph slot\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  // Remove mid-paragraph <strong> and <b> tags so body text looks human-written\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  // Replace em-dashes with clean punctuation\n  s = s.replace(/\\s*—\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  // Replace 'your team' with HR-aware company phrasing\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  // Replace common fancy AI words if any slipped through\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst paras = {\n  para1_hook_html: cleanHumanParagraph(parsed.para1_hook_html, ctx.clReference.para1_hook_html),\n  para2_stewardship_html: cleanHumanParagraph(parsed.para2_stewardship_html, ctx.clReference.para2_stewardship_html),\n  para3_impact_story_html: cleanHumanParagraph(parsed.para3_impact_story_html, ctx.clReference.para3_impact_story_html),\n  para4_resilience_html: cleanHumanParagraph(parsed.para4_resilience_html, ctx.clReference.para4_resilience_html),\n  para5_closing_html: cleanHumanParagraph(parsed.para5_closing_html, ctx.clReference.para5_closing_html)\n};\n\n// Calculate plain-text character count to dynamically auto-fit CSS so the PDF is GUARANTEED 1 Page\nconst combinedHtml = `${paras.para1_hook_html}${paras.para2_stewardship_html}${paras.para3_impact_story_html}${paras.para4_resilience_html}${paras.para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page {\n    size: A4;\n    margin: ${pageMargin};\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: ${bodyFontSize};\n    line-height: ${bodyLineHeight};\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .cl-header {\n    text-align: center;\n    margin-bottom: ${headerMarginBottom};\n    border-bottom: 1px solid #222222;\n    padding-bottom: 10px;\n  }\n  .cl-header h1 {\n    font-size: 22pt;\n    font-weight: normal;\n    margin: 0 0 4px 0;\n    letter-spacing: 0.3px;\n    color: #111111;\n  }\n  .cl-contact {\n    font-size: 9.6pt;\n    color: #222222;\n    margin-bottom: 2px;\n  }\n  .cl-contact a {\n    color: #1155cc;\n    text-decoration: none;\n  }\n  .cl-location {\n    font-size: 9.6pt;\n    color: #333333;\n  }\n  .letter-meta {\n    margin-bottom: 12px;\n    line-height: 1.38;\n    text-align: left;\n  }\n  .letter-date {\n    margin-bottom: 10px;\n    color: #222222;\n  }\n  .recipient-block {\n    margin-bottom: 10px;\n    color: #111111;\n  }\n  .subject-line {\n    margin-bottom: 12px;\n    color: #111111;\n  }\n  p {\n    margin: 0 0 ${paraMarginBottom} 0;\n    text-align: justify;\n  }\n  p.salutation {\n    margin-bottom: 11px;\n    text-align: left;\n  }\n  strong {\n    font-weight: bold;\n    color: #000000;\n  }\n  .sign-off {\n    margin-top: ${signOffMarginTop};\n    page-break-inside: avoid;\n    break-inside: avoid;\n    text-align: left;\n  }\n  .sign-off p {\n    text-align: left;\n  }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}</title>\n  <style>${clCss}</style>\n</head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n\n  ${ctx.salutationHtml}\n  ${paras.para1_hook_html}\n  ${paras.para2_stewardship_html}\n  ${paras.para3_impact_story_html}\n  ${paras.para4_resilience_html}\n  ${paras.para5_closing_html}\n\n  <div class=\"sign-off\">\n    <p style=\"margin-bottom: 6px;\">Sincerely,</p>\n    <p><strong>Sumanto Banerjee</strong></p>\n  </div>\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    paras,\n    plainTextLen,\n    pdfFileName: fileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
       }
     },
     {
       "id": "8e3fd293-ecb0-4a5c-90ae-bfd097db3575",
       "name": "Wait 2s (KVM2 CPU Guard)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -381,17 +383,16 @@
         },
         "folderId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "custom_cover_letter"
         },
         "options": {}
       },
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
         }
       }
     },
@@ -415,8 +416,8 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -433,17 +434,15 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -461,15 +460,15 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
     {
       "id": "196bccf7-2491-4f1b-a87d-b7e38b767ceb",
       "name": "Wait 5s Before Next CL Row",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -509,8 +508,8 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -563,7 +562,7 @@
     {
       "id": "c2ea0d7d-e6cc-48b9-b117-4499ac0d0574",
       "name": "Wait 5s (Gemini Review RPM Guard #1)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -592,13 +591,13 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are the Self-Learning Cover Letter Editor for Sumanto Banerjee.\n\nTarget Role: ${$json.positionTitle} at ${$json.company}\nContains 'For this cover letter / resume' One-Off Flag: ${$json.isForThisClOnly}\nReviewer Feedback ('Notes for CL' / 'Notes by Reviewer'):\n\"\"\"${$json.reviewerNotes}\"\"\"\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.applicableRulesText}\n\nCURRENT CACHED PARAGRAPHS:\n- para1_hook_html: ${$json.para1_hook_html}\n- para2_stewardship_html: ${$json.para2_stewardship_html}\n- para3_impact_story_html: ${$json.para3_impact_story_html}\n- para4_resilience_html: ${$json.para4_resilience_html}\n- para5_closing_html: ${$json.para5_closing_html}\n\nSTRICT INSTRUCTIONS:\n1. Apply the Reviewer Feedback to rewrite the affected paragraph(s) and also clean up any overly long sentences across the letter so the entire letter is 260\u2013320 words total across 5 paragraphs.\n2. SHORT HUMAN SENTENCES & PLAIN WORDS (CRITICAL): Every sentence MUST be 12 to 18 words on average (max 20 words). NEVER use em-dashes (\u2014), semicolons (;), mid-paragraph <strong> bolding, or fancy AI words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'leverage', 'orchestrate', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', or 'paradigm'.\n3. NEVER SAY 'YOUR TEAM': Because the letter is addressed to HR / Talent Acquisition, never say 'your team'\u2014always say '${$json.company}' or 'the team at ${$json.company}'.\n4. Paragraph 5 (para5_closing_html) MUST be a single <p>...</p> tag (do NOT split into two <p> tags).\n5. 'FOR THIS COVER LETTER / RESUME' EPHEMERAL RULE (CRITICAL): If the Reviewer Feedback contains 'For this cover letter', 'For this CL', 'For this resume', or 'only for this', you MUST apply the edit to the paragraph HTML for THIS cover letter, but you MUST set \"rule_scope\": \"NONE\" and \"permanent_learned_rule\": \"\" (empty string) so it is NOT learned for future cover letters.\n\nReturn STRICT JSON only (no markdown fences):\n{\n  \"rule_scope\": \"ALL\" | \"NONE\",\n  \"permanent_learned_rule\": \"Concise reusable rule for future cover letters (MUST BE '' if rule_scope is NONE or user wrote 'For this cover letter / resume')\",\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are the Self-Learning Cover Letter Editor for Sumanto Banerjee.\n\nTarget Role: ${$json.positionTitle} at ${$json.company}\nContains 'For this cover letter / resume' One-Off Flag: ${$json.isForThisClOnly}\nReviewer Feedback ('Notes for CL' / 'Notes by Reviewer'):\n\"\"\"${$json.reviewerNotes}\"\"\"\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (MUST OBEY):\n${$json.applicableRulesText}\n\nCURRENT CACHED PARAGRAPHS:\n- para1_hook_html: ${$json.para1_hook_html}\n- para2_stewardship_html: ${$json.para2_stewardship_html}\n- para3_impact_story_html: ${$json.para3_impact_story_html}\n- para4_resilience_html: ${$json.para4_resilience_html}\n- para5_closing_html: ${$json.para5_closing_html}\n\nSTRICT INSTRUCTIONS:\n1. Apply the Reviewer Feedback to rewrite the affected paragraph(s) and also clean up any overly long sentences across the letter so the entire letter is 260–320 words total across 5 paragraphs.\n2. SHORT HUMAN SENTENCES & PLAIN WORDS (CRITICAL): Every sentence MUST be 12 to 18 words on average (max 20 words). NEVER use em-dashes (—), semicolons (;), mid-paragraph <strong> bolding, or fancy AI words like 'disparate', 'stewardship', 'rigorous', 'multifaceted', 'synergetic', 'leverage', 'orchestrate', 'intersection', 'friction', 'structural adjustment', 'operational funnel', 'cohort', or 'paradigm'.\n3. NEVER SAY 'YOUR TEAM': Because the letter is addressed to HR / Talent Acquisition, never say 'your team'—always say '${$json.company}' or 'the team at ${$json.company}'.\n4. Paragraph 5 (para5_closing_html) MUST be a single <p>...</p> tag (do NOT split into two <p> tags).\n5. 'FOR THIS COVER LETTER / RESUME' EPHEMERAL RULE (CRITICAL): If the Reviewer Feedback contains 'For this cover letter', 'For this CL', 'For this resume', or 'only for this', you MUST apply the edit to the paragraph HTML for THIS cover letter, but you MUST set \"rule_scope\": \"NONE\" and \"permanent_learned_rule\": \"\" (empty string) so it is NOT learned for future cover letters.\n\nReturn STRICT JSON only (no markdown fences):\n{\n  \"rule_scope\": \"ALL\" | \"NONE\",\n  \"permanent_learned_rule\": \"Concise reusable rule for future cover letters (MUST BE '' if rule_scope is NONE or user wrote 'For this cover letter / resume')\",\n  \"para1_hook_html\": \"<p>...</p>\",\n  \"para2_stewardship_html\": \"<p>...</p>\",\n  \"para3_impact_story_html\": \"<p>...</p>\",\n  \"para4_resilience_html\": \"<p>...</p>\",\n  \"para5_closing_html\": \"<p>...</p>\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.25 }\n    : { temperature: 0.25, responseMimeType: \"application/json\" }\n}) }}",
         "options": {}
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_httpHeaderAuth_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
         }
       }
     },
@@ -618,7 +617,7 @@
     {
       "id": "8f55be00-a6e5-4bb7-9dd5-43937479c40d",
       "name": "Wait 7s (Switch CL Review Model)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -639,7 +638,7 @@
         3024
       ],
       "parameters": {
-        "jsCode": "const ctx = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst rawText = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  s = s.replace(/\\s*\u2014\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst para1_hook_html = cleanHumanParagraph(parsed.para1_hook_html, ctx.para1_hook_html);\nconst para2_stewardship_html = cleanHumanParagraph(parsed.para2_stewardship_html, ctx.para2_stewardship_html);\nconst para3_impact_story_html = cleanHumanParagraph(parsed.para3_impact_story_html, ctx.para3_impact_story_html);\nconst para4_resilience_html = cleanHumanParagraph(parsed.para4_resilience_html, ctx.para4_resilience_html);\nconst para5_closing_html = cleanHumanParagraph(parsed.para5_closing_html, ctx.para5_closing_html);\n\nconst isOneOff = Boolean(\n  ctx.isForThisClOnly ||\n  String(parsed.rule_scope || '').toUpperCase() === 'NONE' ||\n  /\\b(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\b/i.test(String(parsed.permanent_learned_rule || ''))\n);\n\nconst extractedRule = isOneOff ? '' : String(parsed.permanent_learned_rule || '').trim();\nconst shouldSaveLearnedRule = !isOneOff && extractedRule.length > 5;\n\nconst combinedHtml = `${para1_hook_html}${para2_stewardship_html}${para3_impact_story_html}${para4_resilience_html}${para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page { size: A4; margin: ${pageMargin}; }\n  * { box-sizing: border-box; }\n  body { font-family: 'Georgia', 'Times New Roman', serif; font-size: ${bodyFontSize}; line-height: ${bodyLineHeight}; color: #111111; margin: 0; padding: 0; }\n  .cl-header { text-align: center; margin-bottom: ${headerMarginBottom}; border-bottom: 1px solid #222222; padding-bottom: 10px; }\n  .cl-header h1 { font-size: 22pt; font-weight: normal; margin: 0 0 4px 0; letter-spacing: 0.3px; color: #111111; }\n  .cl-contact { font-size: 9.6pt; color: #222222; margin-bottom: 2px; }\n  .cl-contact a { color: #1155cc; text-decoration: none; }\n  .cl-location { font-size: 9.6pt; color: #333333; }\n  .letter-meta { margin-bottom: 12px; line-height: 1.38; text-align: left; }\n  .letter-date { margin-bottom: 10px; color: #222222; }\n  .recipient-block { margin-bottom: 10px; color: #111111; }\n  .subject-line { margin-bottom: 12px; color: #111111; }\n  p { margin: 0 0 ${paraMarginBottom} 0; text-align: justify; }\n  p.salutation { margin-bottom: 11px; text-align: left; }\n  strong { font-weight: bold; color: #000000; }\n  .sign-off { margin-top: ${signOffMarginTop}; page-break-inside: avoid; break-inside: avoid; text-align: left; }\n  .sign-off p { text-align: left; }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\" /><title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}</title><style>${clCss}</style></head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">REDACTED_EMAIL@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n  ${ctx.salutationHtml}\n  ${para1_hook_html}\n  ${para2_stewardship_html}\n  ${para3_impact_story_html}\n  ${para4_resilience_html}\n  ${para5_closing_html}\n  <div class=\"sign-off\"><p style=\"margin-bottom: 6px;\">Sincerely,</p><p><strong>Sumanto Banerjee</strong></p></div>\n</body></html>`;\n\nreturn [{\n  json: {\n    ...ctx,\n    extractedRule,\n    shouldSaveLearnedRule,\n    para1_hook_html,\n    para2_stewardship_html,\n    para3_impact_story_html,\n    para4_resilience_html,\n    para5_closing_html,\n    pdfFileName: `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}.pdf`\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+        "jsCode": "const ctx = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst rawText = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {};\n}\n\nconst cleanHumanParagraph = (val, fallback) => {\n  let s = String(val || '').replace(/```html|```/gi, '').trim();\n  if (s.length < 15) s = String(fallback || '').trim();\n  s = s.replace(/<\\/p>\\s*<p[^>]*>/gi, ' ');\n  s = s.replace(/<\\/?(strong|b)>/gi, '');\n  s = s.replace(/\\s*—\\s*/g, ', ').replace(/,\\s*,/g, ',');\n  s = s.replace(/\\bto your team\\b/gi, `to ${ctx.company}`)\n       .replace(/\\bIf your team uses\\b/gi, `If the team at ${ctx.company} uses`)\n       .replace(/\\bif your team uses\\b/gi, `if the team at ${ctx.company} uses`)\n       .replace(/\\bspeaking with your team\\b/gi, 'speaking with you');\n  s = s.replace(/\\bdisparate\\b/gi, 'different')\n       .replace(/\\brigorous stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bpractical stewardship\\b/gi, 'close attention to detail')\n       .replace(/\\bstewardship\\b/gi, 'care')\n       .replace(/\\brigorous\\b/gi, 'careful')\n       .replace(/\\boperational funnel\\b/gi, 'hiring process')\n       .replace(/\\bstructural adjustment\\b/gi, 'simple change')\n       .replace(/\\bstrategic friction\\b/gi, 'confusion')\n       .replace(/\\bdata hygiene\\b/gi, 'data accuracy')\n       .replace(/\\bnew cohorts\\b/gi, 'new joiners')\n       .replace(/\\bcohorts\\b/gi, 'batches');\n  if (!s.startsWith('<p')) s = `<p>${s}</p>`;\n  return s;\n};\n\nconst para1_hook_html = cleanHumanParagraph(parsed.para1_hook_html, ctx.para1_hook_html);\nconst para2_stewardship_html = cleanHumanParagraph(parsed.para2_stewardship_html, ctx.para2_stewardship_html);\nconst para3_impact_story_html = cleanHumanParagraph(parsed.para3_impact_story_html, ctx.para3_impact_story_html);\nconst para4_resilience_html = cleanHumanParagraph(parsed.para4_resilience_html, ctx.para4_resilience_html);\nconst para5_closing_html = cleanHumanParagraph(parsed.para5_closing_html, ctx.para5_closing_html);\n\nconst isOneOff = Boolean(\n  ctx.isForThisClOnly ||\n  String(parsed.rule_scope || '').toUpperCase() === 'NONE' ||\n  /\\b(for this cover letter|for this cl|this cover letter only|only for this cover letter|for this resume|this resume only|only for this resume|just for this)\\b/i.test(String(parsed.permanent_learned_rule || ''))\n);\n\nconst extractedRule = isOneOff ? '' : String(parsed.permanent_learned_rule || '').trim();\nconst shouldSaveLearnedRule = !isOneOff && extractedRule.length > 5;\n\nconst combinedHtml = `${para1_hook_html}${para2_stewardship_html}${para3_impact_story_html}${para4_resilience_html}${para5_closing_html}`;\nconst plainTextLen = combinedHtml.replace(/<[^>]+>/g, '').length;\n\nlet pageMargin = '0.62in 0.75in';\nlet bodyFontSize = '10.3pt';\nlet bodyLineHeight = '1.45';\nlet paraMarginBottom = '11px';\nlet headerMarginBottom = '18px';\nlet signOffMarginTop = '18px';\n\nif (plainTextLen > 2350) {\n  pageMargin = '0.48in 0.68in';\n  bodyFontSize = '9.6pt';\n  bodyLineHeight = '1.34';\n  paraMarginBottom = '8.5px';\n  headerMarginBottom = '14px';\n  signOffMarginTop = '12px';\n} else if (plainTextLen > 2000) {\n  pageMargin = '0.55in 0.72in';\n  bodyFontSize = '10.0pt';\n  bodyLineHeight = '1.40';\n  paraMarginBottom = '9.5px';\n  headerMarginBottom = '16px';\n  signOffMarginTop = '15px';\n}\n\nconst clCss = `\n  @page { size: A4; margin: ${pageMargin}; }\n  * { box-sizing: border-box; }\n  body { font-family: 'Georgia', 'Times New Roman', serif; font-size: ${bodyFontSize}; line-height: ${bodyLineHeight}; color: #111111; margin: 0; padding: 0; }\n  .cl-header { text-align: center; margin-bottom: ${headerMarginBottom}; border-bottom: 1px solid #222222; padding-bottom: 10px; }\n  .cl-header h1 { font-size: 22pt; font-weight: normal; margin: 0 0 4px 0; letter-spacing: 0.3px; color: #111111; }\n  .cl-contact { font-size: 9.6pt; color: #222222; margin-bottom: 2px; }\n  .cl-contact a { color: #1155cc; text-decoration: none; }\n  .cl-location { font-size: 9.6pt; color: #333333; }\n  .letter-meta { margin-bottom: 12px; line-height: 1.38; text-align: left; }\n  .letter-date { margin-bottom: 10px; color: #222222; }\n  .recipient-block { margin-bottom: 10px; color: #111111; }\n  .subject-line { margin-bottom: 12px; color: #111111; }\n  p { margin: 0 0 ${paraMarginBottom} 0; text-align: justify; }\n  p.salutation { margin-bottom: 11px; text-align: left; }\n  strong { font-weight: bold; color: #000000; }\n  .sign-off { margin-top: ${signOffMarginTop}; page-break-inside: avoid; break-inside: avoid; text-align: left; }\n  .sign-off p { text-align: left; }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\" /><title>Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}</title><style>${clCss}</style></head>\n<body>\n  <div class=\"cl-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"cl-contact\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">LinkedIn Profile</a></div>\n    <div class=\"cl-location\">Gurugram, Haryana, India</div>\n  </div>\n  ${ctx.salutationHtml}\n  ${para1_hook_html}\n  ${para2_stewardship_html}\n  ${para3_impact_story_html}\n  ${para4_resilience_html}\n  ${para5_closing_html}\n  <div class=\"sign-off\"><p style=\"margin-bottom: 6px;\">Sincerely,</p><p><strong>Sumanto Banerjee</strong></p></div>\n</body></html>`;\n\nreturn [{\n  json: {\n    ...ctx,\n    extractedRule,\n    shouldSaveLearnedRule,\n    para1_hook_html,\n    para2_stewardship_html,\n    para3_impact_story_html,\n    para4_resilience_html,\n    para5_closing_html,\n    pdfFileName: `Sumanto_Banerjee-Cover_Letter-${ctx.cleanCompany}_v${ctx.nextRevision}.pdf`\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
       }
     },
     {
@@ -662,15 +661,15 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
     {
       "id": "597da3e7-4070-44ca-b7de-59849f8bc2e0",
       "name": "Wait 2s (KVM2 Review CPU Guard)",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -743,8 +742,8 @@
         "operation": "deleteFile",
         "fileId": {
           "__rl": true,
-          "mode": "id",
-          "value": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.oldDriveFileId }}"
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "id"
         },
         "options": {
           "deletePermanently": true
@@ -752,8 +751,8 @@
       },
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
         }
       }
     },
@@ -775,17 +774,16 @@
         },
         "folderId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "custom_cover_letter"
         },
         "options": {}
       },
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleDriveOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
         }
       }
     },
@@ -809,8 +807,8 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -827,17 +825,15 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -855,15 +851,15 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
     {
       "id": "ef76a358-bdb2-4197-9c74-bcd2837ff37c",
       "name": "Wait 5s Before Next CL Review Row",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -903,8 +899,8 @@
       },
       "credentials": {
         "postgres": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_postgres_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
         }
       }
     },
@@ -921,17 +917,15 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "REDACTED_RESOURCE_ID",
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Tracker"
         },
         "sheetName": {
           "__rl": true,
           "value": 1080519924,
           "mode": "list",
-          "cachedResultName": "REDACTED_RESOURCE_NAME",
-          "cachedResultUrl": "https://docs.google.com/REDACTED"
+          "cachedResultName": "Job Application Sheet"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -947,15 +941,15 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REDACTED_CREDENTIAL_ID",
-          "name": "REDACTED_googleSheetsOAuth2Api_CREDENTIAL"
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
         }
       }
     },
     {
       "id": "8d70a5af-b6d6-4254-9e85-1cfeec386adc",
       "name": "Wait 3s Before Next LGTM Row",
-      "webhookId": "REDACTED_WEBHOOKID",
+      "webhookId": "YOUR_WEBHOOK_UUID",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -1476,9 +1470,11 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "errorWorkflow": "62KRhAtxxyJdhxhd"
-  }
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "meta": null
 }
