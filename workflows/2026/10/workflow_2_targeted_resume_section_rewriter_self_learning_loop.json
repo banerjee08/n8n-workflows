@@ -1,0 +1,1077 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Workflow 2: Targeted Resume Section Rewriter & Self-Learning Loop",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-09-24T05:50:08.337Z",
+  "updatedAt": "2026-10-01T07:51:02.383Z",
+  "isArchived": false,
+  "versionCounter": 25,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "9f03583b-c0fe-459d-8878-a010e702c728",
+      "name": "Every 15 Mins (Or Manual Run)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        1792
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5,20,35,50 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "31180748-1df4-4cfb-a151-c4a30bf1c706",
+      "name": "Postgres Audit: Check Stored Resumes & Learned Rules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1504,
+        1488
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM resume_generations) AS total_resumes_stored,\n  (SELECT COUNT(*) FROM resume_generations WHERE resume_status IN ('LGTM', 'Approved', 'Approved & Learned')) AS lgtm_approved_resumes,\n  (SELECT COUNT(*) FROM resume_generations WHERE resume_status = 'Updated - Ready for Review') AS reworked_resumes,\n  (SELECT COUNT(*) FROM learned_rules WHERE is_active = TRUE) AS total_learned_rules,\n  (SELECT COUNT(*) FROM role_few_shot_library WHERE is_active = TRUE) AS total_few_shot_examples,\n  (SELECT COALESCE(json_agg(r), '[]'::json) FROM (\n    SELECT resume_id, s_no, company_name, position_title, role_category, revision_count, resume_status, last_reviewer_note, updated_at\n    FROM resume_generations\n    ORDER BY updated_at DESC\n    LIMIT 5\n  ) r) AS latest_stored_resumes,\n  (SELECT COALESCE(json_agg(l), '[]'::json) FROM (\n    SELECT id, section_name, role_category, rule_instruction, triggered_by_comment, company_context, created_at\n    FROM learned_rules\n    WHERE is_active = TRUE\n    ORDER BY created_at DESC\n    LIMIT 10\n  ) l) AS latest_learned_rules,\n  (SELECT COALESCE(json_agg(f), '[]'::json) FROM (\n    SELECT id, role_category, role_display_name, source_label, created_at\n    FROM role_few_shot_library\n    WHERE is_active = TRUE\n    ORDER BY created_at DESC\n    LIMIT 5\n  ) f) AS latest_promoted_few_shots;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "7d266a36-d9c4-4b90-9c38-a09194e42ec4",
+      "name": "Get Rows Where Resume Status = Needs Rework",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1792,
+        1648
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "Job Application Sheet"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Resume Status",
+              "lookupValue": "Needs Rework"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "07005b2a-5c15-4dce-be03-03e7c6736453",
+      "name": "Get Rows Where Resume Status = LGTM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1792,
+        1968
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "Job Application Sheet"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Resume Status",
+              "lookupValue": "LGTM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "e45303af-ecd4-4e74-aa55-9a3b817e42f8",
+      "name": "Loop Over Review Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2048,
+        1648
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "4bb0578c-56e2-4c9e-ba79-7038308049a7",
+      "name": "Postgres: Fetch Cached Resume Sections",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        2304,
+        1648
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT row_to_json(r) FROM (\n    SELECT\n      resume_id, s_no, job_id, company_name, position_title, role_category,\n      extracted_jd_keywords, summary_html, skills_html, experience_html,\n      marketing_projects_html, certifications_html, education_html, hobbies_html,\n      drive_file_id, drive_web_link, COALESCE(revision_count, 1) AS revision_count\n    FROM resume_generations\n    WHERE (resume_id = '{{ $json[\"Resume_id\"] }}' AND '{{ $json[\"Resume_id\"] }}' <> '')\n       OR (s_no = '{{ $json[\"S. No.\"] }}' AND '{{ $json[\"S. No.\"] }}' <> '')\n       OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\n    ORDER BY updated_at DESC\n    LIMIT 1\n  ) r) AS cached_resume,\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (\n    SELECT section_name, role_category, rule_instruction\n    FROM learned_rules\n    WHERE is_active = TRUE\n    ORDER BY id ASC\n  ) l) AS active_rules;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "7af44ae0-d44c-4f6f-90d1-e237fd434fab",
+      "name": "Merge Sheet Feedback & Cached HTML Sections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        1648
+      ],
+      "parameters": {
+        "jsCode": "const sheetRow = $('Loop Over Review Rows (1 by 1)').last().json || {};\nconst pgOut = $input.first().json || {};\nconst dbRow = pgOut.cached_resume || pgOut || {};\nconst activeRules = Array.isArray(pgOut.active_rules) ? pgOut.active_rules : [];\n\nconst notesForResume = String(sheetRow['Notes for Resume'] || '').trim();\nconst notesByReviewer = String(sheetRow['Notes by Reviewer'] || '').trim();\nconst genericNotes = String(sheetRow['Notes'] || '').trim();\n\nconst reviewerNotes = [notesForResume, notesByReviewer, genericNotes]\n  .filter(n => n && n.toLowerCase() !== 'none provided')\n  .join('\\n');\n\n// Detect if user wrote 'For this resume' (one-off edit that must NOT be learned globally)\nconst isForThisResumeOnly = /\\b(for this resume|this resume only|only for this resume|just for this resume)\\b/i.test(reviewerNotes);\n\nconst sNo = String(sheetRow['S. No.'] || dbRow.s_no || '');\nconst resumeId = String(dbRow.resume_id || sheetRow['Resume_id'] || `RES-${sNo || Date.now()}`);\nconst company = String(sheetRow['Company'] || dbRow.company_name || 'Company').trim();\nconst cleanCompany = company.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'Company';\nconst positionTitle = String(sheetRow['Position - Title'] || dbRow.position_title || 'Senior Data & Business Analyst').trim();\nconst jobDescription = String(sheetRow['Position - Description'] || '').trim();\nconst roleCategory = String(dbRow.role_category || 'bi_data_analyst');\nconst nextRevision = Number(dbRow.revision_count || 1) + 1;\n\nconst applicableRulesText = activeRules\n  .filter(r => {\n    const rc = String(r.role_category || 'ALL').toUpperCase();\n    return rc === 'ALL' || rc === 'GLOBAL' || rc === roleCategory.toUpperCase();\n  })\n  .map((r, idx) => `${idx + 1}. [${r.section_name}]: ${r.rule_instruction}`)\n  .join('\\n') || '1. [skills]: All skill names and category names in the Core Skills section MUST be in Title Case.';\n\nconst hasCachedHtml = Boolean(dbRow.summary_html && String(dbRow.summary_html).trim().length > 10);\n\nconst fallbackSummaryHtml = `<p><strong>Senior Data &amp; Business Analyst</strong> with 5+ years of experience translating operational and financial workflows into scalable analytics, automated pipelines, and testable engineering requirements using <strong>SQL, Python, Tableau, and n8n</strong>.</p>`;\nconst fallbackSkillsHtml = `<ul>\n  <li><strong>Business &amp; Process Analysis:</strong> Workflow Mapping, Requirement Gathering, Gap Analysis, UAT, Stakeholder Collaboration</li>\n  <li><strong>Data &amp; BI Stack:</strong> SQL, Python (Pandas, NumPy), Tableau, Power BI, Excel &amp; Financial Modelling</li>\n  <li><strong>Automation &amp; Operations:</strong> n8n Workflow Automation, ETL Pipelines, Data Governance, KPI Reporting</li>\n</ul>`;\nconst fallbackExperienceHtml = `<div class=\"job-block\">\n  <div class=\"job-header\">\n    <span class=\"job-title\"><strong>Sr. Data Analyst, Highspring India</strong> – Gurugram, India</span>\n    <span class=\"job-date\">Oct 2025 - Present</span>\n  </div>\n  <ul>\n    <li>Conducted <strong>end-to-end workflow mapping and gap analysis</strong> across operational data pipelines to resolve 500+ data consistency issues, improving reporting reliability by 30%.</li>\n    <li>Engineered automated <strong>SQL and Python transformation workflows</strong> to streamline executive reporting and KPI tracking, reducing manual data preparation turnaround time by 45%.</li>\n    <li>Partnered with finance and engineering stakeholders to translate business rules into <strong>scalable production data models</strong> processing 1M+ records monthly.</li>\n  </ul>\n</div>\n<div class=\"job-block\">\n  <div class=\"job-header\">\n    <span class=\"job-title\"><strong>Lead Trainer, Concentrix Daksh</strong> – Gurugram, India</span>\n    <span class=\"job-date\">April 2022 – Aug 2025</span>\n  </div>\n  <ul>\n    <li>Analyzed cross-functional workforce and operational datasets to uncover root-cause bottlenecks, driving <strong>process optimization initiatives</strong> that improved quality metrics by 84%.</li>\n    <li>Designed interactive <strong>Tableau BI dashboards</strong> to track operational SLAs and performance KPIs, reducing stakeholder decision latency by 30%.</li>\n    <li>Automated training and quality assessment workflows, increasing operational efficiency by 25%.</li>\n  </ul>\n</div>\n<div class=\"job-block\">\n  <div class=\"job-header\">\n    <span class=\"job-title\"><strong>Customer Support Associate, Tech Mahindra</strong> – Noida, India</span>\n    <span class=\"job-date\">Nov 2020 – April 2022</span>\n  </div>\n  <ul>\n    <li>Streamlined high-volume <strong>operational escalation workflows</strong> and root-cause triage, raising first-contact resolution efficiency by 20%.</li>\n  </ul>\n</div>\n<div class=\"job-block\">\n  <div class=\"job-header\">\n    <span class=\"job-title\"><strong>Associate, Virtusa</strong> – Hyderabad, India</span>\n    <span class=\"job-date\">Oct 2017 – Sept 2019</span>\n  </div>\n  <ul>\n    <li>Audited enterprise platform workflows and <strong>data quality standards</strong> across 10K+ weekly transactions, maintaining 99.2% SLA compliance.</li>\n  </ul>\n</div>`;\nconst fallbackCertsHtml = `<div class=\"cert-row\"><span><strong>Tableau Business Intelligence Analyst Professional Certificate</strong> – Coursera</span><span class=\"cert-date\">May 2025</span></div>\n<div class=\"cert-row\"><span><strong>Google Advanced Data Analytics</strong> – Coursera</span><span class=\"cert-date\">In Progress</span></div>\n<div class=\"cert-row\"><span><strong>Google Project Management</strong> – Coursera</span><span class=\"cert-date\">In Progress</span></div>`;\n\nreturn [{\n  json: {\n    sNo,\n    resumeId,\n    company,\n    cleanCompany,\n    positionTitle,\n    jobDescription,\n    roleCategory,\n    reviewerNotes,\n    isForThisResumeOnly,\n    applicableRulesText,\n    hasCachedHtml,\n    hasReviewerNotes: reviewerNotes.length > 2,\n    nextRevision,\n    summaryHtml: dbRow.summary_html || fallbackSummaryHtml,\n    skillsHtml: dbRow.skills_html || fallbackSkillsHtml,\n    experienceHtml: dbRow.experience_html || fallbackExperienceHtml,\n    marketingProjectsHtml: dbRow.marketing_projects_html || '',\n    certificationsHtml: dbRow.certifications_html || fallbackCertsHtml,\n    educationHtml: dbRow.education_html || `<div class=\"edu-row\"><span>University of Delhi, B.Comm(Hons.)</span><span class=\"edu-date\">2013 – 2016</span></div>`,\n    hobbiesHtml: dbRow.hobbies_html || `<div class=\"hobbies-line\">Practicing Buddhism &nbsp;|&nbsp; Automating life with n8n &nbsp;|&nbsp; Growing Mushrooms</div>`,\n    oldDriveFileId: dbRow.drive_file_id || '',\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "492aa791-1489-42d3-ad7d-240c28a43f14",
+      "name": "IF Reviewer Notes & Cached Resume Present",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2784,
+        1648
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-has-feedback",
+              "leftValue": "={{ $json.hasReviewerNotes }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2806c727-58c7-402f-964c-fd5d9a15c4f5",
+      "name": "Wait 5s (Gemini RPM Guard #1)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3008,
+        1600
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "1d8a16d7-acd5-48ce-90c9-83f2a1ff285b",
+      "name": "AI Router: Detect Flagged Section & Distill Rule (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        3232,
+        1600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are an AI Resume Feedback Router & Self-Learning Rule Distiller.\n\nTarget Role: ${$json.positionTitle} at ${$json.company} (Role Category: ${$json.roleCategory})\nWas Prior Resume Cached in DB: ${$json.hasCachedHtml}\nContains 'For this resume' One-Off Flag: ${$json.isForThisResumeOnly}\nReviewer Notes ('Notes for Resume' / 'Notes by Reviewer'):\n\"\"\"${$json.reviewerNotes}\"\"\"\n\nAnalyze the reviewer notes and return ONLY valid JSON with these exact keys:\n{\n  \"sections_to_regenerate\": [\"summary\", \"skills\", \"experience\", \"certifications\", \"hobbies\"],\n  \"primary_section_for_rule\": \"summary\" | \"skills\" | \"experience\" | \"certifications\" | \"hobbies\" | \"global\",\n  \"specific_edit_instructions\": \"Clear, actionable instructions for editing the flagged section(s) of THIS resume based on the reviewer's exact notes.\",\n  \"rule_scope\": \"ALL\" | \"role_specific\" | \"NONE\",\n  \"extracted_rule\": \"A concise, permanent rule distilled from this feedback so the resume generator never repeats this mistake in future runs (MUST BE EMPTY STRING '' if the user wrote 'For this resume').\"\n}\n\nSTRICT ROUTING & LEARNING RULES:\n1. 'FOR THIS RESUME' RULE (CRITICAL): If the reviewer notes contain 'For this resume' (or 'only for this resume' / 'this resume only'), you MUST still include the changes in specific_edit_instructions so THIS resume is updated, but you MUST set rule_scope to \"NONE\" and extracted_rule to \"\" (empty string) so it is NOT learned for future resumes.\n2. GENERAL FORMATTING / STYLE RULES: For general formatting or writing rules (e.g. 'skills should be in Title Case', 'do not bold percentages'), ALWAYS set rule_scope to \"ALL\" so every future resume across all roles follows it.\n3. TARGETED SECTIONS: If Was Prior Resume Cached in DB is false, include [\"summary\", \"skills\", \"experience\"] in sections_to_regenerate. Otherwise, include ONLY the section(s) that the reviewer actually wants changed.`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.1 }\n    : { temperature: 0.1, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
+        }
+      }
+    },
+    {
+      "id": "638b1dc7-5346-4120-8df6-43627682c5bf",
+      "name": "Switch Model (AI Router)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3232,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Merge Sheet Feedback & Cached HTML Sections').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at AI Router after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "75235608-7b2a-48a1-9a3b-b604665631ca",
+      "name": "Wait 7s (Switch Router Model)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3408,
+        1808
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "bcdd15e4-4f08-469c-9c73-2c5bc8a51b81",
+      "name": "Parse Router Decision & Learned Rule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        1600
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Merge Sheet Feedback & Cached HTML Sections').last().json;\nconst rawText = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  parsed = {\n    sections_to_regenerate: ['summary', 'skills', 'experience'],\n    primary_section_for_rule: 'global',\n    specific_edit_instructions: ctx.reviewerNotes,\n    rule_scope: ctx.isForThisResumeOnly ? 'NONE' : 'ALL',\n    extracted_rule: ctx.isForThisResumeOnly ? '' : ctx.reviewerNotes\n  };\n}\n\nconst isOneOff = Boolean(\n  ctx.isForThisResumeOnly ||\n  String(parsed.rule_scope || '').toUpperCase() === 'NONE' ||\n  /\\b(for this resume|this resume only|only for this resume|just for this resume)\\b/i.test(String(parsed.extracted_rule || ''))\n);\n\nconst extractedRule = isOneOff ? '' : String(parsed.extracted_rule || '').trim();\nconst shouldSaveLearnedRule = !isOneOff && extractedRule.length > 5;\n\nconst targetRoleForRule = parsed.rule_scope === 'role_specific' ? ctx.roleCategory : 'ALL';\nconst primarySection = String(parsed.primary_section_for_rule || (parsed.sections_to_regenerate && parsed.sections_to_regenerate[0]) || 'global').toLowerCase();\nconst sectionsToRegenerate = !ctx.hasCachedHtml\n  ? ['summary', 'skills', 'experience']\n  : (Array.isArray(parsed.sections_to_regenerate) && parsed.sections_to_regenerate.length > 0 ? parsed.sections_to_regenerate : ['summary', 'experience']);\n\nreturn [{\n  json: {\n    ...ctx,\n    sectionsToRegenerate,\n    primarySectionForRule: primarySection,\n    specificEditInstructions: parsed.specific_edit_instructions || ctx.reviewerNotes,\n    targetRoleForRule,\n    extractedRule,\n    shouldSaveLearnedRule,\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+      }
+    },
+    {
+      "id": "3205a984-0d91-4881-8686-658086f68d85",
+      "name": "Postgres: Save New Rule to learned_rules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        3680,
+        1600
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, company_context, is_active)\nSELECT\n  '{{ $json.primarySectionForRule }}',\n  '{{ $json.targetRoleForRule }}',\n  $1,\n  $2,\n  $3,\n  TRUE\nWHERE '{{ $json.shouldSaveLearnedRule }}' = 'true'\n  AND LENGTH(TRIM($1)) > 5\n  AND $1 !~* '\\m(for this resume|this resume only|only for this resume|just for this resume)\\M'\n  AND $2 !~* '\\m(for this resume|this resume only|only for this resume|just for this resume)\\M'\n  AND NOT EXISTS (\n    SELECT 1 FROM learned_rules\n    WHERE LOWER(TRIM(rule_instruction)) = LOWER(TRIM($1))\n       OR (LOWER(TRIM(COALESCE(triggered_by_comment, ''))) = LOWER(TRIM($2)) AND LOWER(TRIM(COALESCE(company_context, ''))) = LOWER(TRIM($3)))\n  );",
+        "options": {
+          "queryReplacement": "={{ [$json.extractedRule, $json.reviewerNotes, $json.company] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "5fdd7c5e-29e0-477d-9e4a-662bf22d6eb9",
+      "name": "Wait 5s (Gemini RPM Guard #2)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3904,
+        1600
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "69edae14-1a2e-43c4-8e5a-08691d424fe5",
+      "name": "Targeted Section Rewriter (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2500,
+      "onError": "continueErrorOutput",
+      "position": [
+        4128,
+        1600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json._activeModel || 'gemini-3.5-flash-lite' }}:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `You are an expert ATS Resume Section Editor.\n\nTarget Role: ${$('Parse Router Decision & Learned Rule').last().json.positionTitle} at ${$('Parse Router Decision & Learned Rule').last().json.company}\nJob Description Snippet: ${String($('Parse Router Decision & Learned Rule').last().json.jobDescription || '').slice(0, 2000)}\n\nFLAGGED SECTIONS TO REWRITE: ${JSON.stringify($('Parse Router Decision & Learned Rule').last().json.sectionsToRegenerate)}\nNOTES FOR RESUME / EDIT INSTRUCTIONS:\n\"\"\"${$('Parse Router Decision & Learned Rule').last().json.specificEditInstructions}\"\"\"\n\nMANDATORY LEARNED RULES FROM DATABASE (MUST OBEY):\n${$('Parse Router Decision & Learned Rule').last().json.applicableRulesText}\n\nCURRENT CACHED HTML BY SECTION:\n1. summary_html:\n${$('Parse Router Decision & Learned Rule').last().json.summaryHtml}\n\n2. skills_html:\n${$('Parse Router Decision & Learned Rule').last().json.skillsHtml}\n\n3. experience_html:\n${$('Parse Router Decision & Learned Rule').last().json.experienceHtml}\n\n4. certifications_html:\n${$('Parse Router Decision & Learned Rule').last().json.certificationsHtml}\n\n5. hobbies_html:\n${$('Parse Router Decision & Learned Rule').last().json.hobbiesHtml}\n\nSTRICT FORMATTING RULES:\n1. Apply ALL instructions from NOTES FOR RESUME / EDIT INSTRUCTIONS to the section(s) in FLAGGED SECTIONS TO REWRITE (${JSON.stringify($('Parse Router Decision & Learned Rule').last().json.sectionsToRegenerate)}). For any section NOT in that list, return its exact existing HTML verbatim.\n2. Summary: NEVER open with cliches like 'Results-oriented'. Bold at most 2-3 high-signal phrases in the entire summary using <strong>...</strong>.\n3. Core Skills: ALL skill names and category names MUST be in Title Case (e.g., 'Data Profiling', 'Requirement Gathering', 'Stakeholder Collaboration', preserving uppercase acronyms like SQL, BI, ETL, KPI, UAT, and keeping 'n8n'). Order categories dynamically from highest to lowest relevance to the Job Description, with Soft Skills last.\n4. Experience: Keep role headers bold (<span class=\"job-title\"><strong>Position, Company</strong> – Location</span> and <span class=\"job-date\">Tenure</span>). Follow '[Action Verb] [X] to accomplish [Y], resulting in [Z%]' bullet formula. Bold ONLY 1-2 attention-grabbing domain/technical action phrases per bullet; do NOT bold percentage numbers.\n5. One-Page Budget: Keep Highspring India and Concentrix Daksh at >= 3 bullets each; trim older roles if needed so Hobbies fits cleanly on Page 1.\n\nReturn ONLY valid JSON with these exact keys:\n{\n  \"summary_html\": \"...\",\n  \"skills_html\": \"...\",\n  \"experience_html\": \"...\",\n  \"certifications_html\": \"...\",\n  \"hobbies_html\": \"...\"\n}`\n    }]\n  }],\n  generationConfig: String($json._activeModel || '').startsWith('gemma')\n    ? { temperature: 0.2 }\n    : { temperature: 0.2, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
+        }
+      }
+    },
+    {
+      "id": "2a1d40af-b594-46c0-a044-9590e1f88d0b",
+      "name": "Switch Model (Section Rewriter)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4128,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Parse Router Decision & Learned Rule').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at Section Rewriter after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+      }
+    },
+    {
+      "id": "9b2645ae-4b5d-4207-90e1-b07cd138d299",
+      "name": "Wait 7s (Switch Rewriter Model)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4304,
+        1808
+      ],
+      "parameters": {
+        "amount": 7
+      }
+    },
+    {
+      "id": "fc54bf18-a9a6-4315-9d0c-7306b4377fb7",
+      "name": "Re-Compile HTML With Updated Section(s)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4352,
+        1600
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Parse Router Decision & Learned Rule').last().json;\nconst rawText = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\nconst cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\nlet updated = {};\ntry {\n  updated = JSON.parse(cleanJson);\n} catch (e) {\n  updated = {};\n}\n\nconst cleanHtml = (val, fallback) => {\n  const s = String(val || '').replace(/```html|```/gi, '').trim();\n  return s.length > 5 ? s : fallback;\n};\n\nconst toTitleCaseSkillsHtml = (html) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  return String(html || '').replace(/(>[^<]+<)/g, (segment) => {\n    return segment.replace(/\\b([A-Za-z0-9&/+-]+)\\b/g, (word, _, offset) => {\n      if (word.toLowerCase() === 'n8n') return 'n8n';\n      const upper = word.toUpperCase();\n      if (acronyms.has(upper)) return upper;\n      if (minor.has(word.toLowerCase()) && offset > 1) return word.toLowerCase();\n      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n    });\n  });\n};\n\nconst flagged = new Set(ctx.sectionsToRegenerate || []);\n\nconst summaryHtml = flagged.has('summary') ? cleanHtml(updated.summary_html, ctx.summaryHtml) : ctx.summaryHtml;\nconst rawSkillsHtml = flagged.has('skills') ? cleanHtml(updated.skills_html, ctx.skillsHtml) : ctx.skillsHtml;\nconst skillsHtml = toTitleCaseSkillsHtml(rawSkillsHtml);\nconst experienceHtml = flagged.has('experience') ? cleanHtml(updated.experience_html, ctx.experienceHtml) : ctx.experienceHtml;\nconst certificationsHtml = flagged.has('certifications') ? cleanHtml(updated.certifications_html, ctx.certificationsHtml) : ctx.certificationsHtml;\nconst hobbiesHtml = flagged.has('hobbies') ? cleanHtml(updated.hobbies_html, ctx.hobbiesHtml) : ctx.hobbiesHtml;\nconst educationHtml = ctx.educationHtml;\nconst marketingProjectsHtml = ctx.marketingProjectsHtml || '';\n\nconst customCss = `\n  @page {\n    size: A4;\n    margin: 0.34in 0.40in;\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: 10.1pt;\n    line-height: 1.35;\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .resume-header {\n    text-align: center;\n    margin-bottom: 9px;\n  }\n  .resume-header h1 {\n    font-size: 24pt;\n    font-weight: normal;\n    margin: 0 0 3px 0;\n    letter-spacing: 0.3px;\n  }\n  .contact-line {\n    font-size: 9.8pt;\n    color: #222222;\n  }\n  .contact-line a {\n    color: #111111;\n    text-decoration: none;\n  }\n  .section-block {\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .section-title {\n    font-size: 11.8pt;\n    font-weight: bold;\n    border-bottom: 1px solid #1A365D;\n    padding-bottom: 2px;\n    margin-top: 9px;\n    margin-bottom: 5px;\n    color: #1A365D;\n  }\n  p {\n    margin: 0 0 5px 0;\n    text-align: left;\n  }\n  ul {\n    margin: 2px 0 6px 0;\n    padding-left: 18px;\n  }\n  li {\n    margin-bottom: 3px;\n  }\n  strong, .highlight {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-block {\n    margin-bottom: 7px;\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .job-header, .cert-row, .edu-row {\n    display: flex;\n    justify-content: space-between;\n    align-items: baseline;\n    margin-bottom: 2px;\n  }\n  .job-header, .job-title, .job-date {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-date, .cert-date, .edu-date {\n    white-space: nowrap;\n    font-size: 9.8pt;\n  }\n  .hobbies-line {\n    margin-top: 3px;\n    font-size: 10pt;\n  }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Resume-${ctx.cleanCompany}_v${ctx.nextRevision}</title>\n  <style>${customCss}</style>\n</head>\n<body>\n  <div class=\"resume-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"contact-line\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">Linkedin Profile</a></div>\n  </div>\n\n  <div class=\"section-title\">Summary</div>\n  ${summaryHtml}\n\n  <div class=\"section-title\">Core Skills</div>\n  ${skillsHtml}\n\n  <div class=\"section-title\">Experience</div>\n  ${experienceHtml}\n\n  <div class=\"section-title\">Certifications</div>\n  ${certificationsHtml}\n\n  ${marketingProjectsHtml}\n\n  <div class=\"section-title\">Education</div>\n  ${educationHtml}\n\n  <div class=\"section-title\">When I am not analysing...</div>\n  ${hobbiesHtml}\n</body>\n</html>`;\n\nconst pdfFileName = `Sumanto_Banerjee-Resume-${ctx.cleanCompany}_v${ctx.nextRevision}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    summaryHtml,\n    skillsHtml,\n    experienceHtml,\n    certificationsHtml,\n    educationHtml,\n    hobbiesHtml,\n    fullHtml,\n    pdfFileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+      }
+    },
+    {
+      "id": "fc14c3a5-b2d8-4886-b44d-44333f7c2466",
+      "name": "Wait 2s (Gotenberg CPU Guard)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4576,
+        1600
+      ],
+      "parameters": {
+        "amount": 2
+      }
+    },
+    {
+      "id": "15df387a-6c19-44a1-b84d-18acb1a67b6e",
+      "name": "Gotenberg: Render Revised PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4800,
+        1600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "index_html"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "de4a3dd2-a877-423f-81b8-261356c83e76",
+      "name": "Upload Revised PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        5024,
+        1600
+      ],
+      "parameters": {
+        "name": "={{ $('Re-Compile HTML With Updated Section(s)').last().json.pdfFileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "custom_resumes"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "14b3d3ae-01d1-4b24-8857-8f87763818a4",
+      "name": "Postgres: Update Cached Sections & Increment Revision",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        5248,
+        1600
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM resume_generations\nWHERE resume_id = '{{ $('Re-Compile HTML With Updated Section(s)').last().json.resumeId }}'\n   OR (s_no = '{{ $('Re-Compile HTML With Updated Section(s)').last().json.sNo }}' AND '{{ $('Re-Compile HTML With Updated Section(s)').last().json.sNo }}' <> '');\n\nINSERT INTO resume_generations (\n  resume_id, s_no, job_id, company_name, position_title, role_category,\n  extracted_jd_keywords, summary_html, skills_html, experience_html,\n  marketing_projects_html, certifications_html, education_html, hobbies_html,\n  drive_file_id, drive_web_link, revision_count, resume_status, last_reviewer_note, updated_at\n) VALUES (\n  '{{ $('Re-Compile HTML With Updated Section(s)').last().json.resumeId }}',\n  '{{ $('Re-Compile HTML With Updated Section(s)').last().json.sNo }}',\n  'N/A',\n  $1, $2,\n  '{{ $('Re-Compile HTML With Updated Section(s)').last().json.roleCategory }}',\n  '{}'::jsonb,\n  $3, $4, $5, '', $6, $7, $8,\n  '{{ $json.id }}',\n  '{{ $json.webViewLink }}',\n  {{ $('Re-Compile HTML With Updated Section(s)').last().json.nextRevision }},\n  'Updated - Ready for Review',\n  $9,\n  CURRENT_TIMESTAMP\n);",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Re-Compile HTML With Updated Section(s)').last().json.company,\n  $('Re-Compile HTML With Updated Section(s)').last().json.positionTitle,\n  $('Re-Compile HTML With Updated Section(s)').last().json.summaryHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.skillsHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.experienceHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.certificationsHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.educationHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.hobbiesHtml,\n  $('Re-Compile HTML With Updated Section(s)').last().json.reviewerNotes\n] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "7a0434d2-e71f-4b13-860b-7bce4de27149",
+      "name": "Google Sheets: Update Row with Revised PDF Link",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5472,
+        1600
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "Job Application Sheet"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Re-Compile HTML With Updated Section(s)').last().json.sNo }}",
+            "Resume_id": "={{ $('Re-Compile HTML With Updated Section(s)').last().json.resumeId }}",
+            "Resume": "={{ $('Upload Revised PDF to Google Drive').last().json.webViewLink }}",
+            "Resume Status": "Ready for Review"
+          },
+          "matchingColumns": [
+            "S. No."
+          ],
+          "schema": [
+            {
+              "id": "S. No.",
+              "displayName": "S. No.",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume_id",
+              "displayName": "Resume_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Resume",
+              "displayName": "Resume",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Resume Status",
+              "displayName": "Resume Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "c386d160-2d26-48dd-80eb-2d62419907b9",
+      "name": "Wait 6s (Inter-Row Cooldown)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5696,
+        1696
+      ],
+      "parameters": {
+        "amount": 6
+      }
+    },
+    {
+      "id": "0d5f9f73-59c5-473a-943e-e04269e2821c",
+      "name": "Loop Over Approved Rows (1 by 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2048,
+        1968
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "5c1b46c1-5594-4990-b6cd-445743b19b09",
+      "name": "Postgres: Promote Approved Resume to Few-Shot Library",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        2304,
+        1968
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE resume_generations\nSET resume_status = 'Approved', updated_at = CURRENT_TIMESTAMP\nWHERE resume_id = '{{ $json[\"Resume_id\"] }}' OR s_no = '{{ $json[\"S. No.\"] }}' OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'));\n\nDELETE FROM role_few_shot_library\nWHERE source_label IN (\n  SELECT 'Approved Resume - ' || company_name || ' (' || position_title || ')'\n  FROM resume_generations\n  WHERE resume_id = '{{ $json[\"Resume_id\"] }}' OR s_no = '{{ $json[\"S. No.\"] }}' OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\n);\n\nINSERT INTO role_few_shot_library (\n  role_category,\n  role_display_name,\n  include_maerke_stratcomm,\n  include_marketing_projects,\n  sample_summary_html,\n  sample_skills_html,\n  sample_experience_html,\n  source_label,\n  is_active\n)\nSELECT\n  role_category,\n  position_title || ' (' || company_name || ')',\n  FALSE,\n  CASE WHEN LENGTH(COALESCE(marketing_projects_html, '')) > 10 THEN TRUE ELSE FALSE END,\n  summary_html,\n  skills_html,\n  experience_html,\n  'Approved Resume - ' || company_name || ' (' || position_title || ')',\n  TRUE\nFROM resume_generations\nWHERE resume_id = '{{ $json[\"Resume_id\"] }}' OR s_no = '{{ $json[\"S. No.\"] }}' OR LOWER(TRIM(company_name)) = LOWER(TRIM('{{ $json[\"Company\"] }}'))\nORDER BY updated_at DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "d9d97611-af48-43b2-ae84-a26b4bf97fb8",
+      "name": "Google Sheets: Mark Resume Status = Approved & Learned",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2544,
+        1968
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "Job Application Sheet"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "S. No.": "={{ $('Loop Over Approved Rows (1 by 1)').last().json['S. No.'] }}",
+            "Resume Status": "Approved & Learned"
+          },
+          "matchingColumns": [
+            "S. No."
+          ],
+          "schema": [
+            {
+              "id": "S. No.",
+              "displayName": "S. No.",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume Status",
+              "displayName": "Resume Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "auto-tg-trig-lXNGL9Oc",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        1972
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 Mins (Or Manual Run)": {
+      "main": [
+        [
+          {
+            "node": "Get Rows Where Resume Status = Needs Rework",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Resume Status = LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Where Resume Status = Needs Rework": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Review Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Review Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Postgres: Fetch Cached Resume Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Fetch Cached Resume Sections": {
+      "main": [
+        [
+          {
+            "node": "Merge Sheet Feedback & Cached HTML Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Sheet Feedback & Cached HTML Sections": {
+      "main": [
+        [
+          {
+            "node": "IF Reviewer Notes & Cached Resume Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Reviewer Notes & Cached Resume Present": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 6s (Inter-Row Cooldown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #1)": {
+      "main": [
+        [
+          {
+            "node": "AI Router: Detect Flagged Section & Distill Rule (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Router: Detect Flagged Section & Distill Rule (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Parse Router Decision & Learned Rule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (AI Router)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (AI Router)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Router Model)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Router Model)": {
+      "main": [
+        [
+          {
+            "node": "AI Router: Detect Flagged Section & Distill Rule (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Router Decision & Learned Rule": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Save New Rule to learned_rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Save New Rule to learned_rules": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s (Gemini RPM Guard #2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s (Gemini RPM Guard #2)": {
+      "main": [
+        [
+          {
+            "node": "Targeted Section Rewriter (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Targeted Section Rewriter (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Re-Compile HTML With Updated Section(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Model (Section Rewriter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Model (Section Rewriter)": {
+      "main": [
+        [
+          {
+            "node": "Wait 7s (Switch Rewriter Model)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7s (Switch Rewriter Model)": {
+      "main": [
+        [
+          {
+            "node": "Targeted Section Rewriter (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-Compile HTML With Updated Section(s)": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s (Gotenberg CPU Guard)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s (Gotenberg CPU Guard)": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: Render Revised PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: Render Revised PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload Revised PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Revised PDF to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Update Cached Sections & Increment Revision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Update Cached Sections & Increment Revision": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Row with Revised PDF Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Update Row with Revised PDF Link": {
+      "main": [
+        [
+          {
+            "node": "Wait 6s (Inter-Row Cooldown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 6s (Inter-Row Cooldown)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Review Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Where Resume Status = LGTM": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Approved Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Approved Rows (1 by 1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Postgres: Promote Approved Resume to Few-Shot Library",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Promote Approved Resume to Few-Shot Library": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Mark Resume Status = Approved & Learned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Mark Resume Status = Approved & Learned": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Approved Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Rows Where Resume Status = Needs Rework",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Rows Where Resume Status = LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID",
+    "saveExecutionProgress": true
+  },
+  "meta": null
+}
