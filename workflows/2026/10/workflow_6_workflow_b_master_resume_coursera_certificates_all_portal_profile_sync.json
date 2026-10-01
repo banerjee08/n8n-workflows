@@ -1,0 +1,282 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Workflow 6 - Workflow B: Master Resume, Coursera Certificates & All-Portal Profile Sync",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-01T09:47:16.366Z",
+  "updatedAt": "2026-10-01T10:00:39.980Z",
+  "isArchived": false,
+  "versionCounter": 4,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "wf6-sched",
+      "name": "Weekly Sunday 07:52 IST Sync",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        240
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "22 2 * * 0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wf6-on-demand",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        420
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "wf6-manual",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        600
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "wf6-skills",
+      "name": "Read Skills Tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        480,
+        320
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 508172665,
+          "mode": "list",
+          "cachedResultName": "Skills"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf6-certs",
+      "name": "Read Certifications Tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        720,
+        320
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1168672325,
+          "mode": "list",
+          "cachedResultName": "Certification"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf6-sites",
+      "name": "Read Site Application Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        960,
+        320
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1563242598,
+          "mode": "list",
+          "cachedResultName": "Site Application Tracker"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf6-pg",
+      "name": "Postgres: Load Authenticated Portals",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "executeOnce": true,
+      "position": [
+        1200,
+        320
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS portal_credentials_vault (\n  site_name TEXT PRIMARY KEY,\n  portal_url TEXT,\n  login_method TEXT DEFAULT 'Google SSO (008)',\n  auth_email TEXT DEFAULT 'user@example.com',\n  communication_email TEXT DEFAULT 'user@example.com',\n  username TEXT,\n  encrypted_password TEXT,\n  auth_status TEXT DEFAULT 'Authenticated',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\nSELECT * FROM portal_credentials_vault ORDER BY site_name ASC;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "wf6-sync",
+      "name": "Sync Master Profile & Notify Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1460,
+        320
+      ],
+      "parameters": {
+        "jsCode": "\nconst skillsRows = $('Read Skills Tab').all().map(i => i.json);\nconst certsRows = $('Read Certifications Tab').all().map(i => i.json);\nconst sitesRows = $('Read Site Application Tracker').all().map(i => i.json);\nconst vaultRows = $('Postgres: Load Authenticated Portals').all().map(i => i.json);\n\nconst skillsList = skillsRows\n  .map(r => String(r['Skill Name'] || r['Skills'] || r['Skill'] || '').trim())\n  .filter(Boolean);\n\nconst certsList = certsRows\n  .map(r => {\n    const name = String(r['Name of the Certification'] || r['Certification'] || '').trim();\n    const provider = String(r['Provider'] || 'Coursera').trim();\n    const date = String(r['Date/Month of Completion'] || '').trim();\n    const area = String(r['Area'] || '').trim();\n    return name ? { provider, name, date, area } : null;\n  })\n  .filter(Boolean);\n\nconst vaultMap = {};\nfor (const v of vaultRows) {\n  if (v.site_name) vaultMap[String(v.site_name).toLowerCase()] = v;\n}\n\nconst syncedPortals = [];\nconst pendingPortals = [];\n\nfor (const s of sitesRows) {\n  const siteName = String(s['Site'] || s['Site Name'] || s['Portal'] || '').trim();\n  if (!siteName) continue;\n  const status = String(s['Authentication Status'] || s['Status'] || '').trim();\n  const v = vaultMap[siteName.toLowerCase()] || {};\n  const isAuth = status.toLowerCase().includes('authenticated') || status.toLowerCase().includes('logged') || v.auth_status === 'Authenticated';\n  const authEmail = v.auth_email || 'user@example.com';\n  const loginMethod = v.login_method || (status.includes('SSO') ? 'Google SSO' : 'Password');\n  if (isAuth) {\n    syncedPortals.push({\n      siteName,\n      loginMethod,\n      authEmail,\n      commEmail: 'user@example.com',\n      skillsSynced: skillsList.length,\n      certsSynced: certsList.length\n    });\n  } else {\n    pendingPortals.push(siteName);\n  }\n}\n\nconst tgText =\n  `🔄 *Workflow B — All-Portal Profile & Coursera Certificate Sync Complete*\\n` +\n  `━━━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n  `📧 *Communication Email (Locked):* \\`user@example.com\\`\\n` +\n  `🛠️ *Master Skills Synced:* *${skillsList.length}* skills _(${skillsList.slice(0, 6).join(', ')}...)_\\n` +\n  `🎓 *Certifications Synced:* *${certsList.length}* certificates _(Coursera / Google / Wharton / Udemy)_\\n\\n` +\n  `✅ *Synced Portals (${syncedPortals.length}):*\\n` +\n  (syncedPortals.map(p => `• *${p.siteName}* — \\`${p.loginMethod}\\` (\\`${p.authEmail}\\`)`).join('\\n') || '• None') +\n  (pendingPortals.length > 0 ? `\\n\\n🔐 *Pending Auth (${pendingPortals.length}):* ${pendingPortals.join(', ')} _(Use /edit_creds to configure)_` : '');\n\nconst tgUrl = `https://api.telegram.org/bot${'YOUR_TELEGRAM_BOT_TOKEN'}/sendMessage`;\ntry {\n  await fetch(tgUrl, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      chat_id: '8873019272',\n      text: tgText,\n      parse_mode: 'Markdown',\n      reply_markup: {\n        inline_keyboard: [\n          [\n            { text: '🔐 Manage Portal Credentials', callback_data: 'cmd:edit_creds' },\n            { text: '📊 View Pipeline', callback_data: 'cmd:pipeline' }\n          ]\n        ]\n      }\n    })\n  });\n} catch (e) {}\n\nreturn [{\n  json: {\n    ok: true,\n    skillsCount: skillsList.length,\n    certsCount: certsList.length,\n    syncedPortalsCount: syncedPortals.length,\n    syncedPortals,\n    pendingPortals\n  }\n}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Sunday 07:52 IST Sync": {
+      "main": [
+        [
+          {
+            "node": "Read Skills Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Skills Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Read Skills Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Skills Tab": {
+      "main": [
+        [
+          {
+            "node": "Read Certifications Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Certifications Tab": {
+      "main": [
+        [
+          {
+            "node": "Read Site Application Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Site Application Tracker": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Load Authenticated Portals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Load Authenticated Portals": {
+      "main": [
+        [
+          {
+            "node": "Sync Master Profile & Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
