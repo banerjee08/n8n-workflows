@@ -1,0 +1,219 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Workflow 7 - Poised LinkedIn Insider Connect, Sentiment-Aware Post Engager & Referral Engine",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-01T15:39:16.030Z",
+  "updatedAt": "2026-10-01T18:38:35.273Z",
+  "isArchived": false,
+  "versionCounter": 4,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "layman-guide-DK7BGr5CVZrkPe6W",
+      "name": "📖 Plain-English Workflow Guide (What It Does, Dependencies, Input & Output)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        120
+      ],
+      "parameters": {
+        "content": "## 📖 Workflow 7: Poised LinkedIn Networking & Sentiment-Aware Engagement (Plain-English Guide)\n\n### 🎯 What It Does\nHelps you engage with insiders and hiring managers at your target companies (`Reference Sheet` & `Job Application Sheet`) in a **poised, understated, human-like way**:\n- **Sentiment-First Reactions & Comments**: Matches the actual tone of their post (Technical/Analytical, Milestone/Launch, Serious/Reflective, or Light) instead of forcing jokes. Keeps comments strictly to **1 short, believable sentence (8–18 words)**—or recommends a clean reaction (`💡`/`👍`) when words aren't needed.\n- **Step 1 (Day 0 — Composed Peer Connect)**: A short, 25-word connection note showing genuine professional interest without fluff or a job ask.\n- **Step 2 (Day 2+ — Poised Referral Slide-In)**: A calm, 2-sentence note mentioning the role you applied for (or future openings) without sounding needy.\n\n### 🔗 Dependencies (What It Needs to Work)\n- **Google Sheets**: Reads target companies and contacts from `Reference Sheet` and `Job Application Sheet`.\n- **Telegram Bot (`@SB_job_manager_bot`)**: Delivers concise networking cards and lets you paste any real LinkedIn post for live sentiment analysis.\n\n### 📥 Input (What Goes In)\n- **Trigger**: Runs daily at **11:00 AM IST** or whenever you tap **`🤝 LinkedIn Insider Connect`** (`/network`) on Telegram.\n\n### 📤 Output (What Comes Out)\n- **Telegram Playbook Card**: Sentiment-matched reaction/comment guide, poised connection note, and composed referral slide-in.",
+        "height": 580,
+        "width": 620,
+        "color": 7
+      }
+    },
+    {
+      "id": "wf7-sched",
+      "name": "Daily 11:00 IST Networking Digest",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        240
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 5 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wf7-ondemand",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        420
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "wf7-manual",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        600
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "wf7-jobs",
+      "name": "Read Job Application Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        460,
+        420
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1080519924,
+          "mode": "list",
+          "cachedResultName": "Job Application Sheet"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-refs",
+      "name": "Read Reference Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        720,
+        420
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 0,
+          "mode": "list",
+          "cachedResultName": "Reference Sheet"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-engine",
+      "name": "Generate Sentiment-Aware Comments & Poised Connect Notes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1000,
+        420
+      ],
+      "parameters": {
+        "jsCode": "\nconst jobRows = $('Read Job Application Sheet').all().map(i => i.json);\nconst refRows = $('Read Reference Sheet').all().map(i => i.json);\nconst _ctx = this;\nconst TG_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';\nconst ADMIN_CHAT_ID = '8873019272';\n\nconst refByComp = {};\nfor (const r of refRows) {\n  const c = String(r['Company'] || '').trim().toLowerCase();\n  const ref = String(r['Reference'] || '').trim();\n  const soc = String(r['Social Media of Reference'] || '').trim();\n  if (c && (ref || soc)) {\n    refByComp[c] = { ref, soc };\n  }\n}\n\nconst activeCompanies = [];\nconst seen = new Set();\n\nfor (let i = jobRows.length - 1; i >= 0; i--) {\n  const r = jobRows[i];\n  const comp = String(r['Company'] || '').trim();\n  const title = String(r['Position - Title'] || '').trim();\n  const sNo = String(r['S. No.'] || '').trim();\n  if (!comp || !title) continue;\n  const key = comp.toLowerCase();\n  if (!seen.has(key)) {\n    seen.add(key);\n    const refInfo = refByComp[key] || {};\n    activeCompanies.push({\n      sNo,\n      company: comp,\n      role: title,\n      reference: String(r['Reference'] || refInfo.ref || '').trim(),\n      socialUrl: refInfo.soc || '',\n      status: String(r['Status'] || r['Resume Status'] || 'Active').trim()\n    });\n  }\n  if (activeCompanies.length >= 5) break;\n}\n\nconst PlaybookCards = activeCompanies.map(c => {\n  const comp = c.company;\n  const role = c.role;\n  const insider = c.reference ? c.reference.split(/[\\/,\\s]+/)[0] : '';\n  const hiName = insider ? `Hi ${insider},` : `Hi,`;\n  const searchUrl = c.socialUrl || `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(comp + ' Analytics')}`;\n\n  return {\n    company: comp,\n    role,\n    sNo: c.sNo,\n    insider: c.reference || 'Analytics Peer / HM',\n    searchUrl,\n    sentimentGuide: [\n      `• 📊 *Analytical / Tech Post* (React 💡): _\"Clean metric definitions upfront usually save more time than the pipeline build itself. Good read.\"_`,\n      `• 🎯 *Milestone / Team Launch* (React 🎉): _\"Congrats on shipping this—looks like a solid step forward for the team at ${comp}.\"_`,\n      `• 🧭 *Serious / Industry Shift* (React ❤️/💡, *Never Witty*): _\"Appreciate you sharing a candid perspective on this. Important takeaway.\"_`,\n      `• 💬 *Light Observation* (React 👍): _\"The gap between the dashboard request and the actual business question is always the real work.\"_`\n    ].join('\\n'),\n    warmConnectNote: `${hiName} came across your profile while following ${comp}'s analytics work. I work in data modelling and BI (SQL, Python, Tableau) and would love to connect.`,\n    casualSlideInMsg: `Thanks for connecting${insider ? ', ' + insider : ''}. I recently applied for the ${role} role at ${comp} and wanted to share my profile in case my background in data modelling and BI is a fit for this or upcoming openings. Either way, glad to be connected.`,\n    cadenceRule: `Poised Cadence: Keep comments under 18 words. Often a single 💡 or 👍 reaction without text is enough. Never double-DM if unaccepted.`\n  };\n});\n\nif (PlaybookCards.length > 0) {\n  const top = PlaybookCards[0];\n  const text =\n    `🤝 *Poised LinkedIn Playbook — ${top.company} (#${top.sNo})*\\n` +\n    `━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n    `💼 *Role:* ${top.role}\\n` +\n    `👤 *Contact:* *${top.insider}*\\n` +\n    `🎭 *Style:* *Poised, Concise & Sentiment-Matched* _(Zero Fluff)_\\n\\n` +\n    `1️⃣ *Match the Post's Sentiment (1 Short Sentence Max):*\\n` +\n    `${top.sentimentGuide}\\n\\n` +\n    `2️⃣ *Day 0 Connection Note (30 words, calm & peer-level):*\\n` +\n    `\\`${top.warmConnectNote}\\`\\n\\n` +\n    `3️⃣ *Day 2+ Referral / Applied Slide-In (Poised, no pressure):*\\n` +\n    `\\`${top.casualSlideInMsg}\\`\\n\\n` +\n    `🛡️ *Rule:* _${top.cadenceRule}_\\n` +\n    `🔗 [Open LinkedIn Profile / Search](${top.searchUrl})`;\n\n  const kb = [\n    [{ text: '💬 Paste a Post -> Get Sentiment-Matched Reply', callback_data: 'cmd:post_reply' }]\n  ];\n  for (const other of PlaybookCards.slice(1, 4)) {\n    kb.push([{ text: `🤝 Switch to ${other.company} (#${other.sNo})`, callback_data: `net_comp:${other.sNo}` }]);\n  }\n  kb.push([{ text: '▴ Back to Compact Menu', callback_data: 'nav:home' }]);\n\n  try {\n    await _ctx.helpers.httpRequest({\n      method: 'POST',\n      url: `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,\n      headers: { 'Content-Type': 'application/json' },\n      body: {\n        chat_id: ADMIN_CHAT_ID,\n        text,\n        parse_mode: 'Markdown',\n        disable_web_page_preview: true,\n        reply_markup: { inline_keyboard: kb }\n      },\n      json: true\n    });\n  } catch (e) {}\n}\n\nreturn [{ json: { ok: true, count: PlaybookCards.length, PlaybookCards } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Daily 11:00 IST Networking Digest": {
+      "main": [
+        [
+          {
+            "node": "Read Job Application Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Job Application Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Read Job Application Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Job Application Sheet": {
+      "main": [
+        [
+          {
+            "node": "Read Reference Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Reference Sheet": {
+      "main": [
+        [
+          {
+            "node": "Generate Sentiment-Aware Comments & Poised Connect Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
