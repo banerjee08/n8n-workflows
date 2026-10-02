@@ -4,11 +4,27 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-28T08:48:53.855Z",
-  "updatedAt": "2026-10-01T07:51:05.624Z",
+  "updatedAt": "2026-10-01T18:29:51.146Z",
   "isArchived": false,
-  "versionCounter": 12,
+  "versionCounter": 13,
   "sourceWorkflowId": null,
   "nodes": [
+    {
+      "id": "layman-guide-T4k9rXZ2CKK72xZS",
+      "name": "📖 Plain-English Workflow Guide (What It Does, Dependencies, Input & Output)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        6400,
+        2300
+      ],
+      "parameters": {
+        "content": "## 📖 Workflow 3: 1-Page Cover Letter Generator & Reviewer (Plain-English Guide)\n\n### 🎯 What It Does\nOnly after your Resume is approved (or when a job portal specifically asks for a Cover Letter), this workflow writes a **human-sounding, 1-page business Cover Letter PDF** grounded strictly in your approved Resume and the company's Job Description. It also handles your Cover Letter reworks and approvals!\n\n### 🔗 Dependencies (What It Needs to Work)\n- **Google Sheets (`Job Application Tracker`)**: Reads rows where `Cover Letter Status = Create one`, `Needs Rework`, or `LGTM`.\n- **Postgres Database**: Reads your approved Resume HTML (`resume_draft_state`) and your Cover Letter `learned_rules`.\n- **Google Gemini AI + Gotenberg PDF + Google Drive**: Generates the 5-paragraph letter and converts it into a 1-page A4 PDF.\n\n### 📥 Input (What Goes In)\n- **Trigger**: Runs every 15 minutes (`:10, :25, :40, :55`) or immediately when you click **`📝 Approve + Create CL`** on Telegram.\n- **Data In**: The approved Resume content, Company Name, Job Title, Job Description, and any `Notes for CL`.\n\n### 📤 Output (What Comes Out)\n- **1-Page Cover Letter PDF**: Uploaded to Google Drive (`custom_resumes`) as `Cover_Letter_<Resume_id>_Sumanto_Banerjee.pdf`.\n- **Google Sheet Update**: Writes the PDF link into Column `U` (`Cover Letter`) and sets `Cover Letter Status` (Col `V`) to **`Ready for Review`** (or `Approved & Learned` once approved).",
+        "height": 580,
+        "width": 620,
+        "color": 4
+      }
+    },
     {
       "id": "dbdec60d-8778-4642-8f13-ed73d645590c",
       "name": "Every 15 Mins (Or Manual Run)",
