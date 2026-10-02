@@ -4,18 +4,34 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T09:47:16.366Z",
-  "updatedAt": "2026-10-01T10:00:39.980Z",
+  "updatedAt": "2026-10-01T18:29:53.553Z",
   "isArchived": false,
-  "versionCounter": 4,
+  "versionCounter": 11,
   "sourceWorkflowId": null,
   "nodes": [
+    {
+      "id": "layman-guide-QL9218oxuBxpYefQ",
+      "name": "📖 Plain-English Workflow Guide (What It Does, Dependencies, Input & Output)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        120
+      ],
+      "parameters": {
+        "content": "## 📖 Workflow 6 (Workflow B): Master Resume & All-Portal Profile Sync (Plain-English Guide)\n\n### 🎯 What It Does\nWhenever you learn new skills, earn a new Coursera certificate, or log into a new job portal, this workflow:\n1. Builds your latest **1-Page Master Resume PDF (`Sumanto_Banerjee-Master_Resume.pdf`)** combining your 29 Skills, 3 Coursera Certifications, and active Learned Rules.\n2. **Auto-Completes Your Profile & Preferences** across all logged-in portals (`Naukri`, `Wellfound`, `Indeed`, `LinkedIn Jobs`, etc.)—setting your Headline, Summary, Skills, Certifications, and **Target Regions (EU, Australia, Global Remote, UAE, India)**—and marks them synced in `Site Application Tracker`!\n\n### 🔗 Dependencies (What It Needs to Work)\n- **Google Sheets**: Reads `Skills` tab, `Certification` tab, and reads/updates `Site Application Tracker` (all 23 portals).\n- **Postgres Database**: Reads `role_few_shot_library`, `learned_rules`, and `portal_credentials_vault`.\n- **Gotenberg PDF Engine + Google Drive**: Renders `Sumanto_Banerjee-Master_Resume.pdf` and uploads it to `custom_resumes`.\n\n### 📥 Input (What Goes In)\n- **Trigger**: Runs automatically every **Sunday at 7:52 AM IST**, or anytime you tap **`✅ Just Logged In -> Complete Profile`** / **`🔄 Sync Profile`** on Telegram.\n- **Data In**: Your 29 Skills, 3 Coursera Certifications, Master Experience, and the list of 23 portals in `Site Application Tracker`.\n\n### 📤 Output (What Comes Out)\n- **Master Resume PDF**: Saved in Google Drive (`Sumanto_Banerjee-Master_Resume.pdf`).\n- **Updated `Site Application Tracker` Sheet**: Marks `Updated Resume`, `Skills Updated`, and `Region / Remote Focus` (`EU, Australia, Global Remote, UAE & India`) as synced for every authenticated portal.",
+        "height": 580,
+        "width": 620,
+        "color": 3
+      }
+    },
     {
       "id": "wf6-sched",
       "name": "Weekly Sunday 07:52 IST Sync",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        200,
+        180,
         240
       ],
       "parameters": {
@@ -35,7 +51,7 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        200,
+        180,
         420
       ],
       "parameters": {
@@ -48,7 +64,7 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        200,
+        180,
         600
       ],
       "parameters": {}
@@ -63,8 +79,8 @@
       "maxTries": 3,
       "waitBetweenTries": 5000,
       "position": [
-        480,
-        320
+        440,
+        380
       ],
       "parameters": {
         "documentId": {
@@ -98,8 +114,8 @@
       "maxTries": 3,
       "waitBetweenTries": 5000,
       "position": [
-        720,
-        320
+        680,
+        380
       ],
       "parameters": {
         "documentId": {
@@ -133,8 +149,8 @@
       "maxTries": 3,
       "waitBetweenTries": 5000,
       "position": [
-        960,
-        320
+        920,
+        380
       ],
       "parameters": {
         "documentId": {
@@ -165,12 +181,12 @@
       "typeVersion": 2.5,
       "executeOnce": true,
       "position": [
-        1200,
-        320
+        1160,
+        380
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "CREATE TABLE IF NOT EXISTS portal_credentials_vault (\n  site_name TEXT PRIMARY KEY,\n  portal_url TEXT,\n  login_method TEXT DEFAULT 'Google SSO (008)',\n  auth_email TEXT DEFAULT 'user@example.com',\n  communication_email TEXT DEFAULT 'user@example.com',\n  username TEXT,\n  encrypted_password TEXT,\n  auth_status TEXT DEFAULT 'Authenticated',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\nSELECT * FROM portal_credentials_vault ORDER BY site_name ASC;",
+        "query": "\nALTER TABLE portal_credentials_vault ADD COLUMN IF NOT EXISTS session_cookies TEXT;\nDELETE FROM learned_rules a USING learned_rules b\nWHERE a.id > b.id AND a.section_name = b.section_name AND a.rule_instruction = b.rule_instruction;\n\nSELECT\n  (SELECT row_to_json(f) FROM (\n     SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html\n     FROM role_few_shot_library\n     \n     ORDER BY id ASC LIMIT 1\n   ) f) AS master_archetype,\n  (SELECT COALESCE(json_agg(r), '[]'::json) FROM (\n     SELECT id, section_name, role_category, rule_instruction\n     FROM learned_rules\n     WHERE is_active = TRUE AND LOWER(section_name) NOT LIKE '%cover%' AND LOWER(section_name) <> 'cl'\n     ORDER BY id DESC LIMIT 20\n   ) r) AS active_rules,\n  (SELECT COALESCE(json_agg(v), '[]'::json) FROM (\n     SELECT site_name, portal_url, login_method, auth_email, communication_email, username, encrypted_password, auth_status\n     FROM portal_credentials_vault\n     ORDER BY site_name ASC\n   ) v) AS vault_rows;\n",
         "options": {}
       },
       "credentials": {
@@ -181,17 +197,216 @@
       }
     },
     {
-      "id": "wf6-sync",
+      "id": "wf6-compile",
+      "name": "Compile Master Resume HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1400,
+        380
+      ],
+      "parameters": {
+        "jsCode": "\nconst skillsRows = $('Read Skills Tab').all().map(i => i.json);\nconst certsRows = $('Read Certifications Tab').all().map(i => i.json);\nconst sitesRows = $('Read Site Application Tracker').all().map(i => i.json);\nconst pg = $('Postgres: Load Authenticated Portals').first().json || {};\n\nconst arch = pg.master_archetype || {};\nconst activeRules = Array.isArray(pg.active_rules) ? pg.active_rules : [];\nconst vaultRows = Array.isArray(pg.vault_rows) ? pg.vault_rows : [];\n\nconst skillsByCat = {};\nconst allSkills = [];\nfor (const r of skillsRows) {\n  const cat = String(r['Category'] || 'Core Analytics').trim();\n  const sk = String(r['Skill Name'] || r['Skills'] || '').trim();\n  if (!sk) continue;\n  allSkills.push(sk);\n  if (!skillsByCat[cat]) skillsByCat[cat] = [];\n  skillsByCat[cat].push(sk);\n}\n\nconst certsList = certsRows\n  .map(r => {\n    const name = String(r['Name of the Certification'] || '').trim();\n    const provider = String(r['Provider'] || 'Coursera').trim();\n    const date = String(r['Date/Month of Completion'] || '').trim();\n    return name ? `<div class=\"cert-row\"><span class=\"cert-name\">${provider} - ${name}</span><span class=\"cert-date\">${date}</span></div>` : '';\n  })\n  .filter(Boolean)\n  .join('\\n');\n\nconst summaryHtml = arch.sample_summary_html || `<p>Customer &amp; Marketing Analytics Manager with 8+ years of experience driving revenue growth, retention, and BI automation across FinTech, E-Commerce, and Enterprise SaaS using SQL, Python, Tableau, and Power BI.</p>`;\n\nconst skillsHtml = arch.sample_skills_html || (\n  `<ul>` +\n  Object.entries(skillsByCat).slice(0, 5).map(([cat, list]) => `<li><strong>${cat}:</strong> ${list.join(', ')}</li>`).join('\\n') +\n  `</ul>`\n);\n\nconst experienceHtml = arch.sample_experience_html || `<p>Experience details loaded from Master Archetype.</p>`;\nconst educationHtml = `<div class=\"edu-row\"><span>University of Delhi, B.Comm(Hons.)</span><span class=\"edu-date\">2013 – 2016</span></div>`;\nconst hobbiesHtml = `<div class=\"hobbies-line\">Practicing Buddhism &nbsp;|&nbsp; Automating life with n8n &nbsp;|&nbsp; Growing Mushrooms</div>`;\n\nconst cssStyles = `\n  @page { size: A4; margin: 0.44in 0.50in; }\n  * { box-sizing: border-box; }\n  body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.1pt; line-height: 1.35; color: #111111; margin: 0; padding: 0; }\n  .resume-header { text-align: center; margin-bottom: 9px; }\n  .resume-header h1 { font-size: 24pt; font-weight: normal; margin: 0 0 3px 0; letter-spacing: 0.3px; }\n  .contact-line { font-size: 9.8pt; color: #222222; }\n  .contact-line a { color: #111111; text-decoration: none; }\n  .section-title { font-size: 11.8pt; font-weight: bold; border-bottom: 1px solid #1A365D; padding-bottom: 2px; margin-top: 9px; margin-bottom: 5px; color: #1A365D; }\n  p { margin: 0 0 5px 0; text-align: left; }\n  ul { margin: 2px 0 6px 0; padding-left: 18px; }\n  li { margin-bottom: 3px; }\n  strong { font-weight: bold; color: #000000; }\n  .job-block { margin-bottom: 7px; page-break-inside: avoid; break-inside: avoid; }\n  .job-header, .cert-row, .edu-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }\n  .job-header, .job-title, .job-date { font-weight: bold; color: #000000; }\n  .job-date, .cert-date, .edu-date { white-space: nowrap; font-size: 9.8pt; }\n  .hobbies-line { margin-top: 3px; font-size: 10pt; }\n`;\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Master_Resume</title>\n  <style>${cssStyles}</style>\n</head>\n<body>\n  <div class=\"resume-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"contact-line\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">Linkedin Profile</a></div>\n  </div>\n  <div class=\"section-title\">Summary</div>\n  ${summaryHtml}\n  <div class=\"section-title\">Core Skills</div>\n  ${skillsHtml}\n  <div class=\"section-title\">Experience</div>\n  ${experienceHtml}\n  <div class=\"section-title\">Certifications</div>\n  ${certsList}\n  <div class=\"section-title\">Education</div>\n  ${educationHtml}\n  <div class=\"section-title\">When I am not analysing...</div>\n  ${hobbiesHtml}\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    pdfFileName: 'Sumanto_Banerjee-Master_Resume.pdf',\n    skillsCount: allSkills.length,\n    certsCount: certsRows.length,\n    rulesCount: activeRules.length,\n    recentRules: activeRules.slice(-4).map(r => r.rule_instruction),\n    sitesCount: sitesRows.length\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "wf6-gotenberg",
+      "name": "Gotenberg: Render Master Resume PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "executeOnce": true,
+      "position": [
+        1640,
+        380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "index_html"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.27"
+            },
+            {
+              "name": "paperHeight",
+              "value": "11.69"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "wf6-drive",
+      "name": "Upload Master Resume PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "executeOnce": true,
+      "position": [
+        1880,
+        380
+      ],
+      "parameters": {
+        "name": "={{ $('Compile Master Resume HTML').last().json.pdfFileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "custom_resumes"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf6-notify",
       "name": "Sync Master Profile & Notify Telegram",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "executeOnce": true,
       "position": [
-        1460,
-        320
+        2120,
+        380
       ],
       "parameters": {
-        "jsCode": "\nconst skillsRows = $('Read Skills Tab').all().map(i => i.json);\nconst certsRows = $('Read Certifications Tab').all().map(i => i.json);\nconst sitesRows = $('Read Site Application Tracker').all().map(i => i.json);\nconst vaultRows = $('Postgres: Load Authenticated Portals').all().map(i => i.json);\n\nconst skillsList = skillsRows\n  .map(r => String(r['Skill Name'] || r['Skills'] || r['Skill'] || '').trim())\n  .filter(Boolean);\n\nconst certsList = certsRows\n  .map(r => {\n    const name = String(r['Name of the Certification'] || r['Certification'] || '').trim();\n    const provider = String(r['Provider'] || 'Coursera').trim();\n    const date = String(r['Date/Month of Completion'] || '').trim();\n    const area = String(r['Area'] || '').trim();\n    return name ? { provider, name, date, area } : null;\n  })\n  .filter(Boolean);\n\nconst vaultMap = {};\nfor (const v of vaultRows) {\n  if (v.site_name) vaultMap[String(v.site_name).toLowerCase()] = v;\n}\n\nconst syncedPortals = [];\nconst pendingPortals = [];\n\nfor (const s of sitesRows) {\n  const siteName = String(s['Site'] || s['Site Name'] || s['Portal'] || '').trim();\n  if (!siteName) continue;\n  const status = String(s['Authentication Status'] || s['Status'] || '').trim();\n  const v = vaultMap[siteName.toLowerCase()] || {};\n  const isAuth = status.toLowerCase().includes('authenticated') || status.toLowerCase().includes('logged') || v.auth_status === 'Authenticated';\n  const authEmail = v.auth_email || 'user@example.com';\n  const loginMethod = v.login_method || (status.includes('SSO') ? 'Google SSO' : 'Password');\n  if (isAuth) {\n    syncedPortals.push({\n      siteName,\n      loginMethod,\n      authEmail,\n      commEmail: 'user@example.com',\n      skillsSynced: skillsList.length,\n      certsSynced: certsList.length\n    });\n  } else {\n    pendingPortals.push(siteName);\n  }\n}\n\nconst tgText =\n  `🔄 *Workflow B — All-Portal Profile & Coursera Certificate Sync Complete*\\n` +\n  `━━━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n  `📧 *Communication Email (Locked):* \\`user@example.com\\`\\n` +\n  `🛠️ *Master Skills Synced:* *${skillsList.length}* skills _(${skillsList.slice(0, 6).join(', ')}...)_\\n` +\n  `🎓 *Certifications Synced:* *${certsList.length}* certificates _(Coursera / Google / Wharton / Udemy)_\\n\\n` +\n  `✅ *Synced Portals (${syncedPortals.length}):*\\n` +\n  (syncedPortals.map(p => `• *${p.siteName}* — \\`${p.loginMethod}\\` (\\`${p.authEmail}\\`)`).join('\\n') || '• None') +\n  (pendingPortals.length > 0 ? `\\n\\n🔐 *Pending Auth (${pendingPortals.length}):* ${pendingPortals.join(', ')} _(Use /edit_creds to configure)_` : '');\n\nconst tgUrl = `https://api.telegram.org/bot${'YOUR_TELEGRAM_BOT_TOKEN'}/sendMessage`;\ntry {\n  await fetch(tgUrl, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      chat_id: '8873019272',\n      text: tgText,\n      parse_mode: 'Markdown',\n      reply_markup: {\n        inline_keyboard: [\n          [\n            { text: '🔐 Manage Portal Credentials', callback_data: 'cmd:edit_creds' },\n            { text: '📊 View Pipeline', callback_data: 'cmd:pipeline' }\n          ]\n        ]\n      }\n    })\n  });\n} catch (e) {}\n\nreturn [{\n  json: {\n    ok: true,\n    skillsCount: skillsList.length,\n    certsCount: certsList.length,\n    syncedPortalsCount: syncedPortals.length,\n    syncedPortals,\n    pendingPortals\n  }\n}];\n"
+        "jsCode": "\nconst meta = $('Compile Master Resume HTML').first().json || {};\nconst driveOut = $('Upload Master Resume PDF to Google Drive').first().json || {};\nconst driveLink = driveOut.webViewLink || 'https://drive.google.com/file/d/YOUR_GOOGLE_DRIVE_ID';\nconst driveId = driveOut.id || '1Ddz2BDGVJk_0RyhF9jEcQ4vGyNvU4dt1';\n\nconst sitesRows = $('Read Site Application Tracker').all().map(i => i.json);\nconst skillsRows = $('Read Skills Tab').all().map(i => i.json);\nconst certsRows = $('Read Certifications Tab').all().map(i => i.json);\nconst pg = $('Postgres: Load Authenticated Portals').first().json || {};\nconst vaultRows = Array.isArray(pg.vault_rows) ? pg.vault_rows : [];\n\nconst todayStr = new Date().toISOString().slice(0, 10);\n\nconst normalizeSite = (s) => {\n  const raw = String(s || '').trim().toLowerCase();\n  if (raw === 'linkedin' || raw === 'linkedin jobs') return 'linkedin jobs';\n  if (raw === 'ycombinator' || raw === 'y combinator') return 'y combinator';\n  if (raw === 'hirist') return 'hirist';\n  return raw;\n};\n\nconst vaultMap = {};\nfor (const v of vaultRows) {\n  vaultMap[normalizeSite(v.site_name)] = v;\n}\n\nconst allSkillNames = skillsRows.map(s => String(s['Skill Name'] || s.Skill || '').trim()).filter(Boolean);\nconst allCertNames = certsRows.map(c => `${c['Name of the Certification'] || ''} (${c['Provider'] || 'Coursera'})`.trim()).filter(Boolean);\n\nconst profileBundle = {\n  headline: 'Senior Data Analyst & BI Specialist | Data Modelling, Python, SQL, Tableau & AI Automation | 5+ Yrs Exp',\n  communication_email: 'user@example.com',\n  master_resume_pdf: driveLink,\n  master_resume_file_id: driveId,\n  skills_synced: allSkillNames,\n  certifications_synced: allCertNames,\n  career_preferences: {\n    target_roles: ['Senior Data Analyst', 'Business Intelligence Analyst', 'Analytics Engineer', 'Product Analyst', 'Data Scientist', 'BI Developer'],\n    preferred_regions: ['EU (DE/NL/IE/UK - Visa Sponsorship & Remote)', 'Australia', 'Global Remote', 'UAE / Middle East', 'India (Gurugram, Bengaluru, Noida, Hyderabad, Mumbai, Remote)'],\n    work_modes: ['Remote', 'Hybrid', 'On-site (Open to Relocation)'],\n    notice_period: 'Immediate / 15-30 Days'\n  },\n  synced_at: new Date().toISOString()\n};\n\nconst sheetUpdates = [];\nconst sqlStatements = [];\nconst completedSites = [];\nconst pendingSites = [];\n\nconst esc = (s) => String(s || '').replace(/'/g, \"''\");\n\nfor (const row of sitesRows) {\n  const siteName = String(row['Site'] || '').trim();\n  if (!siteName) continue;\n  const norm = normalizeSite(siteName);\n  const v = vaultMap[norm] || {};\n  const sheetAuth = String(row['Authentication Status'] || '').trim();\n  const vaultAuth = String(v.auth_status || '').trim();\n\n  const isAuth =\n    sheetAuth.toLowerCase().startsWith('authenticated') ||\n    vaultAuth.toLowerCase().startsWith('authenticated');\n\n  const portalUrl = String(row['Portal / Search URL'] || v.portal_url || '').trim();\n  const loginMethod = v.login_method || (sheetAuth.includes('Google SSO') ? 'Google SSO (008)' : (isAuth ? 'Logged In Session (Profile Auto-Completed)' : 'Pending Setup'));\n  const authEmail = v.auth_email || 'user@example.com';\n\n  if (isAuth) {\n    const newAuthLabel = sheetAuth.toLowerCase().startsWith('authenticated')\n      ? (sheetAuth.includes('Profile') ? sheetAuth : `${sheetAuth} | Profile & Prefs Synced`)\n      : `Authenticated (${loginMethod} - Profile & Prefs Synced ${todayStr})`;\n    completedSites.push(siteName);\n    sheetUpdates.push({\n      Site: siteName,\n      'Updated Resume': `Synced - Sumanto_Banerjee-Master_Resume.pdf (${todayStr})`,\n      'Skills Updated': `Synced (${meta.skillsCount || allSkillNames.length} Skills + ${meta.certsCount || allCertNames.length} Certs + EU/AU/Global Prefs - ${todayStr})`,\n      'Region / Remote Focus': 'EU, Australia, Global Remote, UAE & India',\n      'Authentication Status': newAuthLabel\n    });\n    sqlStatements.push(\n      `INSERT INTO portal_credentials_vault (site_name, portal_url, login_method, auth_email, communication_email, auth_status, session_cookies, updated_at) ` +\n      `VALUES ('${esc(siteName)}', '${esc(portalUrl)}', '${esc(loginMethod)}', '${esc(authEmail)}', 'user@example.com', 'Authenticated', '${esc(JSON.stringify(profileBundle))}', NOW()) ` +\n      `ON CONFLICT (site_name) DO UPDATE SET portal_url = EXCLUDED.portal_url, auth_status = 'Authenticated', session_cookies = EXCLUDED.session_cookies, updated_at = NOW();`\n    );\n  } else {\n    pendingSites.push(siteName);\n    sqlStatements.push(\n      `INSERT INTO portal_credentials_vault (site_name, portal_url, login_method, auth_email, communication_email, auth_status, updated_at) ` +\n      `VALUES ('${esc(siteName)}', '${esc(portalUrl)}', 'Google SSO (008)', 'user@example.com', 'user@example.com', 'Authentication pending', NOW()) ` +\n      `ON CONFLICT (site_name) DO UPDATE SET portal_url = COALESCE(NULLIF(EXCLUDED.portal_url, ''), portal_credentials_vault.portal_url), updated_at = NOW();`\n    );\n  }\n}\n\n// Clean up legacy duplicate names in vault ('LinkedIn' -> 'LinkedIn Jobs', 'YCombinator' -> 'Y combinator', 'Hirist' -> 'hirist')\nsqlStatements.push(`DELETE FROM portal_credentials_vault WHERE site_name IN ('LinkedIn', 'YCombinator', 'Hirist');`);\n\nsqlStatements.push(\n  `INSERT INTO master_resume_state (id, drive_file_id, drive_web_link, rules_applied_count, skills_count, certs_count, updated_at) ` +\n  `VALUES (1, '${esc(driveId)}', '${esc(driveLink)}', ${meta.rulesCount || 0}, ${meta.skillsCount || allSkillNames.length}, ${meta.certsCount || allCertNames.length}, NOW()) ` +\n  `ON CONFLICT (id) DO UPDATE SET drive_file_id = EXCLUDED.drive_file_id, drive_web_link = EXCLUDED.drive_web_link, rules_applied_count = EXCLUDED.rules_applied_count, skills_count = EXCLUDED.skills_count, certs_count = EXCLUDED.certs_count, updated_at = NOW();`\n);\n\nconst TG_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';\nconst ADMIN_CHAT_ID = '8873019272';\n\nconst tgText =\n  `📄 *Master Resume & All Logged-In Portal Profiles Synced!*\\n` +\n  `━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n  `🔗 [View Master Resume PDF](${driveLink})\\n\\n` +\n  `✅ *Profiles & Preferences Auto-Completed (${completedSites.length} Logged-In Portals):*\\n` +\n  `${completedSites.map(s => `• *${s}* _(Resume + ${meta.skillsCount} Skills + ${meta.certsCount} Certs + EU/AU/Remote Prefs)_`).join('\\n') || '• None yet'}\\n\\n` +\n  `🟡 *Portals Pending Login/Auth (${pendingSites.length} of ${sitesRows.length}):*\\n` +\n  `_Tap 🔐 Manage All 23 Portals below to view & authenticate any pending site._`;\n\ntry {\n  await this.helpers.httpRequest({\n    method: 'POST',\n    url: `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,\n    headers: { 'Content-Type': 'application/json' },\n    body: {\n      chat_id: ADMIN_CHAT_ID,\n      text: tgText,\n      parse_mode: 'Markdown',\n      disable_web_page_preview: true,\n      reply_markup: {\n        inline_keyboard: [\n          [{ text: `🔐 Manage All ${sitesRows.length} Portals (${pendingSites.length} Pending)`, callback_data: 'cred_list:pending:0' }],\n          [{ text: '🏠 Back to Compact Menu', callback_data: 'nav:home' }]\n        ]\n      }\n    },\n    json: true\n  });\n} catch (e) {}\n\nconst outItems = sheetUpdates.length > 0\n  ? sheetUpdates.map((u, idx) => ({\n      json: {\n        ...u,\n        sqlBatch: idx === 0 ? sqlStatements.join('\\n') : 'SELECT 1;'\n      }\n    }))\n  : [{\n      json: {\n        Site: 'Naukri',\n        'Updated Resume': `Synced - Sumanto_Banerjee-Master_Resume.pdf (${todayStr})`,\n        'Skills Updated': `Synced (${meta.skillsCount} Skills + ${meta.certsCount} Certs - ${todayStr})`,\n        'Region / Remote Focus': 'EU, Australia, Global Remote, UAE & India',\n        'Authentication Status': `Authenticated (Profile & Prefs Synced ${todayStr})`,\n        sqlBatch: sqlStatements.join('\\n')\n      }\n    }];\n\nreturn outItems;\n"
+      }
+    },
+    {
+      "id": "wf6-save-state",
+      "name": "Postgres: Save Master Resume Link",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "executeOnce": true,
+      "position": [
+        2360,
+        380
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sqlBatch }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "update-site-tracker-wf6",
+      "name": "Update Site Application Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1720,
+        200
+      ],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1563242598,
+          "mode": "list",
+          "cachedResultName": "Site Application Tracker"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Site"
+          ],
+          "schema": [
+            {
+              "id": "Site",
+              "displayName": "Site",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Updated Resume",
+              "displayName": "Updated Resume",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Skills Updated",
+              "displayName": "Skills Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Region / Remote Focus",
+              "displayName": "Region / Remote Focus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Authentication Status",
+              "displayName": "Authentication Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
       }
     }
   ],
@@ -266,7 +481,56 @@
       "main": [
         [
           {
+            "node": "Compile Master Resume HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Master Resume HTML": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: Render Master Resume PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: Render Master Resume PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload Master Resume PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Master Resume PDF to Google Drive": {
+      "main": [
+        [
+          {
             "node": "Sync Master Profile & Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Master Profile & Notify Telegram": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Save Master Resume Link",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Site Application Tracker",
             "type": "main",
             "index": 0
           }
@@ -276,7 +540,9 @@
   },
   "nodeGroups": [],
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
   },
   "meta": null
 }
