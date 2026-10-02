@@ -4,11 +4,27 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-24T05:50:08.337Z",
-  "updatedAt": "2026-10-01T07:51:02.383Z",
+  "updatedAt": "2026-10-01T18:29:50.218Z",
   "isArchived": false,
-  "versionCounter": 25,
+  "versionCounter": 26,
   "sourceWorkflowId": null,
   "nodes": [
+    {
+      "id": "layman-guide-lXNGL9OcyVVtCBuz",
+      "name": "📖 Plain-English Workflow Guide (What It Does, Dependencies, Input & Output)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        1380
+      ],
+      "parameters": {
+        "content": "## 📖 Workflow 2: Resume Rewriter & Self-Learning Loop (Plain-English Guide)\n\n### 🎯 What It Does\nWhen you review a Resume on Telegram (or in the Google Sheet) and either **ask for changes (`Needs Rework`)** or **approve it with learning (`LGTM`)**, this workflow handles it:\n1. **If you asked for Rework**: It reads your feedback note, rewrites *only* the section you complained about, generates a fresh 1-page PDF, and saves a permanent rule if you chose *\"Save to Lessons Learnt\"*.\n2. **If you clicked Approve & Learn (`LGTM`)**: It saves that winning resume into the database so future resumes for similar roles use it as a reference.\n\n### 🔗 Dependencies (What It Needs to Work)\n- **Google Sheets (`Job Application Tracker`)**: Reads `Resume Status` (`Needs Rework` or `LGTM`) and `Notes by Reviewer`.\n- **Postgres Database**: Updates `learned_rules` and `role_few_shot_library` (and skips learning if marked `[For this resume only]`).\n- **Google Gemini AI + Gotenberg PDF + Google Drive**: Re-renders and replaces the updated Resume PDF.\n\n### 📥 Input (What Goes In)\n- **Trigger**: Runs every 15 minutes (`:05, :20, :35, :50`) or immediately when you click **Approve & Learn** / **Rework** on Telegram.\n- **Data In**: Rows with `Resume Status = Needs Rework` (plus your feedback note in `Notes by Reviewer`) or `Resume Status = LGTM`.\n\n### 📤 Output (What Comes Out)\n- **For Rework**: A newly updated 1-page Resume PDF in Google Drive + `Resume Status` set back to **`Ready for Review`**.\n- **For Approval (`LGTM`)**: Saves the resume to Postgres memory and sets `Resume Status = Approved & Learned`.",
+        "height": 580,
+        "width": 620,
+        "color": 4
+      }
+    },
     {
       "id": "9f03583b-c0fe-459d-8878-a010e702c728",
       "name": "Every 15 Mins (Or Manual Run)",
