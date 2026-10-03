@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T15:39:16.030Z",
-  "updatedAt": "2026-10-01T18:38:35.273Z",
+  "updatedAt": "2026-10-02T13:00:04.088Z",
   "isArchived": false,
-  "versionCounter": 4,
+  "versionCounter": 5,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -213,7 +213,9 @@
   },
   "nodeGroups": [],
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
   },
   "meta": null
 }
