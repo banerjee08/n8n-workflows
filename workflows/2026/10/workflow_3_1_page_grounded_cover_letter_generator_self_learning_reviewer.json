@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-28T08:48:53.855Z",
-  "updatedAt": "2026-10-01T18:29:51.146Z",
+  "updatedAt": "2026-10-06T08:54:39.641Z",
   "isArchived": false,
-  "versionCounter": 13,
+  "versionCounter": 15,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -39,7 +39,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "10,25,40,55 * * * *"
+              "expression": "40 0,12-23 * * *"
             }
           ]
         }
@@ -466,10 +466,22 @@
             "S. No.": "={{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.sNo }}",
             "Resume_id": "={{ $('Compile 1-Page Cover Letter HTML + Dynamic CSS Auto-Fit').last().json.resumeId }}",
             "Cover Letter": "={{ $('Upload Cover Letter PDF to Google Drive').last().json.webViewLink }}",
-            "Cover Letter Status": "Ready for Review"
+            "Cover Letter Status": "Ready for Review",
+            "Last Updated": "={{ new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' IST' }}"
           },
           "matchingColumns": [
             "S. No."
+          ],
+          "schema": [
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
           ]
         },
         "options": {}
@@ -857,10 +869,22 @@
             "S. No.": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.sNo }}",
             "Resume_id": "={{ $('Recompile Reviewed 1-Page Cover Letter HTML').last().json.resumeId }}",
             "Cover Letter": "={{ $('Google Drive: Upload Updated Cover Letter PDF').last().json.webViewLink }}",
-            "Cover Letter Status": "Ready for Review"
+            "Cover Letter Status": "Ready for Review",
+            "Last Updated": "={{ new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' IST' }}"
           },
           "matchingColumns": [
             "S. No."
+          ],
+          "schema": [
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
           ]
         },
         "options": {}
@@ -947,10 +971,22 @@
           "mappingMode": "defineBelow",
           "value": {
             "S. No.": "={{ $('Loop Over CL LGTM Rows (1 by 1)').last().json['S. No.'] }}",
-            "Cover Letter Status": "Approved & Learned"
+            "Cover Letter Status": "Approved & Learned",
+            "Last Updated": "={{ new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' IST' }}"
           },
           "matchingColumns": [
             "S. No."
+          ],
+          "schema": [
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
           ]
         },
         "options": {}
