@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-22T08:00:29.498Z",
-  "updatedAt": "2026-10-01T18:29:49.371Z",
+  "updatedAt": "2026-10-06T08:54:39.641Z",
   "isArchived": false,
-  "versionCounter": 148,
+  "versionCounter": 163,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -39,7 +39,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0,15,30,45 * * * *"
+              "expression": "10 0,11-23 * * *"
             }
           ]
         }
@@ -329,7 +329,7 @@
         864
       ],
       "parameters": {
-        "jsCode": "const prev = $('Sanitize Fields & Check Edge Cases').last().json;\nconst rawText = $('Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)').last().json.candidates[0].content.parts[0].text;\nconst cleanJson = String(rawText || '{}').replace(/```json|```/gi, '').trim();\nconst blueprint = JSON.parse(cleanJson);\n\nconst exactRoleSlug = blueprint.exact_role_slug || blueprint.closest_base_archetype || 'bi_data_analyst';\nconst closestBaseArchetype = blueprint.closest_base_archetype || 'bi_data_analyst';\n\nreturn [{\n  json: {\n    ...prev,\n    roleCategory: exactRoleSlug,\n    closestBaseArchetype,\n    customRoleFramingGuide: blueprint.custom_role_framing_guide || '',\n    jdKeywords: [\n      ...(blueprint.top_hard_skills || []),\n      ...(blueprint.top_domain_and_soft_keywords || [])\n    ],\n    jdBlueprint: blueprint,\n    includeMaerke: Boolean(blueprint.include_maerke_stratcomm),\n    includeMarketingProjects: Boolean(blueprint.include_marketing_projects),\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+        "jsCode": "const prev = $('Sanitize Fields & Check Edge Cases').last().json;\nconst title = String(prev.positionTitle || '');\nconst jd = String(prev.jobDescription || '');\nconst notes = String(prev.notesForResume || '');\nconst comp = String(prev.company || 'Organization');\nconst ind = String(prev.industry || 'Technology & Data Analytics');\nconst combined = `${title} ${jd} ${ind}`.toLowerCase();\n\nlet exactRoleSlug = 'bi_data_analyst';\nlet closestBaseArchetype = 'bi_data_analyst';\n\nif (/\\b(data engineer|analytics engineer|etl|data warehouse|data modelling|data modeling|pipeline|bigquery|postgresql|database)\\b/i.test(title) || /\\b(etl pipeline|data modeling|warehouse architecture)\\b/i.test(jd)) {\n  exactRoleSlug = 'data_engineering_modelling';\n  closestBaseArchetype = 'data_engineering_modelling';\n} else if (/\\b(product analyst|product manager|growth analyst|monetization|funnel|experimentation|a\\/b test)\\b/i.test(combined)) {\n  exactRoleSlug = 'product_manager';\n  closestBaseArchetype = 'bi_data_analyst';\n} else if (/\\b(financial analyst|fp&a|finance|risk|credit|treasury|reconciliation|audit|controls)\\b/i.test(combined)) {\n  exactRoleSlug = 'finance_fpa_analyst';\n  closestBaseArchetype = 'bi_data_analyst';\n} else if (/\\b(operations|strategy|consulting|project leader|process|supply chain|program)\\b/i.test(combined)) {\n  exactRoleSlug = 'operations_strategy';\n  closestBaseArchetype = 'bi_data_analyst';\n}\n\nconst candidateKeywords = [\n  ['SQL', /\\bsql\\b/i],\n  ['Python', /\\bpython|pandas|numpy\\b/i],\n  ['Tableau', /\\btableau\\b/i],\n  ['Power BI', /\\bpower\\s*bi\\b/i],\n  ['BigQuery', /\\bbigquery|cloud data|snowflake|redshift|databricks\\b/i],\n  ['Data Modelling', /\\bdata\\s+model|semantic\\s+layer|schema\\b/i],\n  ['ETL & Data Pipelines', /\\betl|pipeline|data\\s+integration|ingestion\\b/i],\n  ['KPI & Executive Reporting', /\\bkpi|dashboard|executive\\s+reporting|bi\\b/i],\n  ['A/B Experimentation', /\\ba\\/b|experiment|hypothesis|statistical\\b/i],\n  ['Predictive & Cohort Analytics', /\\bcohort|retention|churn|forecasting|predictive\\b/i],\n  ['Root-Cause & Variance Analysis', /\\broot-cause|variance|anomaly|diagnostic\\b/i],\n  ['Data Governance & QA', /\\bgovernance|data\\s+quality|qa|validation|audit\\b/i],\n  ['Process Automation', /\\bautomation|workflow|efficiency|n8n\\b/i],\n  ['Stakeholder Collaboration', /\\bstakeholder|cross-functional|leadership|partner\\b/i]\n];\n\nconst matchedKeywords = [];\nfor (const [label, regex] of candidateKeywords) {\n  if (regex.test(combined)) matchedKeywords.push(label);\n}\nif (matchedKeywords.length < 6) {\n  for (const [label] of candidateKeywords) {\n    if (!matchedKeywords.includes(label)) matchedKeywords.push(label);\n    if (matchedKeywords.length >= 8) break;\n  }\n}\nconst topKeywords = matchedKeywords.slice(0, 8);\n\nfunction shouldIncludeMarketingProjects(tStr, jStr, nStr) {\n  const t = String(tStr || '').toLowerCase();\n  const j = String(jStr || '').toLowerCase();\n  const n = String(nStr || '').toLowerCase();\n  if (/\\b(no marketing project|remove marketing project|without marketing project|don't include marketing|do not include marketing)\\b/i.test(n)) {\n    return false;\n  }\n  if (/\\b(include marketing project|add marketing project|show marketing project)\\b/i.test(n)) {\n    return true;\n  }\n  const isMarketingOrTvcTitle = /\\b(marketing\\s+manager|brand\\s+manager|campaign\\s+manager|advertising|tvc|tvc\\s+production|ad\\s+production|ad\\s+film|commercial\\s+production|creative\\s+director|head\\s+of\\s+marketing|vp\\s+marketing|cmo|growth\\s+marketing\\s+manager|performance\\s+marketing\\s+manager|marketing\\s+lead|marketing\\s+director|marketing\\s+specialist|advertising\\s+manager)\\b/i.test(t);\n  const isDataOrTechOrFinanceTitle = /\\b(data\\s+analyst|business\\s+intelligence|bi\\s+analyst|bi\\s+developer|bi\\s+specialist|analytics\\s+engineer|data\\s+scientist|data\\s+engineer|product\\s+analyst|financial\\s+analyst|fp&a|operations\\s+analyst|business\\s+analyst|data\\s*&\\s*services|analytics\\s+manager|analytics\\s+lead|senior\\s+analyst|senior\\s+specialist|project\\s+leader)\\b/i.test(t) && !isMarketingOrTvcTitle;\n  if (isDataOrTechOrFinanceTitle) return false;\n  const requiresTvcOrAdProduction = /\\b(tvc|tvc\\s+production|television\\s+commercial|ad\\s+film|commercial\\s+production|advertising\\s+agency|advertising\\s+campaign\\s+production|brand\\s+film\\s+production)\\b/i.test(j);\n  return Boolean(isMarketingOrTvcTitle || requiresTvcOrAdProduction);\n}\n\nconst allowMarketingProjects = shouldIncludeMarketingProjects(title, jd, notes);\n\nconst blueprint = {\n  exact_role_slug: exactRoleSlug,\n  closest_base_archetype: closestBaseArchetype,\n  top_hard_skills: topKeywords.slice(0, 5),\n  top_domain_and_soft_keywords: topKeywords.slice(5, 8),\n  core_company_contribution: `Driving scalable SQL/Python data pipelines, governed BI dashboards, and actionable decision support for ${comp}`,\n  custom_role_framing_guide: `Frame Sumanto as a ${title} tailored to ${comp} (${ind})`\n};\n\nreturn [{\n  json: {\n    ...prev,\n    roleCategory: exactRoleSlug,\n    closestBaseArchetype,\n    customRoleFramingGuide: blueprint.custom_role_framing_guide,\n    jdKeywords: topKeywords,\n    jdBlueprint: blueprint,\n    includeMaerke: true,\n    includeMarketingProjects: allowMarketingProjects,\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];\n"
       }
     },
     {
@@ -344,7 +344,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  COALESCE(\n    (SELECT row_to_json(r1) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.roleCategory }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r1),\n    (SELECT row_to_json(r2) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.closestBaseArchetype }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r2)\n  ) AS role_reference,\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (\n     SELECT section_name, rule_instruction\n     FROM learned_rules\n     WHERE is_active = TRUE AND UPPER(COALESCE(role_category, 'ALL')) IN ('ALL', 'GLOBAL', UPPER('{{ $json.roleCategory }}'), UPPER('{{ $json.closestBaseArchetype }}'))\n     ORDER BY id ASC\n  ) l) AS active_rules;",
+        "query": "INSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nSELECT\n  'summary',\n  'ALL',\n  '80% Existing Experience / 20% JD Glimpse Rule: Always open the Summary with the grounded title \"Senior Data & Business Analyst\" (never copy the target job title verbatim). Anchor 80% of the Summary in a paraphrase of Sumanto''s real experience (Highspring 1M+ records & 40% overhead reduction, Concentrix 84% quality & 30% gap reduction, Maerke 25-30% client growth) and include at most 2 overlapping competency phrases (~20%) from the target JD.',\n  'User rule: 80/20 experience-to-JD ratio in Summary, always start with Senior Data & Business Analyst',\n  TRUE\nWHERE NOT EXISTS (\n  SELECT 1 FROM learned_rules\n  WHERE section_name = 'summary' AND rule_instruction ILIKE '%80% Existing Experience%' AND is_active = TRUE\n);\nINSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nSELECT\n  'core_skills',\n  'ALL',\n  'Do NOT mention Power BI anywhere in the resume (Summary, Core Skills, or Experience) unless Power BI is explicitly present in the Master Skills tab.',\n  'User rule: Remove Power BI until it is added to the Master Skill set',\n  TRUE\nWHERE NOT EXISTS (\n  SELECT 1 FROM learned_rules\n  WHERE section_name = 'core_skills' AND rule_instruction ILIKE '%Power BI%' AND is_active = TRUE\n);\n\nINSERT INTO learned_rules (section_name, role_category, rule_instruction, triggered_by_comment, is_active)\nSELECT\n  'marketing_projects',\n  'ALL',\n  'Do NOT include the \"Marketing Projects\" section (Grofers 2018/2017 Mother’s Day Campaign, DIDA sportswear TVC) in the resume unless applying for Marketing Manager related roles or roles explicitly requiring TVCs, advertising, marketing campaigns, or TVC production.',\n  'User rule: Omit Marketing Projects unless applying for marketing manager / TVC / advertising / marketing / TVC production roles',\n  TRUE\nWHERE NOT EXISTS (\n  SELECT 1 FROM learned_rules\n  WHERE section_name = 'marketing_projects' AND is_active = TRUE\n);\n\nUPDATE role_few_shot_library\nSET include_marketing_projects = FALSE\nWHERE LOWER(role_category) NOT LIKE '%marketing%';\n\nUPDATE resume_generations\nSET marketing_projects_html = ''\nWHERE position_title !~* '(marketing manager|brand manager|advertising|tvc|creative director|head of marketing|vp marketing|cmo)';\n\nSELECT\n  COALESCE(\n    (SELECT row_to_json(r1) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.roleCategory }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r1),\n    (SELECT row_to_json(r2) FROM (\n       SELECT role_category, sample_summary_html, sample_skills_html, sample_experience_html, include_maerke_stratcomm, include_marketing_projects\n       FROM role_few_shot_library\n       WHERE LOWER(role_category) = LOWER('{{ $json.closestBaseArchetype }}') AND is_active = TRUE\n       ORDER BY created_at DESC LIMIT 1\n    ) r2)\n  ) AS role_reference,\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (\n     SELECT section_name, rule_instruction\n     FROM learned_rules\n     WHERE is_active = TRUE AND UPPER(COALESCE(role_category, 'ALL')) IN ('ALL', 'GLOBAL', UPPER('{{ $json.roleCategory }}'), UPPER('{{ $json.closestBaseArchetype }}'))\n     ORDER BY id ASC\n  ) l) AS active_rules;\n",
         "options": {}
       },
       "credentials": {
@@ -364,7 +364,7 @@
         864
       ],
       "parameters": {
-        "jsCode": "const base = $('Parse 5-10 Keywords & Role Blueprint').last().json;\nconst pg = $input.first().json || {};\nconst ref = pg.role_reference || {};\nconst rules = pg.active_rules || [];\n\nconst rulesBySection = (sec) => rules\n  .filter(r => {\n    const s = String(r.section_name || '').toLowerCase().trim();\n    return s === sec || s === 'global' || s === 'all' || s.includes(sec);\n  })\n  .map((r, i) => `${i + 1}. ${r.rule_instruction}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    ...base,\n    roleReference: ref,\n    allActiveRulesCount: rules.length,\n    summaryRules: rulesBySection('summary'),\n    skillsRules: rulesBySection('skill'),\n    experienceRules: rulesBySection('experience'),\n    certificationsRules: rulesBySection('certification'),\n    _activeModel: 'gemini-3.5-flash-lite'\n  }\n}];"
+        "jsCode": "const base = $('Parse 5-10 Keywords & Role Blueprint').last().json;\nconst pgRow = $input.first()?.json || {};\nconst ref = pgRow.reference || {};\nconst rules = Array.isArray(pgRow.learned_rules) ? pgRow.learned_rules : [];\n\nlet masterSkillsText = '';\ntry {\n  const skillItems = $('1. Read Master Skills Tab (Once)').all();\n  masterSkillsText = skillItems.map(i => Object.values(i.json || {}).join(' ')).join(' ').toLowerCase();\n} catch (e) {}\nconst hasPowerBiInMaster = masterSkillsText.includes('power bi');\n\nconst formatRules = (sec) => rules\n  .filter(r => r.target_section === sec || r.target_section === 'ALL')\n  .map((r, i) => `${i + 1}. [${r.rule_type}] ${r.rule_instruction}`)\n  .join('\\n');\n\nconst title = String(base.positionTitle || 'Senior Data Analyst').trim();\nconst jd = String(base.jobDescription || '').toLowerCase();\nconst roleCat = String(base.roleCategory || 'data_analyst');\n\n// ============================================================================\n// 1. Build Summary: STRICT 80% Existing Experience (Paraphrased) / 20% JD Glimpse\n//    - Always starts with grounded title: \"Senior Data & Business Analyst\"\n//    - Sentence 1 & 2 (~80%): Paraphrase of real Highspring + Concentrix + Maerke experience\n//    - Sentence 3 (~20%): Max 2 overlapping competency phrases from JD + Master Skills\n// ============================================================================\nlet sentence2 = `Proven track record of analyzing 1M+ monthly records using <strong>SQL, Python, and Tableau</strong> to cut manual reporting overhead by 40%, automate interactive KPI dashboards, and maintain 95% delivery quality across cross-functional teams.`;\n\nif (roleCat === 'product_manager' || /product|growth|funnel|experiment|retention/i.test(title + ' ' + jd)) {\n  sentence2 = `Proven track record of analyzing 1M+ monthly records using <strong>SQL, Python, and Tableau</strong> to uncover conversion bottlenecks, cut manual reporting overhead by 40%, and drive 25%–30% gains in customer acquisition across 15+ launches.`;\n} else if (roleCat === 'finance_fpa_analyst' || /financ|fp&a|risk|treasury|payment|commercial|pricing|revenue/i.test(title + ' ' + jd)) {\n  sentence2 = `Proven track record of analyzing 1M+ monthly records using <strong>SQL, Python, and Tableau</strong> to automate KPI reporting, cut manual overhead by 40%, and drive 25%–30% commercial and operational growth across regional and enterprise accounts.`;\n} else if (roleCat === 'operations_program_manager' || /operations|strategy|consulting|workforce|process|program/i.test(title + ' ' + jd)) {\n  sentence2 = `Proven track record of analyzing 1M+ monthly records using <strong>SQL, Python, and Tableau</strong> to cut manual reporting overhead by 40%, close operational execution gaps by 30%, and boost workforce and process productivity across cross-functional teams.`;\n}\n\n// Pick 2 overlapping competencies (~20% JD glimpse) grounded in Master Skills\nconst glimpseCandidates = [\n  { phrase: 'data cleaning and transformation', match: /pipeline|etl|warehouse|bigquery|postgres|sql|model|clean|wrangl|transform/i },\n  { phrase: 'diagnostic root-cause analysis', match: /root-cause|root cause|diagnostic|variance|trend|anomaly|investigat|problem/i },\n  { phrase: 'funnel and cohort segmentation', match: /funnel|cohort|retention|churn|conversion|segment|customer|acquisition/i },\n  { phrase: 'automated dashboard reporting', match: /dashboard|tableau|bi |visualiz|scorecard|kpi|report/i },\n  { phrase: 'workflow automation and QA governance', match: /automat|governance|quality|qa|sla|process|efficiency|streamlin/i },\n  { phrase: 'narrative insight synthesis', match: /stakeholder|executive|storytelling|consulting|strategy|presentation|decision/i }\n];\nconst matchedGlimpses = glimpseCandidates.filter(g => g.match.test(jd)).map(g => g.phrase);\nconst glimpse1 = matchedGlimpses[0] || 'data cleaning and transformation';\nconst glimpse2 = matchedGlimpses[1] || (glimpse1 === 'diagnostic root-cause analysis' ? 'narrative insight synthesis' : 'diagnostic root-cause analysis');\n\nconst summaryHtml = `<p>Senior Data &amp; Business Analyst combining 5+ years of enterprise data analytics and operations intelligence with a strong foundation in commercial strategy and stakeholder consulting. ${sentence2} Adept at applying <strong>${glimpse1}</strong> and <strong>${glimpse2}</strong> to translate complex datasets into clear executive presentations and actionable business decisions.</p>`;\n\n// ============================================================================\n// 2. Build Core Skills (100% from Master Skills tab, reordered by JD relevance)\n// ============================================================================\nconst scoreSkill = (s) => {\n  const tokens = s.toLowerCase().split(/[\\s/&+-]+/).filter(t => t.length > 2);\n  let sc = 0;\n  for (const t of tokens) {\n    if (jd.includes(t)) sc += 2;\n  }\n  return sc;\n};\nconst sortSkills = (arr) => [...arr].sort((a, b) => scoreSkill(b) - scoreSkill(a));\n\nconst cat1Skills = sortSkills([\n  'SQL (PostgreSQL, MySQL, BigQuery)', 'Python (Pandas, NumPy)', 'R',\n  'Excel', 'Jupyter Notebooks', 'API/Data Integration', 'Database Management'\n]);\nconst rawCat2 = [\n  'Tableau',\n  ...(hasPowerBiInMaster ? ['Power BI'] : []),\n  'Dashboard/Report Automation', 'Interactive Dashboards',\n  'Executive Presentations', 'Narrative Insight Synthesis', 'KPI Scorecard Design'\n];\nconst cat2Skills = sortSkills(rawCat2);\nconst cat3Skills = sortSkills([\n  'Data Cleaning & Wrangling', 'Data Transformation', 'Quality Assurance',\n  'Automating Workflows (n8n)', 'Identifying Improvement Opportunities', 'Root-Cause & Variance Analysis'\n]);\nconst cat4Skills = sortSkills([\n  'Stakeholder Communication', 'Cross-Functional Teamwork', 'Consulting & Client Engagement',\n  'Training & Mentorship', 'Critical Thinking & Problem Solving', 'Business Acumen'\n]);\n\nconst skillsHtml = `<ul>\n  <li><strong>Data Analysis &amp; Database Management:</strong> ${cat1Skills.join(', ')}</li>\n  <li><strong>Business Intelligence &amp; Visualization:</strong> ${cat2Skills.join(', ')}</li>\n  <li><strong>Data Governance &amp; Process Optimization:</strong> ${cat3Skills.join(', ')}</li>\n  <li><strong>Stakeholder Collaboration &amp; Strategy:</strong> ${cat4Skills.join(', ')}</li>\n</ul>`;\n\n// ============================================================================\n// 3. Build Experience (4 Authentic Roles, Paraphrased to Match Angle, Zero Proprietary JD Nouns)\n// ============================================================================\nconst hsBullet1 = (roleCat === 'product_manager' || /product|growth|funnel/i.test(title))\n  ? `<li>Spearheaded end-to-end <strong>funnel and behavioral analytics</strong> across 1M+ monthly records using SQL and Python, uncovering conversion bottlenecks and cutting manual reporting overhead by 40%.</li>`\n  : ((roleCat === 'finance_fpa_analyst' || /financ|payment|commercial|revenue/i.test(title))\n    ? `<li>Spearheaded end-to-end <strong>data profiling and reconciliation</strong> across 1M+ monthly records using SQL and Python, resolving reporting discrepancies and cutting manual overhead by 40%.</li>`\n    : `<li>Spearheaded end-to-end <strong>SQL data modelling</strong> and pipeline optimization across 1M+ monthly records using Python and BigQuery, cutting manual reporting overhead by 40%.</li>`);\n\nconst hsBullet2 = `<li>Designed and deployed interactive <strong>Tableau dashboards</strong> and automated KPI reporting suites across 15+ cross-functional launches, accelerating leadership decision cycles.</li>`;\n\nconst hsBullet3 = `<li>Conducted deep-dive <strong>root-cause analysis</strong> and customer segmentation across multi-source datasets, partnering with engineering and business teams to maintain 95% delivery quality.</li>`;\n\nconst csrRoleBlock = base.includeMarketingProjects ? '' : `\n<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Customer Support Representative, Concentrix Daksh – Gurugram, India</strong></span><span class=\"job-date\"><strong>Jan 2021 – Mar 2022</strong></span></div>\n  <ul>\n    <li>Resolved escalated consumer inquiries by utilizing <strong>CRM telemetry</strong> and historical performance metrics, accelerating ticket resolution speed by 35% across high-volume queues.</li>\n    <li>Analyzed user interaction trends to identify recurring <strong>service bottlenecks</strong>, partnering with operations leads to streamline workflows and boost customer satisfaction.</li>\n  </ul>\n</div>`;\n\nconst experienceHtml = `<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Sr. Data Analyst, Highspring India – Gurugram, India</strong></span><span class=\"job-date\"><strong>Oct 2025 - Present</strong></span></div>\n  <ul>\n    ${[hsBullet1, hsBullet2, hsBullet3].join('\\n    ')}\n  </ul>\n</div>\n<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Lead Trainer, Concentrix Daksh – Gurugram, India</strong></span><span class=\"job-date\"><strong>April 2022 – Aug 2025</strong></span></div>\n  <ul>\n    <li>Built automated <strong>performance analytics</strong> trackers and Excel/SQL competency matrices across 200+ specialists, boosting new-hire quality scores by 84% within two quarters.</li>\n    <li>Led <strong>diagnostic gap analysis</strong> on operational SLA and quality telemetry, redesigning process workflows to reduce recurring knowledge and execution gaps by 30%.</li>\n    <li>Partnered with global operations stakeholders on <strong>capacity planning</strong> and workflow standardization, driving a 25% increase in team productivity and throughput.</li>\n  </ul>\n</div>${csrRoleBlock}\n<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Founder | Creative Director, Maerke Stratcomm – New Delhi, India</strong></span><span class=\"job-date\"><strong>June 2010 – July 2020</strong></span></div>\n  <ul>\n    <li>Directed <strong>commercial analytics</strong>, pricing strategy, and market segmentation for 15+ B2B and retail clients, driving a 30% increase in customer acquisition.</li>\n    <li>Implemented <strong>funnel performance tracking</strong> and ROI attribution models across regional distribution channels, expanding HORECA and enterprise account revenue by 25%.</li>\n  </ul>\n</div>`;\n\nconst certificationsHtml = `<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Tableau Business Intelligence Analyst Professional Certificate</span><span class=\"cert-date\">May 2025</span></div>\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Advanced Data Analytics</span><span class=\"cert-date\">In Progress</span></div>\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Project Management</span><span class=\"cert-date\">In Progress</span></div>`;\n\nreturn [{\n  json: {\n    ...base,\n    hasPowerBiInMaster,\n    roleReference: ref,\n    allActiveRulesCount: rules.length,\n    summaryRules: formatRules('SUMMARY'),\n    skillsRules: formatRules('CORE_SKILLS'),\n    experienceRules: formatRules('EXPERIENCE'),\n    certificationsRules: formatRules('CERTIFICATIONS'),\n    summaryHtml,\n    skillsHtml,\n    experienceHtml,\n    certificationsHtml,\n    _preTailored: true\n  }\n}];"
       }
     },
     {
@@ -525,7 +525,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Generate ONLY the HTML for the Experience section of Sumanto Banerjee's resume.\n\nTARGET ROLE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.positionTitle} at ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.company}\nCUSTOM ROLE FRAMING GUIDE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.customRoleFramingGuide}\n5-10 JD KEYWORDS TO PARTITION ACROSS ROLES: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.jdKeywords.join(', ')}\nINCLUDE MAERKE STRATCOMM (2010-2020)?: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.includeMaerke}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (HIGHEST PRIORITY):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.experienceRules || 'None'}\n\nROLE-SPECIFIC REFERENCE WIREFRAME (${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleCategory}):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleReference.sample_experience_html}\n\nSummary already generated (DO NOT repeat the same highlighted terms from Summary):\n${$('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text}\n\nSTRICT CONSTRAINTS:\n1. STRICT 1-PAGE BULLET COUNT BUDGET:\n   - If INCLUDE MAERKE STRATCOMM is true:\n     * Sr. Data Analyst, Highspring India – Gurugram, India: STRICTLY 3 bullets.\n     * Lead Trainer, Concentrix Daksh – Gurugram, India: STRICTLY 3 bullets.\n     * Founder | Creative Director, Maerke Stratcomm – New Delhi, India: STRICTLY 2 bullets.\n     (Total = 8 bullets; keep each bullet 20-25 words max so it never wraps to 3 lines).\n   - If INCLUDE MAERKE STRATCOMM is false:\n     * Sr. Data Analyst, Highspring India – Gurugram, India: 4 bullets.\n     * Lead Trainer, Concentrix Daksh – Gurugram, India: 3 bullets.\n2. BOLD POSITION, COMPANY & TENURE:\n   <div class=\"job-header\"><span class=\"job-title\"><strong>Sr. Data Analyst, Highspring India – Gurugram, India</strong></span><span class=\"job-date\"><strong>Oct 2025 - Present</strong></span></div>\n3. 'DID X USING Y TO ACHIEVE Z%' STRUCTURE & UNBOLDED METRICS:\n   Write every bullet in the Action + Method/Competency + Quantifiable Result format, preserving the real percentages/numbers from the wireframe (e.g. 1M+ monthly records, 40% overhead reduction, 95% delivery quality, 15+ launches, 84% hire quality, 30% knowledge gaps, 25% output, 25% HORECA sales, 30% customer acquisition).\n   CRITICAL HIGHLIGHTING RULE: DO NOT bold numbers, percentages, or percentage phrases (keep 'cutting manual overhead by 40%', 'boosted hire quality by 84%', '1M+ monthly records' in plain unbolded text!). Instead, wrap ONLY 1 to 2 short, high-impact competency/action words per bullet in <strong>...</strong> tags (e.g., <strong>requirements gathering</strong>, <strong>process mapping</strong>, <strong>SQL-based data profiling</strong>, <strong>Tableau analytics dashboards</strong>) that grab HR's attention.\n4. ZERO REPETITIVE HIGHLIGHTED WORDS ACROSS BULLETS.\n5. Return ONLY raw HTML (<div class=\"job-block\">...</div> elements, no markdown fences).`\n    }]\n  }],\n  generationConfig: { temperature: 0.25 }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: `Generate ONLY the HTML for the Experience section of Sumanto Banerjee's resume.\n\nTARGET ROLE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.positionTitle} at ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.company}\nCUSTOM ROLE FRAMING GUIDE: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.customRoleFramingGuide}\n5-10 JD KEYWORDS TO PARTITION ACROSS ROLES: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.jdKeywords.join(', ')}\nINCLUDE MAERKE STRATCOMM (2010-2020)?: ${$('Prepare Role-Scoped Few-Shot & Rules').last().json.includeMaerke}\n\nMANDATORY LEARNED RULES FROM PAST REVIEWS (HIGHEST PRIORITY):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.experienceRules || 'None'}\n\nROLE-SPECIFIC REFERENCE WIREFRAME (${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleCategory}):\n${$('Prepare Role-Scoped Few-Shot & Rules').last().json.roleReference.sample_experience_html}\n\nSummary already generated (DO NOT repeat the same highlighted terms from Summary):\n${$('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text}\n\nSTRICT CONSTRAINTS:\n1. STRICT 1-PAGE BULLET COUNT BUDGET:\n   - Include ALL 3 core roles so the 1-page resume is full (90%-95% page height):\n     * Sr. Data Analyst, Highspring India – Gurugram, India: 4 bullets (if Marketing Projects is omitted) or 3 bullets (if Marketing Projects is included).\n     * Lead Trainer, Concentrix Daksh – Gurugram, India: STRICTLY 3 bullets.\n     * Founder | Creative Director, Maerke Stratcomm – New Delhi, India: STRICTLY 2 bullets.\n     (Total = 8 to 9 substantive 2-line bullets, 22-26 words each).\n   - If INCLUDE MAERKE STRATCOMM is false:\n     * Sr. Data Analyst, Highspring India – Gurugram, India: 4 bullets.\n     * Lead Trainer, Concentrix Daksh – Gurugram, India: 3 bullets.\n2. BOLD POSITION, COMPANY & TENURE:\n   <div class=\"job-header\"><span class=\"job-title\"><strong>Sr. Data Analyst, Highspring India – Gurugram, India</strong></span><span class=\"job-date\"><strong>Oct 2025 - Present</strong></span></div>\n3. 'DID X USING Y TO ACHIEVE Z%' STRUCTURE & UNBOLDED METRICS:\n   Write every bullet in the Action + Method/Competency + Quantifiable Result format, preserving the real percentages/numbers from the wireframe (e.g. 1M+ monthly records, 40% overhead reduction, 95% delivery quality, 15+ launches, 84% hire quality, 30% knowledge gaps, 25% output, 25% HORECA sales, 30% customer acquisition).\n   CRITICAL HIGHLIGHTING RULE: DO NOT bold numbers, percentages, or percentage phrases (keep 'cutting manual overhead by 40%', 'boosted hire quality by 84%', '1M+ monthly records' in plain unbolded text!). Instead, wrap ONLY 1 to 2 short, high-impact competency/action words per bullet in <strong>...</strong> tags (e.g., <strong>requirements gathering</strong>, <strong>process mapping</strong>, <strong>SQL-based data profiling</strong>, <strong>Tableau analytics dashboards</strong>) that grab HR's attention.\n4. ZERO REPETITIVE HIGHLIGHTED WORDS ACROSS BULLETS.\n5. Return ONLY raw HTML (<div class=\"job-block\">...</div> elements, no markdown fences).`\n    }]\n  }],\n  generationConfig: { temperature: 0.25 }\n}) }}",
         "options": {}
       },
       "credentials": {
@@ -641,7 +641,7 @@
         480
       ],
       "parameters": {
-        "jsCode": "const customCss = `\n  @page {\n    size: A4;\n    margin: 0.44in 0.50in;\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: 10.1pt;\n    line-height: 1.35;\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .resume-header {\n    text-align: center;\n    margin-bottom: 9px;\n  }\n  .resume-header h1 {\n    font-size: 24pt;\n    font-weight: normal;\n    margin: 0 0 3px 0;\n    letter-spacing: 0.3px;\n  }\n  .contact-line {\n    font-size: 9.8pt;\n    color: #222222;\n  }\n  .contact-line a {\n    color: #111111;\n    text-decoration: none;\n  }\n  .section-block {\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .section-title {\n    font-size: 11.8pt;\n    font-weight: bold;\n    border-bottom: 1px solid #1A365D;\n    padding-bottom: 2px;\n    margin-top: 9px;\n    margin-bottom: 5px;\n    color: #1A365D\n  }\n  p {\n    margin: 0 0 5px 0;\n    text-align: left;\n  }\n  ul {\n    margin: 2px 0 6px 0;\n    padding-left: 18px;\n  }\n  li {\n    margin-bottom: 3px;\n  }\n  strong, .highlight {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-block {\n    margin-bottom: 7px;\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .job-header, .cert-row, .edu-row {\n    display: flex;\n    justify-content: space-between;\n    align-items: baseline;\n    margin-bottom: 2px;\n  }\n  .job-header, .job-title, .job-date {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-date, .cert-date, .edu-date {\n    white-space: nowrap;\n    font-size: 9.8pt;\n  }\n  .hobbies-line {\n    margin-top: 3px;\n    font-size: 10pt;\n  }\n`;\n\nreturn [{ json: { cssStyles: customCss } }];"
+        "jsCode": "const customCss = `\n  @page {\n    size: A4;\n    margin: 0.34in 0.40in;\n  }\n  * {\n    box-sizing: border-box;\n  }\n  body {\n    font-family: 'Georgia', 'Times New Roman', serif;\n    font-size: 9.9pt;\n    line-height: 1.32;\n    color: #111111;\n    margin: 0;\n    padding: 0;\n  }\n  .resume-header {\n    text-align: center;\n    margin-bottom: 7px;\n  }\n  .resume-header h1 {\n    font-size: 23pt;\n    font-weight: normal;\n    margin: 0 0 2px 0;\n    letter-spacing: 0.3px;\n  }\n  .contact-line {\n    font-size: 9.6pt;\n    color: #222222;\n  }\n  .contact-line a {\n    color: #111111;\n    text-decoration: none;\n  }\n  .section-block {\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .section-title {\n    font-size: 11.4pt;\n    font-weight: bold;\n    border-bottom: 1px solid #1A365D;\n    padding-bottom: 1.5px;\n    margin-top: 8px;\n    margin-bottom: 4px;\n    color: #1A365D\n  }\n  p {\n    margin: 0 0 4px 0;\n    text-align: left;\n  }\n  ul {\n    margin: 1.5px 0 4.5px 0;\n    padding-left: 17px;\n  }\n  li {\n    margin-bottom: 2.2px;\n  }\n  strong, .highlight {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-block {\n    margin-bottom: 5.5px;\n    page-break-inside: avoid;\n    break-inside: avoid;\n  }\n  .job-header, .cert-row, .edu-row {\n    display: flex;\n    justify-content: space-between;\n    align-items: baseline;\n    margin-bottom: 1.5px;\n  }\n  .job-header, .job-title, .job-date {\n    font-weight: bold;\n    color: #000000;\n  }\n  .job-date, .cert-date, .edu-date {\n    white-space: nowrap;\n    font-size: 9.6pt;\n  }\n  .hobbies-line {\n    margin-top: 2px;\n    font-size: 9.8pt;\n  }\n`;\n\nreturn [{ json: { cssStyles: customCss } }];"
       }
     },
     {
@@ -654,7 +654,7 @@
         480
       ],
       "parameters": {
-        "jsCode": "const ctx = $('Prepare Role-Scoped Few-Shot & Rules').last().json;\nconst cleanHtml = (raw) => String(raw || '').replace(/```html|```/gi, '').trim();\n\nconst toTitleCaseSkillsHtml = (html) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  return String(html || '').replace(/(>[^<]+<)/g, (segment) => {\n    return segment.replace(/\\b([A-Za-z0-9&/+-]+)\\b/g, (word, _, offset) => {\n      if (word.toLowerCase() === 'n8n') return 'n8n';\n      const upper = word.toUpperCase();\n      if (acronyms.has(upper)) return upper;\n      if (minor.has(word.toLowerCase()) && offset > 1) return word.toLowerCase();\n      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n    });\n  });\n};\n\nconst summaryHtml = cleanHtml($('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst skillsHtml = toTitleCaseSkillsHtml(cleanHtml($('Section 2: Filter & Reorder Core Skills (Gemini)').last().json.candidates[0].content.parts[0].text));\nconst experienceHtml = cleanHtml($('Section 3: Tailor Experience Wireframe (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst certificationsHtml = cleanHtml($('Section 4: Select Top 2-3 Certifications (Gemini)').last().json.candidates[0].content.parts[0].text);\nconst cssStyles = $('CSS Style Window (Edit Anytime)').last().json.cssStyles;\n\nconst educationHtml = `<div class=\"edu-row\"><span>University of Delhi, B.Comm(Hons.)</span><span class=\"edu-date\">2013 – 2016</span></div>`;\nconst hobbiesHtml = `<div class=\"hobbies-line\">Practicing Buddhism &nbsp;|&nbsp; Automating life with n8n &nbsp;|&nbsp; Growing Mushrooms</div>`;\n\nconst marketingProjectsHtml = ctx.includeMarketingProjects\n  ? `<div class=\"section-title\">Marketing Projects</div>\n     <div><strong>Grofers</strong> - 2018 Mother’s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2018\">Link</a></div>\n     <div><strong>Grofers</strong> - 2017 Mother’s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2017\">Link</a></div>\n     <div><strong>DIDA sportswear</strong> - TVC - <a href=\"https://www.youtube.com/results?search_query=DIDA+sportswear+TVC\">Link</a></div>`\n  : '';\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Resume-${ctx.cleanCompany}</title>\n  <style>${cssStyles}</style>\n</head>\n<body>\n  <div class=\"resume-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"contact-line\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">Linkedin Profile</a></div>\n  </div>\n\n  <div class=\"section-title\">Summary</div>\n  ${summaryHtml}\n\n  <div class=\"section-title\">Core Skills</div>\n  ${skillsHtml}\n\n  <div class=\"section-title\">Experience</div>\n  ${experienceHtml}\n\n  <div class=\"section-title\">Certifications</div>\n  ${certificationsHtml}\n\n  ${marketingProjectsHtml}\n\n  <div class=\"section-title\">Education</div>\n  ${educationHtml}\n\n  <div class=\"section-title\">When I am not analysing...</div>\n  ${hobbiesHtml}\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Resume-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    summaryHtml,\n    skillsHtml,\n    experienceHtml,\n    marketingProjectsHtml,\n    certificationsHtml,\n    educationHtml,\n    hobbiesHtml,\n    fullHtml,\n    pdfFileName: fileName\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];"
+        "jsCode": "\n// Strict Grounding Guard: Only allow real Coursera certificates (Tableau BI, Google Advanced Data Analytics, Google Project Management) and real Master Skills (replace ungrounded Snowflake with BigQuery/PostgreSQL)\nconst prepCheck = $('Prepare Role-Scoped Few-Shot & Rules').last().json || {};\nconst allowPowerBi = Boolean(prepCheck.hasPowerBiInMaster);\nconst sanitizeGroundedText = (h) => {\n  let out = String(h || '').replace(/\\bSnowflake\\b/gi, 'BigQuery');\n  if (!allowPowerBi) {\n    out = out\n      .replace(/,\\s*Power\\s*BI\\b/gi, '')\n      .replace(/\\bPower\\s*BI\\s*,\\s*/gi, '')\n      .replace(/\\bTableau\\s+and\\s+Power\\s*BI\\b/gi, 'Tableau')\n      .replace(/\\bTableau\\s*\\/\\s*Power\\s*BI\\b/gi, 'Tableau')\n      .replace(/\\bPower\\s*BI\\s*\\/\\s*Tableau\\b/gi, 'Tableau')\n      .replace(/\\bPower\\s*BI\\b/gi, 'Tableau');\n  }\n  return out;\n};\n\nconst inputJson = $input.first()?.json || {};\nconst prepCtx = $('Prepare Role-Scoped Few-Shot & Rules').last().json || {};\nconst isRefitPass = Boolean(inputJson._isRefitPass);\nconst ctx = isRefitPass ? inputJson : prepCtx;\nconst useDirectHtml = Boolean(isRefitPass || ctx._preTailored);\nconst cleanHtml = (raw) => String(raw || '').replace(/```html|```/gi, '').trim();\n\nconst toTitleCaseSkillsHtml = (html) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  const decoded = String(html || '').replace(/&amp;/gi, '&').replace(/&Amp;/g, '&');\n  return decoded.replace(/(>[^<]+<)/g, (segment) => {\n    const titled = segment.replace(/\\b([A-Za-z0-9/+-]+)\\b/g, (word, _, offset) => {\n      if (word.toLowerCase() === 'n8n') return 'n8n';\n      const upper = word.toUpperCase();\n      if (acronyms.has(upper)) return upper;\n      if (minor.has(word.toLowerCase()) && offset > 1) return word.toLowerCase();\n      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n    });\n    return titled.replace(/&(?!(?:amp|lt|gt|quot|nbsp|#\\d+);)/gi, '&amp;');\n  });\n};\n\nconst summaryHtml = useDirectHtml\n  ? ctx.summaryHtml\n  : cleanHtml($('Section 1: Generate Summary (Gemini)').last().json.candidates[0].content.parts[0].text).replace(/&Amp;/g, '&amp;');\n\nconst skillsHtml = useDirectHtml\n  ? toTitleCaseSkillsHtml(ctx.skillsHtml)\n  : toTitleCaseSkillsHtml(cleanHtml($('Section 2: Filter & Reorder Core Skills (Gemini)').last().json.candidates[0].content.parts[0].text));\n\nconst experienceHtml = useDirectHtml\n  ? ctx.experienceHtml\n  : cleanHtml($('Section 3: Tailor Experience Wireframe (Gemini)').last().json.candidates[0].content.parts[0].text).replace(/&Amp;/g, '&amp;');\n\nconst certificationsHtml = useDirectHtml\n  ? ctx.certificationsHtml\n  : cleanHtml($('Section 4: Select Top 2-3 Certifications (Gemini)').last().json.candidates[0].content.parts[0].text).replace(/&Amp;/g, '&amp;');\n\nconst cssStyles = (isRefitPass && ctx.cssOverride)\n  ? ctx.cssOverride\n  : $('CSS Style Window (Edit Anytime)').last().json.cssStyles;\n\nconst educationHtml = `<div class=\"edu-row\"><span>University of Delhi, B.Comm(Hons.)</span><span class=\"edu-date\">2013 – 2016</span></div>`;\nconst hobbiesHtml = `<div class=\"hobbies-line\">Practicing Buddhism &nbsp;|&nbsp; Automating life with n8n &nbsp;|&nbsp; Growing Mushrooms</div>`;\n\nconst isMarketingOrTvcRole = Boolean(ctx.includeMarketingProjects) && (\n  /\\b(marketing\\s+manager|brand\\s+manager|campaign\\s+manager|advertising|tvc|tvc\\s+production|ad\\s+production|ad\\s+film|commercial\\s+production|creative\\s+director|head\\s+of\\s+marketing|vp\\s+marketing|cmo|growth\\s+marketing|performance\\s+marketing|marketing\\s+lead|marketing\\s+director|marketing\\s+specialist)\\b/i.test(String(ctx.positionTitle || '')) ||\n  /\\b(tvc|tvc\\s+production|television\\s+commercial|ad\\s+film|commercial\\s+production|advertising\\s+agency|advertising\\s+campaign\\s+production)\\b/i.test(String(ctx.jobDescription || '')) ||\n  /\\b(include marketing project|add marketing project)\\b/i.test(String(ctx.notesForResume || ''))\n);\n\nconst marketingProjectsHtml = isMarketingOrTvcRole\n  ? `<div class=\"section-title\">Marketing Projects</div>\n     <div><strong>Grofers</strong> - 2018 Mother’s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2018\">Link</a></div>\n     <div><strong>Grofers</strong> - 2017 Mother’s Day Campaign - <a href=\"https://www.youtube.com/results?search_query=Grofers+Mothers+Day+2017\">Link</a></div>\n     <div><strong>DIDA sportswear</strong> - TVC - <a href=\"https://www.youtube.com/results?search_query=DIDA+sportswear+TVC\">Link</a></div>`\n  : '';\n\nconst groundedCertsHtml = /Snowflake|Data Warehousing|Data Analytics Professional/i.test(certificationsHtml)\n  ? `<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Tableau Business Intelligence Analyst Professional Certificate</span><span class=\"cert-date\">May 2025</span></div>\\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Advanced Data Analytics</span><span class=\"cert-date\">In Progress</span></div>\\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Project Management</span><span class=\"cert-date\">In Progress</span></div>`\n  : certificationsHtml;\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Sumanto_Banerjee-Resume-${ctx.cleanCompany}</title>\n  <style>${cssStyles}</style>\n</head>\n<body>\n  <div class=\"resume-header\">\n    <h1>Sumanto Banerjee</h1>\n    <div class=\"contact-line\">user@example.com &nbsp;|&nbsp; +91-8802444912 &nbsp;|&nbsp; <a href=\"https://www.linkedin.com/in/sumanto-banerjee/\">Linkedin Profile</a></div>\n  </div>\n\n  <div class=\"section-title\">Summary</div>\n  ${sanitizeGroundedText(summaryHtml)}\n\n  <div class=\"section-title\">Core Skills</div>\n  ${sanitizeGroundedText(skillsHtml)}\n\n  <div class=\"section-title\">Experience</div>\n  ${sanitizeGroundedText(experienceHtml)}\n\n  <div class=\"section-title\">Certifications</div>\n  ${groundedCertsHtml}\n\n  ${marketingProjectsHtml}\n\n  <div class=\"section-title\">Education</div>\n  ${educationHtml}\n\n  <div class=\"section-title\">When I am not analysing...</div>\n  ${hobbiesHtml}\n</body>\n</html>`;\n\nconst fileName = `Sumanto_Banerjee-Resume-${ctx.cleanCompany}.pdf`;\n\nreturn [{\n  json: {\n    ...ctx,\n    refitAttempt: Number(ctx.refitAttempt || 0),\n    summaryHtml,\n    skillsHtml,\n    experienceHtml,\n    marketingProjectsHtml,\n    certificationsHtml,\n    educationHtml,\n    hobbiesHtml,\n    fullHtml,\n    pdfFileName: fileName,\n    lastUpdatedIst: (() => {\n      const ist = new Date(Date.now() + 5.5 * 3600 * 1000);\n      return `${ist.toISOString().slice(0, 10)} ${ist.toISOString().slice(11, 16)} IST`;\n    })()\n  },\n  binary: {\n    index_html: await this.helpers.prepareBinaryData(Buffer.from(fullHtml, 'utf8'), 'index.html', 'text/html')\n  }\n}];\n"
       }
     },
     {
@@ -668,7 +668,7 @@
         480
       ],
       "parameters": {
-        "amount": 2
+        "amount": 1
       }
     },
     {
@@ -721,7 +721,7 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        6128,
+        6560,
         480
       ],
       "parameters": {
@@ -753,7 +753,7 @@
       "typeVersion": 2.5,
       "alwaysOutputData": true,
       "position": [
-        6352,
+        6784,
         480
       ],
       "parameters": {
@@ -777,7 +777,7 @@
       "typeVersion": 4.5,
       "alwaysOutputData": true,
       "position": [
-        6576,
+        7008,
         480
       ],
       "parameters": {
@@ -800,10 +800,22 @@
             "S. No.": "={{ $('Compile Sections + CSS into index.html').last().json.sNo }}",
             "Resume_id": "={{ $('Compile Sections + CSS into index.html').last().json.resumeId }}",
             "Resume": "={{ $('Upload PDF to Google Drive').last().json.webViewLink }}",
-            "Resume Status": "Ready for Review"
+            "Resume Status": "Ready for Review",
+            "Last Updated": "={{ $('Compile Sections + CSS into index.html').last().json.lastUpdatedIst }}"
           },
           "matchingColumns": [
             "S. No."
+          ],
+          "schema": [
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
           ]
         },
         "options": {}
@@ -822,11 +834,11 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        6800,
-        1328
+        7232,
+        480
       ],
       "parameters": {
-        "amount": 6
+        "amount": 1
       }
     },
     {
@@ -840,6 +852,106 @@
       ],
       "parameters": {
         "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "c2e3d436-8306-44d6-8621-4961f308bf07",
+      "name": "Check PDF Page Count (1-Page Inspector)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6120,
+        480
+      ],
+      "parameters": {
+        "jsCode": "\nconst item = $input.first();\nconst compiledCtx = $('Compile Sections + CSS into index.html').last().json || {};\nconst ctx = { ...compiledCtx, ...(item.json || {}) };\nconst refitAttempt = Number(ctx.refitAttempt || 0);\n\nlet pdfPageCount = 1;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  const latin = buf.toString('latin1');\n  const pageObjMatches = latin.match(/\\/Type\\s*\\/Page\\b(?!s)/g) || [];\n  const countMatches = [...latin.matchAll(/\\/Type\\s*\\/Pages\\b[\\s\\S]{0,300}?\\/Count\\s+(\\d+)/g)].map(m => Number(m[1]));\n  if (pageObjMatches.length > 0) {\n    pdfPageCount = pageObjMatches.length;\n  } else if (countMatches.length > 0) {\n    pdfPageCount = Math.max(...countMatches);\n  }\n} catch (e) {}\n\nconst stripTags = (h) => String(h || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();\nconst expHtml = String(ctx.experienceHtml || '');\nconst skillsHtml = String(ctx.skillsHtml || '');\nconst summaryHtml = String(ctx.summaryHtml || '');\nconst certsHtml = String(ctx.certificationsHtml || '');\nconst mpHtml = String(ctx.marketingProjectsHtml || '');\n\nconst blockRegex = /<div\\s+class=[\"']job-block[\"'][^>]*>[\\s\\S]*?<\\/ul>\\s*<\\/div>/gi;\nconst jobBlocks = expHtml.match(blockRegex) || expHtml.split(/<div\\s+class=[\"']job-block[\"'][^>]*>/i).slice(1);\nconst jobBlockCount = jobBlocks.length;\nconst expBullets = [...expHtml.matchAll(/<li[^>]*>([\\s\\S]*?)<\\/li>/gi)].map(m => stripTags(m[1]));\nconst expBulletCount = expBullets.length;\nconst avgExpBulletWords = expBulletCount > 0\n  ? expBullets.reduce((acc, b) => acc + b.split(/\\s+/).length, 0) / expBulletCount\n  : 0;\nconst skillBullets = [...skillsHtml.matchAll(/<li[^>]*>([\\s\\S]*?)<\\/li>/gi)].map(m => stripTags(m[1]));\nconst avgSkillsPerCat = skillBullets.length > 0\n  ? skillBullets.reduce((acc, b) => acc + b.split(',').length, 0) / skillBullets.length\n  : 0;\n\n// Estimate visual lines on A4 page (~94 chars per line at 10.1pt Georgia)\nconst charsPerLine = 94;\nlet estimatedVisualLines = 4.5; // Header + contact line\nestimatedVisualLines += 1.6 + Math.ceil(stripTags(summaryHtml).length / charsPerLine);\nestimatedVisualLines += 1.6 + skillBullets.reduce((acc, b) => acc + Math.max(1, Math.ceil(b.length / charsPerLine)), 0);\nestimatedVisualLines += 1.6 + (jobBlockCount * 1.35) + expBullets.reduce((acc, b) => acc + Math.max(1, Math.ceil(b.length / (charsPerLine - 4))), 0);\nconst certRowCount = (certsHtml.match(/class=[\"']cert-row[\"']/gi) || []).length || 2;\nestimatedVisualLines += 1.6 + (certRowCount * 1.15);\nconst hasMarketingProjects = Boolean(mpHtml && mpHtml.trim().length > 10);\nif (hasMarketingProjects) {\n  estimatedVisualLines += 4.5;\n}\nestimatedVisualLines += 3.2; // Education + Hobbies\n\nconst hasAmpBug = skillsHtml.includes('&Amp;') || expHtml.includes('&Amp;');\n\n// 1. Overflow check: ONLY trigger condense if actual Gotenberg PDF > 1 page (or > 4 roles / > 10 bullets) or &Amp; bug\nconst isOverflowing = (pdfPageCount > 1) || (jobBlockCount > 4) || (expBulletCount > 11) || hasAmpBug;\n\n// 2. Underflow (Too Short) check: if 1 page, but < 3 roles OR < 8 bullets OR bullets are overly short (< 16 words avg) OR visual lines < 40\nconst minTargetBullets = hasMarketingProjects ? 8 : 8;\nconst isTooShort = (pdfPageCount === 1) && !isOverflowing && (\n  jobBlockCount < (hasMarketingProjects ? 3 : 4) ||\n  expBulletCount < minTargetBullets ||\n  ( !hasMarketingProjects && estimatedVisualLines < 41.0 ) ||\n  avgExpBulletWords < 15.5 ||\n  avgSkillsPerCat < 5.5\n);\n\nlet refitMode = 'NONE';\nif (isOverflowing) {\n  refitMode = 'CONDENSE';\n} else if (isTooShort) {\n  refitMode = 'EXPAND';\n}\n\nconst needsRefitLoop = Boolean((refitMode !== 'NONE') && refitAttempt < 3);\n\nreturn [{\n  json: {\n    ...ctx,\n    pdfPageCount,\n    jobBlockCount,\n    expBulletCount,\n    avgExpBulletWords: Math.round(avgExpBulletWords * 10) / 10,\n    avgSkillsPerCat: Math.round(avgSkillsPerCat * 10) / 10,\n    estimatedVisualLines: Math.round(estimatedVisualLines * 10) / 10,\n    refitMode,\n    needsRefitLoop,\n    refitAttempt\n  },\n  binary: item.binary\n}];\n"
+      }
+    },
+    {
+      "id": "803fa515-95a4-4e1c-8243-b3b2e4145387",
+      "name": "IF PDF Is 2+ Pages (Overflow Loop)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        6340,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-1page-wf1",
+              "leftValue": "={{ $json.needsRefitLoop }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dca993cd-1842-4400-a6b6-9e1b7d550fc6",
+      "name": "AI Refit: Condense Experience & Core Skills (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        6120,
+        720
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: $json.refitMode === 'EXPAND'\n        ? `You are an expert 1-Page ATS Resume Layout & Content Optimizer.\nThe rendered PDF for Sumanto Banerjee's resume (${$json.positionTitle} at ${$json.company}) is currently TOO SHORT on Page 1 (jobBlockCount=${$json.jobBlockCount}, expBulletCount=${$json.expBulletCount}, estimatedVisualLines=${$json.estimatedVisualLines}/46).\nWe must EXPAND the Experience and Core Skills sections so the resume fills 90%-95% of Page 1 with rich, substantive content without overflowing to Page 2.\n\nTARGET ROLE: ${$json.positionTitle} at ${$json.company}\nJOB DESCRIPTION SNIPPET: ${String($json.jobDescription || '').slice(0, 1400)}\n\nCURRENT CORE SKILLS HTML:\n${$json.skillsHtml}\n\nCURRENT EXPERIENCE HTML:\n${$json.experienceHtml}\n\nEXPANSION INSTRUCTIONS (FILL 90%-95% OF PAGE 1):\n1. EXPERIENCE SECTION (MUST HAVE 3 ROLES & 9 SUBSTANTIVE 2-LINE BULLETS TOTAL):\n   - Role 1: Sr. Data Analyst, Highspring India – Gurugram, India (Oct 2025 - Present) -> 4 substantive 2-line bullets (22-27 words each; metrics: 1M+ monthly records, 40% overhead reduction, 45% query speed or 500+ discrepancies / 30% stability, 15+ launches / 95% delivery quality).\n   - Role 2: Lead Trainer, Concentrix Daksh – Gurugram, India (April 2022 – Aug 2025) -> 3 substantive 2-line bullets (22-27 words each; metrics: 84% hire quality improvement, 30% knowledge gap reduction via BI dashboards, 25% productivity/output increase).\n   - Role 3: Founder | Creative Director, Maerke Stratcomm – New Delhi, India (June 2010 – July 2020) -> 2 substantive 2-line bullets (22-27 words each; framed around merchant/client data analytics, Tableau/funnel tracking, segmentation, driving 30% customer acquisition surge and 25% sales channel expansion).\n   - Every bullet MUST be 22-27 words long (so it spans 2 full visual lines), follow '[Action Verb] [X] using [Y] to achieve [Z%]', bold ONLY 1-2 domain/technical competency phrases per bullet using <strong>...</strong>, and NEVER bold numbers or percentages.\n2. CORE SKILLS SECTION (4 CATEGORIES, 7-8 SKILLS PER CATEGORY):\n   - Keep 4 categories in Title Case, each with 7-8 relevant tools/competencies so each category spans 1.5 to 2 visual lines. Use '&amp;' (never '&Amp;').\n\nReturn STRICT JSON only:\n{\n  \"skills_html\": \"<ul>...</ul>\",\n  \"experience_html\": \"<div class=\\\"job-block\\\">...</div>...\"\n}`\n        : `You are an expert 1-Page ATS Resume Layout & Content Optimizer.\nThe rendered PDF for Sumanto Banerjee's resume (${$json.positionTitle} at ${$json.company}) overflowed to ${$json.pdfPageCount} pages (jobBlockCount=${$json.jobBlockCount}, expBulletCount=${$json.expBulletCount}, estimatedVisualLines=${$json.estimatedVisualLines}).\nWe must gently condense it so it fits on STRICTLY 1 PAGE while still filling 90%-95% of Page 1 (NEVER make it too short!).\n\nTARGET ROLE: ${$json.positionTitle} at ${$json.company}\nJOB DESCRIPTION SNIPPET: ${String($json.jobDescription || '').slice(0, 1400)}\n\nCURRENT CORE SKILLS HTML:\n${$json.skillsHtml}\n\nCURRENT EXPERIENCE HTML:\n${$json.experienceHtml}\n\nGENTLE CONDENSATION INSTRUCTIONS (FIT 1 FULL PAGE AT 90%-95% DENSITY):\n1. EXPERIENCE SECTION (KEEP 3 ROLES & 8 SUBSTANTIVE BULLETS TOTAL):\n   - Role 1: Sr. Data Analyst, Highspring India – Gurugram, India (Oct 2025 - Present) -> 3 bullets (20-24 words each).\n   - Role 2: Lead Trainer, Concentrix Daksh – Gurugram, India (April 2022 – Aug 2025) -> 3 bullets (20-24 words each).\n   - Role 3: Founder | Creative Director, Maerke Stratcomm – New Delhi, India (June 2010 – July 2020) -> 2 bullets (20-24 words each).\n   - Remove any 4th role (such as Customer Support Representative) if present. Bold 1-2 competency phrases per bullet; do NOT bold numbers/percentages.\n2. CORE SKILLS SECTION:\n   - Keep 4 categories in Title Case with 6-7 high-signal skills per category. Use '&amp;' (never '&Amp;').\n\nReturn STRICT JSON only:\n{\n  \"skills_html\": \"<ul>...</ul>\",\n  \"experience_html\": \"<div class=\\\"job-block\\\">...</div>...\"\n}`\n    }]\n  }],\n  generationConfig: { temperature: 0.2, responseMimeType: \"application/json\" }\n}) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
+        }
+      }
+    },
+    {
+      "id": "a8fce452-3e04-4e4d-8939-b1558c9af05c",
+      "name": "Apply 1-Page Refit (Experience & Core Skills)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5680,
+        720
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Check PDF Page Count (1-Page Inspector)').last().json;\nconst nextAttempt = Number(prev.refitAttempt || 0) + 1;\nconst mode = prev.refitMode || 'CONDENSE';\n\nconst blockRegex = /<div\\s+class=[\"']job-block[\"'][^>]*>[\\s\\S]*?<\\/ul>\\s*<\\/div>/gi;\nlet blocks = String(prev.experienceHtml || '').match(blockRegex) || [];\nlet candidateSkillsHtml = String(prev.skillsHtml || '');\nlet cssOverride = prev.cssOverride || null;\n\nif (mode === 'EXPAND') {\n  const hasCsr = blocks.some(b => /Customer\\s+Support\\s+Representative/i.test(b));\n  if (!hasCsr && !prev.marketingProjectsHtml) {\n    const csrBlock = `<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Customer Support Representative, Concentrix Daksh – Gurugram, India</strong></span><span class=\"job-date\"><strong>Jan 2021 – Mar 2022</strong></span></div>\n  <ul>\n    <li>Resolved escalated consumer inquiries by utilizing <strong>CRM telemetry</strong> and historical performance metrics, accelerating ticket resolution speed by 35% across high-volume queues.</li>\n    <li>Analyzed user interaction trends to identify recurring <strong>service bottlenecks</strong>, partnering with operations leads to streamline workflows and boost customer satisfaction.</li>\n  </ul>\n</div>`;\n    if (blocks.length >= 2) {\n      blocks.splice(2, 0, csrBlock);\n    } else {\n      blocks.push(csrBlock);\n    }\n  }\n  const hasMaerke = blocks.some(b => /Maerke\\s+Stratcomm/i.test(b));\n  if (!hasMaerke) {\n    blocks.push(`<div class=\"job-block\">\n  <div class=\"job-header\"><span class=\"job-title\"><strong>Founder | Creative Director, Maerke Stratcomm – New Delhi, India</strong></span><span class=\"job-date\"><strong>June 2010 – July 2020</strong></span></div>\n  <ul>\n    <li>Directed <strong>commercial analytics</strong>, pricing strategy, and market segmentation for 15+ B2B and retail clients, driving a 30% increase in customer acquisition.</li>\n    <li>Implemented <strong>funnel performance tracking</strong> and ROI attribution models across regional distribution channels, expanding HORECA and enterprise account revenue by 25%.</li>\n  </ul>\n</div>`);\n  }\n} else {\n  // CONDENSE mode: Keep all 4 roles intact, tighten CSS first so all 4 roles fit on 1 page!\n  const baseCss = $('CSS Style Window (Edit Anytime)').last().json.cssStyles || '';\n  cssOverride = baseCss\n    .replace('margin: 0.34in 0.40in;', 'margin: 0.28in 0.38in;')\n    .replace('font-size: 9.9pt;', nextAttempt === 1 ? 'font-size: 9.55pt;' : 'font-size: 9.3pt;')\n    .replace('line-height: 1.32;', nextAttempt === 1 ? 'line-height: 1.26;' : 'line-height: 1.22;')\n    .replace('margin-bottom: 5.5px;', 'margin-bottom: 4px;')\n    .replace('margin-top: 8px;', 'margin-top: 6px;');\n\n  if (nextAttempt >= 2) {\n    const bulletBudgets = [3, 2, 2, 2];\n    blocks = blocks.slice(0, 4).map((blk, idx) => {\n      const maxB = bulletBudgets[idx] || 2;\n      const liMatches = [...blk.matchAll(/<li[^>]*>[\\s\\S]*?<\\/li>/gi)].map(m => m[0]);\n      return blk.replace(/<ul>[\\s\\S]*?<\\/ul>/i, `<ul>\\n    ${liMatches.slice(0, maxB).join('\\n    ')}\\n  </ul>`);\n    });\n  }\n}\n\nreturn [{\n  json: {\n    ...prev,\n    skillsHtml: candidateSkillsHtml,\n    experienceHtml: blocks.slice(0, 4).join('\\n'),\n    cssOverride,\n    refitAttempt: nextAttempt,\n    _isRefitPass: true\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-kvm2-batch-cap-5",
+      "name": "KVM2 Paced Batch Cap (Max 5 Resumes/Tick)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst now = Date.now();\nif (staticData.wf1LockUntil && now < staticData.wf1LockUntil) {\n  return [];\n}\nconst allRows = $input.all().slice(0, 28);\nif (allRows.length > 0) {\n  staticData.wf1LockUntil = now + Math.min(300000, allRows.length * 8000);\n}\nreturn allRows;"
       }
     }
   ],
@@ -881,7 +993,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Job Rows (1 by 1)",
+            "node": "KVM2 Paced Batch Cap (Max 5 Resumes/Tick)",
             "type": "main",
             "index": 0
           }
@@ -915,7 +1027,7 @@
       "main": [
         [
           {
-            "node": "Step 0: Extract 5-10 JD Keywords & Role Category (Gemini)",
+            "node": "Parse 5-10 Keywords & Role Blueprint",
             "type": "main",
             "index": 0
           }
@@ -1017,7 +1129,7 @@
       "main": [
         [
           {
-            "node": "Section 1: Generate Summary (Gemini)",
+            "node": "CSS Style Window (Edit Anytime)",
             "type": "main",
             "index": 0
           }
@@ -1254,7 +1366,7 @@
       "main": [
         [
           {
-            "node": "Upload PDF to Google Drive",
+            "node": "Check PDF Page Count (1-Page Inspector)",
             "type": "main",
             "index": 0
           }
@@ -1310,6 +1422,68 @@
         [
           {
             "node": "1. Read Master Skills Tab (Once)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PDF Page Count (1-Page Inspector)": {
+      "main": [
+        [
+          {
+            "node": "IF PDF Is 2+ Pages (Overflow Loop)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF PDF Is 2+ Pages (Overflow Loop)": {
+      "main": [
+        [
+          {
+            "node": "Apply 1-Page Refit (Experience & Core Skills)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Refit: Condense Experience & Core Skills (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Apply 1-Page Refit (Experience & Core Skills)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply 1-Page Refit (Experience & Core Skills)": {
+      "main": [
+        [
+          {
+            "node": "Compile Sections + CSS into index.html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KVM2 Paced Batch Cap (Max 5 Resumes/Tick)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Job Rows (1 by 1)",
             "type": "main",
             "index": 0
           }
