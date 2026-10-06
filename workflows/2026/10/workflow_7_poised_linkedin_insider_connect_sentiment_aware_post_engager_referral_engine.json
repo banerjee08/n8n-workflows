@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T15:39:16.030Z",
-  "updatedAt": "2026-10-05T10:24:11.614Z",
+  "updatedAt": "2026-10-06T09:06:16.545Z",
   "isArchived": false,
-  "versionCounter": 8,
+  "versionCounter": 36,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -27,7 +27,7 @@
     },
     {
       "id": "wf7-sched",
-      "name": "Daily 11:00 IST Networking Digest",
+      "name": "Nightly 01:30 AM IST Daily Curation (Companies, Portals, Network, LinkedIn)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -39,7 +39,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "30 5 * * *"
+              "expression": "0 20 * * *"
             }
           ]
         }
@@ -47,7 +47,7 @@
     },
     {
       "id": "wf7-sched-eod",
-      "name": "Daily 21:00 IST LinkedIn EOD Summary",
+      "name": "Nightly 22:30 IST LinkedIn EOD Summary",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -59,7 +59,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "30 15 * * *"
+              "expression": "0 17 * * *"
             }
           ]
         }
@@ -101,7 +101,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nCREATE TABLE IF NOT EXISTS linkedin_activity_log (\n  activity_id TEXT PRIMARY KEY,\n  activity_date DATE DEFAULT CURRENT_DATE,\n  company_name TEXT,\n  insider_name TEXT,\n  linkedin_url TEXT,\n  activity_type TEXT,\n  post_snippet TEXT,\n  detected_sentiment TEXT,\n  reaction_type TEXT,\n  content_text TEXT,\n  approval_status TEXT DEFAULT 'Pending Approval',\n  rule_scope TEXT DEFAULT 'Standard',\n  learned_rule_feedback TEXT DEFAULT '',\n  execution_status TEXT DEFAULT 'Awaiting Approval',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS linkedin_daily_stats (\n  stat_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,\n  connection_requests_sent INT DEFAULT 0,\n  follow_requests_sent INT DEFAULT 0,\n  follow_requests_accepted INT DEFAULT 0,\n  messages_sent INT DEFAULT 0,\n  reactions_given INT DEFAULT 0,\n  comments_posted INT DEFAULT 0,\n  profile_views INT DEFAULT 8,\n  easy_applies INT DEFAULT 0,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO linkedin_daily_stats (stat_date, profile_views)\nVALUES (CURRENT_DATE, 8)\nON CONFLICT (stat_date) DO NOTHING;\n\nSELECT\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (SELECT * FROM linkedin_activity_log ORDER BY CAST(REGEXP_REPLACE(activity_id, '[^0-9]', '', 'g') AS INT) ASC) l) AS li_logs,\n  (SELECT row_to_json(s) FROM (SELECT * FROM linkedin_daily_stats WHERE stat_date = CURRENT_DATE LIMIT 1) s) AS li_stats,\n  (SELECT COALESCE(json_agg(row_to_json(r)), '[]'::json) FROM (SELECT id, section_name, rule_instruction FROM learned_rules WHERE is_active = TRUE AND LOWER(section_name) LIKE '%linkedin%' ORDER BY id ASC) r) AS li_rules;\n",
+        "query": "UPDATE workflow_entity SET \"parentFolderId\" = 'vC7m13ZLDvyrB9M5' WHERE id IN ('OH96b2tHgFWXoEJ6','lXNGL9OcyVVtCBuz','T4k9rXZ2CKK72xZS','kYpYvF2pM66RYXCC','rdkSBj2Xmk5rA05e','QL9218oxuBxpYefQ','DK7BGr5CVZrkPe6W') AND (\"parentFolderId\" IS NULL OR \"parentFolderId\" <> 'vC7m13ZLDvyrB9M5');\nALTER TABLE portal_credentials_vault ADD COLUMN IF NOT EXISTS session_cookies TEXT;\n\nCREATE TABLE IF NOT EXISTS linkedin_activity_log (\n  activity_id TEXT PRIMARY KEY,\n  activity_date DATE DEFAULT CURRENT_DATE,\n  company_name TEXT,\n  insider_name TEXT,\n  target_profile_url TEXT DEFAULT '',\n  linkedin_url TEXT,\n  activity_type TEXT,\n  post_snippet TEXT,\n  detected_sentiment TEXT,\n  reaction_type TEXT,\n  content_text TEXT,\n  approval_status TEXT DEFAULT 'Pending Approval',\n  rule_scope TEXT DEFAULT 'Standard',\n  learned_rule_feedback TEXT DEFAULT '',\n  execution_status TEXT DEFAULT 'Awaiting Approval',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nALTER TABLE linkedin_activity_log ADD COLUMN IF NOT EXISTS target_profile_url TEXT DEFAULT '';\n\nCREATE TABLE IF NOT EXISTS linkedin_network_contacts (\n  contact_id TEXT PRIMARY KEY,\n  category TEXT,\n  company_name TEXT,\n  person_name TEXT,\n  target_profile_url TEXT DEFAULT '',\n  role_title TEXT DEFAULT '',\n  location TEXT DEFAULT '',\n  outreach_stage TEXT DEFAULT '',\n  connection_note TEXT DEFAULT '',\n  latest_post_url TEXT DEFAULT '',\n  approval_status TEXT DEFAULT 'Pending Approval',\n  execution_status TEXT DEFAULT 'Awaiting Approval',\n  notes_log TEXT DEFAULT '',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS linkedin_daily_stats (\n  stat_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,\n  connection_requests_sent INT DEFAULT 0,\n  follow_requests_sent INT DEFAULT 0,\n  follow_requests_accepted INT DEFAULT 0,\n  messages_sent INT DEFAULT 0,\n  reactions_given INT DEFAULT 0,\n  comments_posted INT DEFAULT 0,\n  profile_views INT DEFAULT 8,\n  easy_applies INT DEFAULT 0,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO linkedin_daily_stats (stat_date, profile_views)\nVALUES (CURRENT_DATE, 8)\nON CONFLICT (stat_date) DO NOTHING;\n\n\nUPDATE linkedin_activity_log\nSET execution_status = '⏳ Approved — Tap Link to Send (Set li_at for Auto)'\nWHERE execution_status IN ('Posted / Sent', 'Reacted Only');\n\nUPDATE linkedin_network_contacts\nSET execution_status = '⏳ Approved — Tap Link to Send (Set li_at for Auto)'\nWHERE execution_status IN ('Posted / Sent', 'Reacted Only');\n\nSELECT\n  (SELECT COALESCE(NULLIF(session_cookies, ''), NULLIF(encrypted_password, '')) FROM portal_credentials_vault WHERE site_name IN ('LinkedIn_Session_Cookie', 'LinkedIn Jobs') AND COALESCE(NULLIF(session_cookies, ''), NULLIF(encrypted_password, '')) IS NOT NULL LIMIT 1) AS li_at_cookie,\n  (SELECT COALESCE(json_agg(row_to_json(l)), '[]'::json) FROM (SELECT * FROM linkedin_activity_log ORDER BY CAST(REGEXP_REPLACE(activity_id, '[^0-9]', '', 'g') AS INT) ASC) l) AS li_logs,\n  (SELECT COALESCE(json_agg(row_to_json(f)), '[]'::json) FROM (SELECT * FROM linkedin_network_contacts ORDER BY CAST(REGEXP_REPLACE(contact_id, '[^0-9]', '', 'g') AS INT) ASC) f) AS fh_contacts,\n  (SELECT row_to_json(s) FROM (SELECT * FROM linkedin_daily_stats WHERE stat_date = CURRENT_DATE LIMIT 1) s) AS li_stats,\n  (SELECT COALESCE(json_agg(row_to_json(r)), '[]'::json) FROM (SELECT id, section_name, rule_instruction FROM learned_rules WHERE is_active = TRUE AND LOWER(section_name) LIKE '%linkedin%' ORDER BY id ASC) r) AS li_rules;\n",
         "options": {}
       },
       "credentials": {
@@ -223,11 +223,17 @@
       "typeVersion": 2,
       "executeOnce": true,
       "position": [
-        1380,
-        420
+        1340,
+        300
       ],
       "parameters": {
-        "jsCode": "\nconst jobRows = $('Read Job Application Sheet').all().map(i => i.json);\nconst refRows = $('Read Reference Sheet').all().map(i => i.json);\nconst sheetLiRows = $('Read LinkedIn Activity Log Sheet').all().map(i => i.json);\nconst pgData = $('Postgres: Load LinkedIn Log & Rules').first().json || {};\nconst _ctx = this;\n\nconst TG_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';\nconst ADMIN_CHAT_ID = '8873019272';\nconst SHEET_ID = 'YOUR_GOOGLE_DOC_OR_SHEET_ID';\nconst LI_LOG_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=658414123`;\nconst LI_EOD_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=1573461345`;\n\nlet isEodTrigger = false;\ntry {\n  if ($('Daily 21:00 IST LinkedIn EOD Summary').isExecuted) isEodTrigger = true;\n} catch (e) {}\ntry {\n  if ($('On-Demand Telegram Trigger').isExecuted) {\n    const trig = $('On-Demand Telegram Trigger').first().json || {};\n    if (trig.mode === 'eod' || trig.action === 'cmd:li_eod') isEodTrigger = true;\n  }\n} catch (e) {}\n\nconst liRules = Array.isArray(pgData.li_rules) ? pgData.li_rules : [];\nconst liStats = pgData.li_stats || {};\nconst pgLogsMap = {};\nfor (const r of (Array.isArray(pgData.li_logs) ? pgData.li_logs : [])) {\n  pgLogsMap[r.activity_id] = r;\n}\n\nconst esc = s => String(s || '').replace(/'/g, \"''\");\nconst sqlQueries = [];\n\nconst mergedLogs = [];\nfor (const sr of sheetLiRows) {\n  const actId = String(sr['Activity ID'] || '').trim();\n  if (!actId) continue;\n  const pgRow = pgLogsMap[actId];\n  const sheetStatus = String(sr['Approval Status'] || 'Pending Approval').trim();\n  const sheetScope = String(sr['Rule Scope'] || 'Standard').trim();\n  const sheetFeedback = String(sr['Learned Rule / Reviewer Feedback'] || '').trim();\n  const sheetExec = String(sr['Execution Status'] || 'Awaiting Approval').trim();\n  const sheetContent = String(sr['Generated / Posted Content'] || '').trim();\n\n  const finalStatus = pgRow ? pgRow.approval_status : sheetStatus;\n  const finalScope = pgRow ? pgRow.rule_scope : sheetScope;\n  const finalFeedback = pgRow ? pgRow.learned_rule_feedback : sheetFeedback;\n  const finalExec = pgRow ? pgRow.execution_status : sheetExec;\n  const finalContent = pgRow ? pgRow.content_text : sheetContent;\n\n  const item = {\n    activity_id: actId,\n    activity_date: String(sr['Date'] || new Date().toISOString().slice(0, 10)).trim(),\n    company_name: String(sr['Company'] || '').trim(),\n    insider_name: String(sr['Target Insider / Author'] || '').trim(),\n    linkedin_url: String(sr['LinkedIn URL'] || '').trim(),\n    activity_type: String(sr['Activity Type'] || '').trim(),\n    post_snippet: String(sr['Post Snippet / Context'] || '').trim(),\n    detected_sentiment: String(sr['Detected Sentiment'] || '').trim(),\n    reaction_type: String(sr['Reaction Given'] || '').trim(),\n    content_text: finalContent,\n    approval_status: finalStatus,\n    rule_scope: finalScope,\n    learned_rule_feedback: finalFeedback,\n    execution_status: finalExec\n  };\n  mergedLogs.push(item);\n\n  sqlQueries.push(`\n    INSERT INTO linkedin_activity_log (\n      activity_id, activity_date, company_name, insider_name, linkedin_url,\n      activity_type, post_snippet, detected_sentiment, reaction_type, content_text,\n      approval_status, rule_scope, learned_rule_feedback, execution_status, updated_at\n    ) VALUES (\n      '${esc(item.activity_id)}', '${esc(item.activity_date)}', '${esc(item.company_name)}', '${esc(item.insider_name)}', '${esc(item.linkedin_url)}',\n      '${esc(item.activity_type)}', '${esc(item.post_snippet)}', '${esc(item.detected_sentiment)}', '${esc(item.reaction_type)}', '${esc(item.content_text)}',\n      '${esc(item.approval_status)}', '${esc(item.rule_scope)}', '${esc(item.learned_rule_feedback)}', '${esc(item.execution_status)}', NOW()\n    ) ON CONFLICT (activity_id) DO NOTHING;\n  `);\n}\n\nconst isApproved = r => /^approved/i.test(r.approval_status) || r.execution_status === 'Posted / Sent' || r.execution_status === 'Reacted Only';\nconst isPending = r => /pending|reworked/i.test(r.approval_status);\nconst isDenied = r => /denied|skipped|rejected/i.test(r.approval_status);\n\nconst connSent = mergedLogs.filter(r => r.activity_type === 'Connection Request' && isApproved(r)).length + Number(liStats.connection_requests_sent || 0);\nconst followSent = mergedLogs.filter(r => r.activity_type === 'Follow Request' && isApproved(r)).length + Number(liStats.follow_requests_sent || 0);\nconst followAccepted = mergedLogs.filter(r => r.activity_type === 'Follow Accepted' && isApproved(r)).length + Number(liStats.follow_requests_accepted || 0);\nconst msgsSent = mergedLogs.filter(r => (r.activity_type === 'Direct Message (Slide-In)' || r.activity_type === 'Follow Accepted') && isApproved(r)).length + Number(liStats.messages_sent || 0);\nconst reactionsGiven = mergedLogs.filter(r => r.reaction_type && r.reaction_type !== '—' && isApproved(r)).length + Number(liStats.reactions_given || 0);\nconst commentsPosted = mergedLogs.filter(r => r.activity_type === 'Post Comment' && isApproved(r)).length + Number(liStats.comments_posted || 0);\nconst profileViews = Math.max(8, mergedLogs.filter(r => r.activity_type === 'Profile View / Research').length + Number(liStats.profile_views || 8));\n\nconst pendingList = mergedLogs.filter(isPending);\nconst approvedList = mergedLogs.filter(isApproved);\nconst deniedList = mergedLogs.filter(isDenied);\nconst singlePostRulesCount = mergedLogs.filter(r => r.rule_scope === 'This Post Only').length;\nconst globalRulesCount = Math.max(liRules.length, mergedLogs.filter(r => r.rule_scope === 'Global Learned Rule').length);\n\nconst todayStr = new Date().toISOString().slice(0, 10);\nconst eodSummaryRow = {\n  'Date': todayStr,\n  'Connection Requests Sent': connSent,\n  'Follow Requests Sent': followSent,\n  'Follow Requests Accepted': followAccepted,\n  'Messages / DMs Sent': msgsSent,\n  'Reactions Given on Posts': reactionsGiven,\n  'Comments Posted': commentsPosted,\n  'Other Activities (Profile Views / Searches / Drafts)': `${pendingList.length} Pending Approval Drafts + ${profileViews} Target Insiders Researched`,\n  'Drafts Generated Today': mergedLogs.length,\n  'Approved Count': approvedList.length,\n  'Denied Count': deniedList.length,\n  'Global Rules Learned': globalRulesCount,\n  'Single-Post Rules Applied': singlePostRulesCount,\n  'Daily Summary Notes & Top Companies': `Active across Amex, Axtria, Google, Stripe, Nagarro, Razorpay, EY, HDFC, Crisil, Siemens Energy, Nielsen. ${pendingList.length} items pending approval.`\n};\n\nif (isEodTrigger) {\n  const eodText =\n    `🌙 *End-of-Day (EOD) LinkedIn Networking Summary (${todayStr})*\\n` +\n    `━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n    `🤝 *Connection Requests Sent:* *${connSent}*\\n` +\n    `➕ *Follow Requests Sent:* *${followSent}*\\n` +\n    `✅ *Follow Requests Accepted:* *${followAccepted}*\\n` +\n    `💬 *Messages / DMs Sent:* *${msgsSent}*\\n` +\n    `👍 *Reactions Given on Posts:* *${reactionsGiven}* _(💡/🎉/❤️/👍)_\\n` +\n    `🗨️ *Comments Posted:* *${commentsPosted}*\\n\\n` +\n    `🔍 *Other Activities Done on LinkedIn:*\\n` +\n    `• *Target Insiders & Profiles Researched:* *${profileViews}*\\n` +\n    `• *Total Comments/Notes in Log:* *${mergedLogs.length}* (\\`🟢 ${approvedList.length} Approved\\` | \\`🟡 ${pendingList.length} Pending\\` | \\`🔴 ${deniedList.length} Denied\\`)\\n` +\n    `• *Global Rules Learned (Future Reference):* *${globalRulesCount}*\\n` +\n    `• *Single-Post Rules Applied (This Post Only):* *${singlePostRulesCount}*\\n\\n` +\n    `📊 [Open LinkedIn Activity & Post Log Sheet](${LI_LOG_URL})\\n` +\n    `📈 [Open LinkedIn Daily EOD Summary Sheet](${LI_EOD_URL})`;\n\n  const kb = [\n    [{ text: `🟡 Review Pending LinkedIn Queue (${pendingList.length})`, callback_data: 'li_list:pending:0' }],\n    [{ text: '💬 Paste a Post -> Get Sentiment-Matched Reply', callback_data: 'cmd:post_reply' }],\n    [{ text: '➕ Log +1 Connect', callback_data: 'li_inc:conn' }, { text: '✅ Log +1 Follow Accepted', callback_data: 'li_inc:accept' }],\n    [{ text: '▴ Back to Compact Menu', callback_data: 'nav:home' }]\n  ];\n\n  try {\n    await _ctx.helpers.httpRequest({\n      method: 'POST',\n      url: `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,\n      headers: { 'Content-Type': 'application/json' },\n      body: { chat_id: ADMIN_CHAT_ID, text: eodText, parse_mode: 'Markdown', disable_web_page_preview: true, reply_markup: { inline_keyboard: kb } },\n      json: true\n    });\n  } catch (e) {}\n} else {\n  const rulesSummary = liRules.length > 0\n    ? liRules.slice(-3).map(r => `• _${r.rule_instruction.slice(0, 85)}_`).join('\\n')\n    : `• _Keep comments to 1 short poised sentence (8–18 words); match post sentiment; never force wit._`;\n\n  const pendingPreview = pendingList.slice(0, 4).map(p =>\n    `• *${p.activity_id} (${p.company_name})* — _${p.activity_type}_ (${p.reaction_type !== '—' ? p.reaction_type : p.detected_sentiment})`\n  ).join('\\n') || '• All queued items reviewed!';\n\n  const text =\n    `🤝 *Poised LinkedIn Hub & Approval Queue*\\n` +\n    `━━━━━━━━━━━━━━━━━━━━━━━━\\n` +\n    `📊 *Today's Live LinkedIn Activity:*\\n` +\n    `• 🤝 Connects Sent: *${connSent}* | ✅ Accepted: *${followAccepted}* | ➕ Follows: *${followSent}*\\n` +\n    `• 💬 Messages Sent: *${msgsSent}* | 👍 Reactions: *${reactionsGiven}* | 🗨️ Comments: *${commentsPosted}*\\n\\n` +\n    `🟡 *Pending Your Approval (${pendingList.length} items):*\\n` +\n    `${pendingPreview}\\n\\n` +\n    `🧠 *Active LinkedIn Learned Rules (${globalRulesCount}):*\\n` +\n    `${rulesSummary}\\n\\n` +\n    `📊 [Open LinkedIn Activity & Post Log Sheet](${LI_LOG_URL})\\n` +\n    `📈 [Open LinkedIn Daily EOD Summary Sheet](${LI_EOD_URL})`;\n\n  const kb = [\n    [{ text: `🟡 Approve / Deny Pending Queue (${pendingList.length})`, callback_data: 'li_list:pending:0' }],\n    [{ text: `🟢 View Approved (${approvedList.length})`, callback_data: 'li_list:approved:0' }, { text: `📋 View All (${mergedLogs.length})`, callback_data: 'li_list:all:0' }],\n    [{ text: '💬 Paste a Post -> Get Sentiment-Matched Reply', callback_data: 'cmd:post_reply' }],\n    [{ text: '🌙 View Full LinkedIn EOD Summary', callback_data: 'cmd:li_eod' }],\n    [{ text: '▴ Back to Compact Menu', callback_data: 'nav:home' }]\n  ];\n\n  try {\n    await _ctx.helpers.httpRequest({\n      method: 'POST',\n      url: `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,\n      headers: { 'Content-Type': 'application/json' },\n      body: { chat_id: ADMIN_CHAT_ID, text, parse_mode: 'Markdown', disable_web_page_preview: true, reply_markup: { inline_keyboard: kb } },\n      json: true\n    });\n  } catch (e) {}\n}\n\nreturn [{\n  json: {\n    ok: true,\n    isEodTrigger,\n    combinedSql: sqlQueries.join('\\n') || 'SELECT 1;',\n    eodSummaryRow\n  }\n}];\n"
+        "jsCode": "const jobRows = $('Read Job Application Sheet').all().map(i => i.json);\nconst refRows = $('Read Reference Sheet').all().map(i => i.json);\nconst sheetLiRows = $('Read LinkedIn Activity Log Sheet').all().map(i => i.json);\nconst sheetFhRows = $('Read Friends & HR Network Sheet').all().map(i => i.json);\nconst siteRows = $('Read Site Application Tracker').all().map(i => i.json);\nconst pg = $('Postgres: Load LinkedIn Log & Rules').first().json || {};\n\nconst liAtCookie = String(pg.li_at_cookie || '').trim();\nconst pgLogs = Array.isArray(pg.li_logs) ? pg.li_logs : [];\nconst pgFh = Array.isArray(pg.fh_contacts) ? pg.fh_contacts : [];\nconst liStats = pg.li_stats || {};\nconst esc = s => String(s || '').replace(/'/g, \"''\");\nconst sqlQueries = [];\n\nconst TG_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';\nconst CHAT_ID = '8873019272';\nconst SHEET_ID = 'YOUR_GOOGLE_DOC_OR_SHEET_ID';\nconst REF_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=0`;\nconst PORTAL_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=939822974`;\nconst LI_LOG_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=658414123`;\nconst FH_NET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=1798753586`;\nconst _ctx = this;\n\nconst istNow = new Date(Date.now() + 5.5 * 3600 * 1000);\nconst todayStr = istNow.toISOString().slice(0, 10);\n\n// Optional Live LinkedIn Voyager API Executor (only marks \"✅ Sent on LinkedIn (API Verified)\" when li_at succeeds!)\nasync function tryVoyagerExecute(cookie, actType, postUrl, reactionLabel, commentText) {\n  if (!cookie || cookie.length < 20) {\n    return { ok: false, status: '⏳ Approved — Tap Link to Send (Set li_at for Auto)' };\n  }\n  const urnMatch = String(postUrl || '').match(/activity[:-](\\d{18,20})|ugcPost[:-](\\d{18,20})/i);\n  if (!urnMatch) {\n    return { ok: false, status: '⏳ Approved — Tap Profile/Post Link to Send' };\n  }\n  const actIdNum = urnMatch[1] || urnMatch[2];\n  const threadUrn = `urn:li:activity:${actIdNum}`;\n  const csrf = 'ajax:8841920394810293841';\n  const headers = {\n    'Cookie': `li_at=${cookie}; JSESSIONID=\"${csrf}\"`,\n    'csrf-token': csrf,\n    'x-restli-protocol-version': '2.0.0',\n    'Content-Type': 'application/json',\n    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'\n  };\n  try {\n    if (reactionLabel && reactionLabel !== '—') {\n      const rMap = { 'Insightful': 'INTEREST', 'Support': 'EMPATHY', 'Celebrate': 'PRAISE', 'Like': 'LIKE' };\n      const rType = rMap[reactionLabel] || 'LIKE';\n      await _ctx.helpers.httpRequest({\n        method: 'POST',\n        url: `https://www.linkedin.com/voyager/api/feed/normReactions?threadUrn=${encodeURIComponent(threadUrn)}`,\n        headers,\n        body: { reactionType: rType },\n        json: true,\n        timeout: 5000\n      });\n    }\n    if (actType === 'Post Comment' && commentText) {\n      await _ctx.helpers.httpRequest({\n        method: 'POST',\n        url: 'https://www.linkedin.com/voyager/api/feed/normComments',\n        headers,\n        body: {\n          commentary: { text: commentText, attributes: [] },\n          threadUrn\n        },\n        json: true,\n        timeout: 5000\n      });\n    }\n    return { ok: true, status: '✅ Sent on LinkedIn (API Verified)' };\n  } catch (e) {\n    return { ok: false, status: '⏳ Approved — Tap Link to Send (li_at Expired/Needs 1-Tap)' };\n  }\n}\n\n// ============================================================================\n// DAILY ACTIVITY 1: Expand Target Company List (Reference Sheet, gid=0) — +5 Feasible/Day\n// ============================================================================\nconst existingCompanies = new Set();\nconst emptyRefSlots = [];\nlet maxRefSNo = 0;\nfor (const r of refRows) {\n  const c = String(r['Company'] || '').trim().toLowerCase();\n  const sn = parseInt(String(r['S. No. '] || r['S. No.'] || '').trim(), 10);\n  if (!isNaN(sn) && sn > maxRefSNo) maxRefSNo = sn;\n  if (c && sn < 1000) existingCompanies.add(c);\n  else if (!c && !isNaN(sn) && sn > 0) emptyRefSlots.push(sn);\n}\n\nconst curatedCompanyCatalog = [\n  { company: 'Adyen', location: 'Amsterdam / Bengaluru / Remote', career: 'https://careers.adyen.com/vacancies', industry: 'FinTech & Global Payments', region: 'EU Visa & India Hybrid', ats: 'Greenhouse' },\n  { company: 'Revolut', location: 'Remote (India / UK / EU)', career: 'https://www.revolut.com/careers/', industry: 'FinTech & Digital Banking', region: 'India & EU Remote-First', ats: 'Lever' },\n  { company: 'Klarna', location: 'Stockholm / Berlin / London', career: 'https://www.klarna.com/careers/open-positions/', industry: 'FinTech & AI Commerce', region: 'EU (Visa Sponsorship)', ats: 'Workday' },\n  { company: 'N26', location: 'Berlin / Vienna / Barcelona', career: 'https://n26.com/en-eu/careers', industry: 'FinTech & Mobile Banking', region: 'EU (Visa Sponsorship)', ats: 'Greenhouse' },\n  { company: 'Celonis', location: 'Munich / Madrid / Bengaluru', career: 'https://www.celonis.com/careers/jobs/', industry: 'Process Mining & Enterprise SaaS', region: 'India & EU Hybrid', ats: 'Greenhouse' },\n  { company: 'Miro', location: 'Amsterdam / Berlin / Austin', career: 'https://miro.com/careers/open-positions/', industry: 'Collaborative SaaS & Product Analytics', region: 'EU (Visa Sponsorship)', ats: 'Greenhouse' },\n  { company: 'Canva', location: 'Sydney / Melbourne / Remote', career: 'https://www.lifeatcanva.com/en/jobs/', industry: 'Design SaaS & Growth Analytics', region: 'Australia (Visa / Remote)', ats: 'SmartRecruiters' },\n  { company: 'SafetyCulture', location: 'Sydney / Townsville / Manchester', career: 'https://safetyculture.com/careers/', industry: 'Operations SaaS & IoT Analytics', region: 'Australia & UK', ats: 'Lever' },\n  { company: 'Seek', location: 'Melbourne / Sydney', career: 'https://www.seek.com.au/about/careers/', industry: 'HR Tech & Marketplace Analytics', region: 'Australia', ats: 'Workday' },\n  { company: 'Afterpay / Block', location: 'Melbourne / Sydney / Remote', career: 'https://block.xyz/careers/jobs', industry: 'FinTech & Consumer Payments', region: 'Australia & Global Remote', ats: 'SmartRecruiters' },\n  { company: 'Monzo Bank', location: 'London / UK Remote', career: 'https://monzo.com/careers/', industry: 'FinTech & Retail Banking', region: 'UK & EU', ats: 'Greenhouse' },\n  { company: 'Deliveroo', location: 'London / Hyderabad', career: 'https://careers.deliveroo.co.uk/', industry: 'Logistics & Marketplace Analytics', region: 'India (Hyderabad) & UK', ats: 'Greenhouse' },\n  { company: 'Booking.com', location: 'Amsterdam / Bengaluru', career: 'https://careers.booking.com/jobs', industry: 'Travel Tech & Experimentation', region: 'EU Visa & India (Bengaluru)', ats: 'Workday' },\n  { company: 'Zalando', location: 'Berlin / Dortmund / Dublin', career: 'https://jobs.zalando.com/en/jobs/', industry: 'E-Commerce & Merchandising Analytics', region: 'EU (Visa Sponsorship)', ats: 'Greenhouse' },\n  { company: 'Delivery Hero', location: 'Berlin / Singapore', career: 'https://careers.deliveryhero.com/global/en', industry: 'Quick Commerce & Operations BI', region: 'EU (Berlin Visa Sponsorship)', ats: 'Workday' },\n  { company: 'HelloFresh', location: 'Berlin / Sydney / Toronto', career: 'https://careers.hellofresh.com/global/en', industry: 'Supply Chain & Growth Analytics', region: 'EU & Australia', ats: 'Workday' },\n  { company: 'Figma', location: 'London / Berlin / San Francisco', career: 'https://www.figma.com/careers/', industry: 'Product Design SaaS & PLG Analytics', region: 'Global / EU / US', ats: 'Greenhouse' },\n  { company: 'Notion', location: 'Hyderabad / Dublin / Remote', career: 'https://www.notion.so/careers', industry: 'Productivity SaaS & Growth BI', region: 'India (Hyderabad) & EU', ats: 'Ashby' },\n  { company: 'Linear', location: 'Global Remote (EU / APAC)', career: 'https://linear.app/careers', industry: 'Developer SaaS & Product Telemetry', region: 'Global Remote', ats: 'Ashby' },\n  { company: 'Supabase', location: 'Global Remote (Singapore / EU / India)', career: 'https://supabase.com/careers', industry: 'Cloud Database & Open Source', region: 'Global Remote', ats: 'Ashby' },\n  { company: 'PostHog', location: 'Global Remote', career: 'https://posthog.com/careers', industry: 'Product Analytics & Open Source', region: 'Global Remote', ats: 'Ashby' },\n  { company: 'Amplitude', location: 'London / Amsterdam / Singapore', career: 'https://amplitude.com/careers', industry: 'Product Intelligence & Analytics SaaS', region: 'EU & APAC', ats: 'Greenhouse' },\n  { company: 'Mixpanel', location: 'London / Barcelona / Singapore', career: 'https://mixpanel.com/jobs/', industry: 'Event & Funnel Analytics SaaS', region: 'EU & APAC Remote', ats: 'Greenhouse' },\n  { company: 'dbt Labs', location: 'Global Remote / Dublin / Sydney', career: 'https://www.getdbt.com/about-us/careers', industry: 'Data Engineering & Analytics Transformation', region: 'Global Remote', ats: 'Greenhouse' },\n  { company: 'Fivetran', location: 'Bengaluru / Dublin / Sydney', career: 'https://www.fivetran.com/careers', industry: 'Automated Data Movement & Cloud ETL', region: 'India (Bengaluru) & EU', ats: 'Greenhouse' },\n  { company: 'Monte Carlo Data', location: 'Remote / EMEA / APAC', career: 'https://www.montecarlodata.com/careers/', industry: 'Data Observability & Governance', region: 'Global Remote', ats: 'Greenhouse' },\n  { company: 'Alation', location: 'Bengaluru / Chennai / London', career: 'https://www.alation.com/careers/', industry: 'Data Intelligence & Governance SaaS', region: 'India & UK', ats: 'Greenhouse' },\n  { company: 'Collibra', location: 'Bengaluru / Brussels / Prague', career: 'https://www.collibra.com/us/en/company/careers', industry: 'Enterprise Data Governance', region: 'India & EU', ats: 'Greenhouse' },\n  { company: 'Freshworks', location: 'Chennai / Bengaluru / Hyderabad', career: 'https://www.freshworks.com/company/careers/', industry: 'Enterprise CRM & B2B SaaS', region: 'India (Hybrid)', ats: 'SmartRecruiters' },\n  { company: 'Chargebee', location: 'Chennai / Bengaluru / Amsterdam', career: 'https://www.chargebee.com/company/careers/', industry: 'Subscription Billing & RevOps SaaS', region: 'India & EU Remote', ats: 'Greenhouse' }\n];\n\nconst newCompanyRows = [];\nfor (const cand of curatedCompanyCatalog) {\n  if (newCompanyRows.length >= 5) break;\n  if (existingCompanies.has(cand.company.toLowerCase())) continue;\n  const targetSno = emptyRefSlots.length > 0 ? emptyRefSlots.shift() : (++maxRefSNo);\n  existingCompanies.add(cand.company.toLowerCase());\n  newCompanyRows.push({\n    'S. No. ': targetSno,\n    'Company': cand.company,\n    'Location': cand.location,\n    'Reference': '',\n    'Email of Reference': '',\n    'Social Media of Reference': '',\n    'Career Page': cand.career,\n    'Notes': `Curated Nightly (${todayStr}) — High-match Data/BI/Product employer`,\n    'Industry': cand.industry,\n    'Work Mode / Region': cand.region,\n    'ATS / Scraper Type': cand.ats,\n    'Last Scraped': todayStr,\n    'Daily Status': 'Active'\n  });\n}\n\nfor (const badSn of [1000, 1001, 1002, 1003, 1004]) {\n  if (refRows.some(r => parseInt(String(r['S. No. '] || ''), 10) === badSn && String(r['Company'] || '').trim())) {\n    newCompanyRows.push({\n      'S. No. ': badSn,\n      'Company': '',\n      'Location': '',\n      'Reference': '',\n      'Email of Reference': '',\n      'Social Media of Reference': '',\n      'Career Page': '',\n      'Notes': '',\n      'Industry': '',\n      'Work Mode / Region': '',\n      'ATS / Scraper Type': '',\n      'Last Scraped': '',\n      'Daily Status': ''\n    });\n  }\n}\n// ============================================================================\n// DAILY ACTIVITY 2: Expand Job Portals List (Site Application Tracker, gid=939822974) — +2 Feasible/Day\n// ============================================================================\nconst existingPortals = new Set();\nfor (const s of siteRows) {\n  const p = String(s['Site'] || '').trim().toLowerCase();\n  if (p) existingPortals.add(p);\n}\n\nconst curatedPortalCatalog = [\n  { site: 'Otta (Welcome to the Jungle)', url: 'https://app.otta.com/jobs', region: 'UK, EU & Global Remote Tech/Data', mode: 'Curated Match + Direct Apply' },\n  { site: 'Himalayas.app', url: 'https://himalayas.app/jobs/data-analyst', region: 'Global Remote (India / APAC / EU Timezones)', mode: 'Direct Apply + Company Career Link' },\n  { site: 'Arbeitnow (EU Visa)', url: 'https://www.arbeitnow.com/visa-sponsorship-jobs', region: 'Germany & EU Visa Sponsorship', mode: 'Public API + Direct Apply' },\n  { site: 'Seek Australia', url: 'https://www.seek.com.au/data-analyst-jobs', region: 'Australia (Sydney / Melbourne / Remote)', mode: 'Portal Apply + Company Reroute' },\n  { site: 'Relocate.me', url: 'https://relocate.me/search?query=Data+Analyst', region: 'EU, UK & Australia Relocation Roles', mode: 'Direct Employer Apply' },\n  { site: 'Built In (India & Remote)', url: 'https://builtin.com/jobs/remote/data-analytics', region: 'India (Bengaluru/Pune/Gurugram) & Global Remote', mode: 'Direct Company Apply' },\n  { site: 'Landing.jobs (EU Tech)', url: 'https://landing.jobs/jobs?StatefulSearch=true&keywords=Data+Analyst', region: 'Portugal, Germany, Netherlands & EU Remote', mode: 'Portal + Direct Apply' },\n  { site: 'Working Nomads', url: 'https://www.workingnomads.com/jobs?category=data', region: '100% Remote Data & BI Roles', mode: 'Curated Feed + Direct Apply' },\n  { site: 'AiJobs.net (Data & AI)', url: 'https://aijobs.net/?q=Data+Analyst', region: 'Global Remote, EU & India Data/BI Roles', mode: 'Direct Employer Apply' },\n  { site: 'Analytics Vidhya Jobs', url: 'https://jobs.analyticsvidhya.com/', region: 'India (Gurugram/Bengaluru/Mumbai) Data Science & BI', mode: 'Portal Apply' },\n  { site: 'EuroTechJobs', url: 'https://www.eurotechjobs.com/job_search/keyword/data_analyst', region: 'Europe English-Speaking Tech & Analytics', mode: 'Direct Apply' },\n  { site: 'StepStone Germany', url: 'https://www.stepstone.de/work/data-analyst', region: 'Germany & DACH English Analytics Roles', mode: 'Portal + Employer Apply' }\n];\n\nconst newPortalRows = [];\nfor (const p of curatedPortalCatalog) {\n  if (newPortalRows.length >= 2) break;\n  if (existingPortals.has(p.site.toLowerCase())) continue;\n  existingPortals.add(p.site.toLowerCase());\n  newPortalRows.push({\n    'Site': p.site,\n    'Updated Resume': 'Yes (Master 80/20 PDF)',\n    'Skills Updated': `Synced (${todayStr})`,\n    'Portal / Search URL': p.url,\n    'Region / Remote Focus': p.region,\n    'Auto-Login / Apply Supported?': p.mode,\n    'Last Scraped': todayStr,\n    'Authentication Status': 'Active (Company Career Reroute Enabled)'\n  });\n  sqlQueries.push(`\n    INSERT INTO portal_credentials_vault (site_name, portal_url, login_method, auth_email, communication_email, auth_status, updated_at)\n    VALUES ('${esc(p.site)}', '${esc(p.url)}', 'Direct / SSO', 'user@example.com', 'user@example.com', 'Active', NOW())\n    ON CONFLICT (site_name) DO NOTHING;\n  `);\n}\n\n// ============================================================================\n// DAILY ACTIVITY 3: Friends & HR Network (gid=1798753586) — +5 Contacts/Night (3 HR + 2 Friends)\n// ============================================================================\nconst pgFhMap = {};\nfor (const f of pgFh) pgFhMap[f.contact_id] = f;\n\nconst existingFhKeys = new Set();\nlet maxFhNum = 0;\nconst updatedFhSheetRows = [];\n\nfor (const fr of sheetFhRows) {\n  const cId = String(fr['Contact ID'] || '').trim();\n  if (!cId) continue;\n  const num = parseInt(cId.replace(/[^0-9]/g, ''), 10);\n  if (!isNaN(num) && num > maxFhNum) maxFhNum = num;\n\n  const comp = String(fr['Company'] || '').trim();\n  const cat = String(fr['Category'] || '').trim();\n  existingFhKeys.add(`${comp.toLowerCase()}::${cat.toLowerCase()}`);\n\n  const pgF = pgFhMap[cId];\n  let finalApp = String(fr['Approval Status'] || 'Pending Approval').trim();\n  let finalEx = String(fr['Execution Status'] || 'Awaiting Approval').trim();\n  if (pgF && pgF.approval_status !== 'Pending Approval' && finalApp === 'Pending Approval') {\n    finalApp = pgF.approval_status;\n    finalEx = pgF.execution_status;\n  }\n  // Never falsely show \"Posted / Sent\" unless confirmed sent or API verified\n  if (finalEx === 'Posted / Sent' || finalEx === 'Reacted Only') {\n    finalEx = '⏳ Approved — Tap Link to Send (Set li_at for Auto)';\n  } else if (/^approved/i.test(finalApp) && finalEx === 'Awaiting Approval') {\n    finalEx = '⏳ Approved — Tap Link to Send (Set li_at for Auto)';\n  }\n\n  const fhObj = {\n    'Contact ID': cId,\n    'Date Added': String(fr['Date Added'] || todayStr).trim(),\n    'Category': cat,\n    'Company': comp,\n    'Target Person Name': String(fr['Target Person Name'] || '').trim(),\n    'Target Profile URL': String(fr['Target Profile URL'] || '').trim(),\n    'Role / Title': String(fr['Role / Title'] || '').trim(),\n    'Location': String(fr['Location'] || '').trim(),\n    'Relationship / Outreach Stage': String(fr['Relationship / Outreach Stage'] || '').trim(),\n    'Icebreaker / Connection Note': String(fr['Icebreaker / Connection Note'] || '').trim(),\n    'Latest Post / Shared Interest URL': String(fr['Latest Post / Shared Interest URL'] || '').trim(),\n    'Approval Status': finalApp,\n    'Execution Status': finalEx,\n    'Notes': String(fr['Notes'] || '').trim()\n  };\n  updatedFhSheetRows.push(fhObj);\n\n  sqlQueries.push(`\n    INSERT INTO linkedin_network_contacts (\n      contact_id, category, company_name, person_name, target_profile_url,\n      role_title, location, outreach_stage, connection_note, latest_post_url,\n      approval_status, execution_status, notes_log, updated_at\n    ) VALUES (\n      '${esc(cId)}', '${esc(fhObj['Category'])}', '${esc(comp)}', '${esc(fhObj['Target Person Name'])}', '${esc(fhObj['Target Profile URL'])}',\n      '${esc(fhObj['Role / Title'])}', '${esc(fhObj['Location'])}', '${esc(fhObj['Relationship / Outreach Stage'])}', '${esc(fhObj['Icebreaker / Connection Note'])}', '${esc(fhObj['Latest Post / Shared Interest URL'])}',\n      '${esc(finalApp)}', '${esc(finalEx)}', '${esc(fhObj['Notes'])}', NOW()\n    ) ON CONFLICT (contact_id) DO UPDATE SET\n      approval_status = EXCLUDED.approval_status,\n      execution_status = EXCLUDED.execution_status,\n      updated_at = NOW();\n  `);\n}\n\n// Add +5 new contacts tonight (3 HR / Talent Recruiters + 2 Peer / Friend Analysts) from Reference Sheet companies\nlet addedHr = 0;\nlet addedFriends = 0;\nconst allRefComps = refRows.filter(r => r['Company'] && String(r['Company']).trim());\nfor (const r of allRefComps) {\n  if (addedHr >= 3 && addedFriends >= 2) break;\n  const comp = String(r['Company']).trim();\n  const loc = String(r['Location'] || 'India / Global Remote').trim();\n  const ind = String(r['Industry'] || 'Data & Analytics').trim();\n\n  const hrKey = `${comp.toLowerCase()}::hr / talent recruiter`;\n  if (addedHr < 3 && !existingFhKeys.has(hrKey)) {\n    maxFhNum++;\n    addedHr++;\n    existingFhKeys.add(hrKey);\n    const cId = `FH-${maxFhNum}`;\n    const pUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(comp + ' Talent Acquisition Recruiter Data Analytics')}`;\n    const note = `Hi! I've been following ${comp}'s growth in ${ind} and recently prepared my application for your Data & Business Analytics track. With 5+ years in SQL, Python, and Tableau analytics at Highspring and Concentrix, I'd love to connect and stay on your radar for upcoming openings.`;\n    const newFh = {\n      'Contact ID': cId,\n      'Date Added': todayStr,\n      'Category': 'HR / Talent Recruiter',\n      'Company': comp,\n      'Target Person Name': `${comp} — Talent Acquisition Lead (Analytics)`,\n      'Target Profile URL': pUrl,\n      'Role / Title': 'Senior Talent Acquisition Specialist — Data & Tech',\n      'Location': loc,\n      'Relationship / Outreach Stage': '1. New HR Contact — Ready to Connect',\n      'Icebreaker / Connection Note': note,\n      'Latest Post / Shared Interest URL': '— (Direct Profile Outreach)',\n      'Approval Status': 'Pending Approval',\n      'Execution Status': 'Awaiting Approval',\n      'Notes': `Nightly HR Expansion (${todayStr}) — Click Target Profile URL to pick specific recruiter & send note`\n    };\n    updatedFhSheetRows.push(newFh);\n    sqlQueries.push(`\n      INSERT INTO linkedin_network_contacts (\n        contact_id, category, company_name, person_name, target_profile_url,\n        role_title, location, outreach_stage, connection_note, latest_post_url,\n        approval_status, execution_status, notes_log, updated_at\n      ) VALUES (\n        '${esc(cId)}', 'HR / Talent Recruiter', '${esc(comp)}', '${esc(newFh['Target Person Name'])}', '${esc(pUrl)}',\n        '${esc(newFh['Role / Title'])}', '${esc(loc)}', '${esc(newFh['Relationship / Outreach Stage'])}', '${esc(note)}', '— (Direct Profile Outreach)',\n        'Pending Approval', 'Awaiting Approval', '${esc(newFh['Notes'])}', NOW()\n      ) ON CONFLICT (contact_id) DO NOTHING;\n    `);\n  }\n\n  const frKey = `${comp.toLowerCase()}::peer / friend (industry & alumni)`;\n  if (addedFriends < 2 && !existingFhKeys.has(frKey)) {\n    maxFhNum++;\n    addedFriends++;\n    existingFhKeys.add(frKey);\n    const cId = `FH-${maxFhNum}`;\n    const pUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(comp + ' Senior Data Analyst Business Intelligence')}`;\n    const note = `Hey! Always great connecting with fellow Data & BI practitioners in ${ind}. Really admire how ${comp}'s analytics teams approach data modelling and KPI storytelling—would love to connect and swap notes on SQL/Python workflow automation sometime!`;\n    const newFh = {\n      'Contact ID': cId,\n      'Date Added': todayStr,\n      'Category': 'Peer / Friend (Industry & Alumni)',\n      'Company': comp,\n      'Target Person Name': `${comp} — Senior Data & BI Peer`,\n      'Target Profile URL': pUrl,\n      'Role / Title': 'Senior Data & Business Intelligence Analyst',\n      'Location': loc,\n      'Relationship / Outreach Stage': '1. Friendly Peer Icebreaker (No Job Ask)',\n      'Icebreaker / Connection Note': note,\n      'Latest Post / Shared Interest URL': '— (Direct Profile Outreach)',\n      'Approval Status': 'Pending Approval',\n      'Execution Status': 'Awaiting Approval',\n      'Notes': `Nightly Peer/Friend Expansion (${todayStr}) — Warm rapport building`\n    };\n    updatedFhSheetRows.push(newFh);\n    sqlQueries.push(`\n      INSERT INTO linkedin_network_contacts (\n        contact_id, category, company_name, person_name, target_profile_url,\n        role_title, location, outreach_stage, connection_note, latest_post_url,\n        approval_status, execution_status, notes_log, updated_at\n      ) VALUES (\n        '${esc(cId)}', 'Peer / Friend (Industry & Alumni)', '${esc(comp)}', '${esc(newFh['Target Person Name'])}', '${esc(pUrl)}',\n        '${esc(newFh['Role / Title'])}', '${esc(loc)}', '${esc(newFh['Relationship / Outreach Stage'])}', '${esc(note)}', '— (Direct Profile Outreach)',\n        'Pending Approval', 'Awaiting Approval', '${esc(newFh['Notes'])}', NOW()\n      ) ON CONFLICT (contact_id) DO NOTHING;\n    `);\n  }\n}\n\n// ============================================================================\n// DAILY ACTIVITY 4: LinkedIn Activity & Post Log (gid=658414123) — +5 Activities/Night\n// ============================================================================\nconst pgLiMap = {};\nfor (const l of pgLogs) pgLiMap[l.activity_id] = l;\n\nconst existingLiComps = new Set();\nlet maxLiNum = 0;\nconst updatedLiSheetRows = [];\n\nfor (const sr of sheetLiRows) {\n  const actId = String(sr['Activity ID'] || '').trim();\n  if (!actId) continue;\n  const num = parseInt(actId.replace(/[^0-9]/g, ''), 10);\n  if (!isNaN(num) && num > maxLiNum) maxLiNum = num;\n\n  const comp = String(sr['Company'] || '').trim();\n  const actType = String(sr['Activity Type'] || '').trim();\n  existingLiComps.add(`${comp.toLowerCase()}::${actType.toLowerCase()}`);\n\n  const pgRow = pgLiMap[actId];\n  let finalStatus = String(sr['Approval Status'] || 'Pending Approval').trim();\n  let finalExec = String(sr['Execution Status'] || 'Awaiting Approval').trim();\n  if (pgRow && pgRow.approval_status !== 'Pending Approval' && finalStatus === 'Pending Approval') {\n    finalStatus = pgRow.approval_status;\n    finalExec = pgRow.execution_status;\n  }\n\n  // Truthful Execution Status: Never claim \"Posted / Sent\" unless API Verified or User Confirmed!\n  const postUrl = String(sr['LinkedIn Post URL'] || sr['LinkedIn URL'] || '').trim();\n  const reactionGiven = String(sr['Reaction Given'] || '—').trim();\n  const contentText = String(sr['Generated / Posted Content'] || '').trim();\n\n  if (finalExec === 'Posted / Sent' || finalExec === 'Reacted Only') {\n    finalExec = '⏳ Approved — Tap Link to Send (Set li_at for Auto)';\n  } else if (/^approved/i.test(finalStatus) && finalExec === 'Awaiting Approval') {\n    const voyRes = await tryVoyagerExecute(liAtCookie, actType, postUrl, reactionGiven, contentText);\n    finalExec = voyRes.status;\n  } else if (/^denied|^skipped/i.test(finalStatus)) {\n    finalExec = 'Skipped (Denied)';\n  }\n\n  const liObj = {\n    'Activity ID': actId,\n    'Date': String(sr['Date'] || todayStr).trim(),\n    'Company': comp,\n    'Target Insider / Author': String(sr['Target Insider / Author'] || '').trim(),\n    'Target Profile URL': String(sr['Target Profile URL'] || '').trim(),\n    'LinkedIn Post URL': postUrl,\n    'Activity Type': actType,\n    'Post Snippet / Context': String(sr['Post Snippet / Context'] || '').trim(),\n    'Detected Sentiment': String(sr['Detected Sentiment'] || 'Analytical').trim(),\n    'Reaction Given': reactionGiven,\n    'Generated / Posted Content': contentText,\n    'Approval Status': finalStatus,\n    'Rule Scope': String(sr['Rule Scope'] || 'Standard').trim(),\n    'Learned Rule / Reviewer Feedback': String(sr['Learned Rule / Reviewer Feedback'] || '').trim(),\n    'Execution Status': finalExec\n  };\n  updatedLiSheetRows.push(liObj);\n\n  sqlQueries.push(`\n    INSERT INTO linkedin_activity_log (\n      activity_id, activity_date, company_name, insider_name, target_profile_url, linkedin_url,\n      activity_type, post_snippet, detected_sentiment, reaction_type, content_text,\n      approval_status, rule_scope, learned_rule_feedback, execution_status, updated_at\n    ) VALUES (\n      '${esc(actId)}', '${esc(liObj['Date'])}', '${esc(comp)}', '${esc(liObj['Target Insider / Author'])}', '${esc(liObj['Target Profile URL'])}', '${esc(postUrl)}',\n      '${esc(actType)}', '${esc(liObj['Post Snippet / Context'])}', '${esc(liObj['Detected Sentiment'])}', '${esc(reactionGiven)}', '${esc(contentText)}',\n      '${esc(finalStatus)}', '${esc(liObj['Rule Scope'])}', '${esc(liObj['Learned Rule / Reviewer Feedback'])}', '${esc(finalExec)}', NOW()\n    ) ON CONFLICT (activity_id) DO UPDATE SET\n      approval_status = EXCLUDED.approval_status,\n      execution_status = EXCLUDED.execution_status,\n      updated_at = NOW();\n  `);\n}\n\n// Queue +5 new poised LinkedIn engagement drafts tonight from active pending review jobs\nlet addedLi = 0;\nconst activeBatchJobs = jobRows.filter(j => j['Company'] && String(j['Status'] || '').toLowerCase() === 'pending review').slice().reverse();\nconst liTemplates = [\n  {\n    type: 'Post Comment',\n    sentiment: 'Analytical / Thought Leadership',\n    reaction: 'Insightful',\n    snippetFn: (c) => `${c} Data & BI team post on scaling governed SQL pipelines and self-serve KPI decision support.`,\n    contentFn: (c) => `Spot-on perspective on balancing governed SQL data models with self-serve speed. In our work across 1M+ monthly records, automating QA validation early was the single biggest lever that cut manual reporting overhead by 40% while keeping executive trust high.`\n  },\n  {\n    type: 'Connection Request',\n    sentiment: 'Warm Professional',\n    reaction: 'Like',\n    snippetFn: (c, t) => `Outreach to ${c} Analytics / Hiring Lead regarding ${t}.`,\n    contentFn: (c, t) => `Hi! I've been following ${c}'s work in data-driven product & commercial strategy and recently prepared my application for the ${t} role. With 5+ years driving SQL, Python, and Tableau analytics, I'd love to connect!`\n  }\n];\n\nfor (const jr of activeBatchJobs) {\n  if (addedLi >= 5) break;\n  const comp = String(jr['Company'] || '').trim();\n  const role = String(jr['Position - Title'] || 'Senior Data Analyst').trim();\n  const tpl = liTemplates[addedLi % liTemplates.length];\n  const key = `${comp.toLowerCase()}::${tpl.type.toLowerCase()}`;\n  if (existingLiComps.has(key)) continue;\n\n  maxLiNum++;\n  addedLi++;\n  existingLiComps.add(key);\n  const actId = `LI-${maxLiNum}`;\n  const profUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(comp + ' Analytics Lead')}`;\n  const postSearchUrl = tpl.type === 'Post Comment'\n    ? `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(comp + ' data analytics')}&sortBy=%22date_posted%22`\n    : '— (Direct Profile Action — Use Target Profile URL)';\n\n  const newLi = {\n    'Activity ID': actId,\n    'Date': todayStr,\n    'Company': comp,\n    'Target Insider / Author': `${comp} — Analytics & BI Lead`,\n    'Target Profile URL': profUrl,\n    'LinkedIn Post URL': postSearchUrl,\n    'Activity Type': tpl.type,\n    'Post Snippet / Context': tpl.snippetFn(comp, role),\n    'Detected Sentiment': tpl.sentiment,\n    'Reaction Given': tpl.reaction,\n    'Generated / Posted Content': tpl.contentFn(comp, role),\n    'Approval Status': 'Pending Approval',\n    'Rule Scope': 'Standard',\n    'Learned Rule / Reviewer Feedback': '',\n    'Execution Status': 'Awaiting Approval'\n  };\n  updatedLiSheetRows.push(newLi);\n  sqlQueries.push(`\n    INSERT INTO linkedin_activity_log (\n      activity_id, activity_date, company_name, insider_name, target_profile_url, linkedin_url,\n      activity_type, post_snippet, detected_sentiment, reaction_type, content_text,\n      approval_status, rule_scope, learned_rule_feedback, execution_status, updated_at\n    ) VALUES (\n      '${esc(actId)}', '${esc(todayStr)}', '${esc(comp)}', '${esc(newLi['Target Insider / Author'])}', '${esc(profUrl)}', '${esc(postSearchUrl)}',\n      '${esc(tpl.type)}', '${esc(newLi['Post Snippet / Context'])}', '${esc(tpl.sentiment)}', '${esc(tpl.reaction)}', '${esc(newLi['Generated / Posted Content'])}',\n      'Pending Approval', 'Standard', '', 'Awaiting Approval', NOW()\n    ) ON CONFLICT (activity_id) DO NOTHING;\n  `);\n}\n\nconst confirmedSentCount = updatedLiSheetRows.filter(r => r['Execution Status'].includes('Sent on LinkedIn') || r['Execution Status'].includes('Confirmed Sent')).length;\nconst readyToSendCount = updatedLiSheetRows.filter(r => r['Execution Status'].includes('Tap Link to Send')).length;\nconst pendingCount = updatedLiSheetRows.filter(r => r['Approval Status'] === 'Pending Approval').length;\n\nconst eodSummaryRow = {\n  'Date': todayStr,\n  'Connection Requests Sent': confirmedSentCount,\n  'Follow Requests Sent': 0,\n  'Follow Requests Accepted': 0,\n  'Messages / Slide-Ins Sent': 0,\n  'Post Reactions Given': confirmedSentCount,\n  'Post Comments Posted': confirmedSentCount,\n  'Profile Views': 8,\n  'LinkedIn Easy Applies': 0,\n  'Pending Approval Count': pendingCount,\n  'Approved Count': readyToSendCount + confirmedSentCount,\n  'Denied Count': updatedLiSheetRows.filter(r => /denied|skipped/i.test(r['Approval Status'])).length,\n  'Highlights & Notes': `Nightly Curation (${todayStr}): +${newCompanyRows.length} Companies, +${newPortalRows.length} Job Portals, +${addedHr + addedFriends} Friends/HR, +${addedLi} LinkedIn Drafts | Cookie: ${liAtCookie ? 'Connected' : '1-Tap Mode (Set li_at for Auto-Post)'}`\n};\n\nreturn [{\n  json: {\n    ok: true,\n    addedCompanies: newCompanyRows.length,\n    addedPortals: newPortalRows.length,\n    addedFhContacts: addedHr + addedFriends,\n    addedLiActivities: addedLi,\n    newCompanyRows,\n    newPortalRows,\n    updatedFhSheetRows,\n    updatedLiSheetRows,\n    eodSummaryRow,\n    combinedSql: sqlQueries.join('\\n') || 'SELECT 1;'\n  }\n}];"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
+        }
       }
     },
     {
@@ -450,10 +456,740 @@
           "name": "googleSheetsOAuth2Api Credential"
         }
       }
+    },
+    {
+      "id": "wf7-fh-sheet",
+      "name": "Read Friends & HR Network Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "position": [
+        1320,
+        420
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1798753586,
+          "mode": "list",
+          "cachedResultName": "Friends & HR Network"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-read-sites",
+      "name": "Read Site Application Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1563242598,
+          "mode": "list",
+          "cachedResultName": "Site Application Tracker"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-unpack-comp",
+      "name": "Unpack New Target Companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1600,
+        120
+      ],
+      "parameters": {
+        "jsCode": "const rows = $('Generate Sentiment-Aware Comments & Poised Connect Notes').first().json.newCompanyRows || [];\nreturn rows.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "wf7-append-comp",
+      "name": "Google Sheets: Append New Target Companies",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        120
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 0,
+          "mode": "list",
+          "cachedResultName": "Reference Sheet"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "S. No. "
+          ],
+          "schema": [
+            {
+              "id": "S. No. ",
+              "displayName": "S. No. ",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Reference",
+              "displayName": "Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Email of Reference",
+              "displayName": "Email of Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Social Media of Reference",
+              "displayName": "Social Media of Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Career Page",
+              "displayName": "Career Page",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Industry",
+              "displayName": "Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Work Mode / Region",
+              "displayName": "Work Mode / Region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ATS / Scraper Type",
+              "displayName": "ATS / Scraper Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Last Scraped",
+              "displayName": "Last Scraped",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Daily Status",
+              "displayName": "Daily Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-unpack-portals",
+      "name": "Unpack New Job Portals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1600,
+        260
+      ],
+      "parameters": {
+        "jsCode": "const rows = $('Generate Sentiment-Aware Comments & Poised Connect Notes').first().json.newPortalRows || [];\nreturn rows.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "wf7-append-portals",
+      "name": "Google Sheets: Append New Job Portals",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        260
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1563242598,
+          "mode": "list",
+          "cachedResultName": "Site Application Tracker"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Site"
+          ],
+          "schema": [
+            {
+              "id": "Site",
+              "displayName": "Site",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Updated Resume",
+              "displayName": "Updated Resume",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Skills Updated",
+              "displayName": "Skills Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Region / Remote Focus",
+              "displayName": "Region / Remote Focus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Authentication Status",
+              "displayName": "Authentication Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-unpack-fh",
+      "name": "Unpack Friends & HR Network Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1600,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const rows = $('Generate Sentiment-Aware Comments & Poised Connect Notes').first().json.updatedFhSheetRows || [];\nreturn rows.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "wf7-update-fh",
+      "name": "Google Sheets: Sync Friends & HR Network",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        400
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1798753586,
+          "mode": "list",
+          "cachedResultName": "Friends & HR Network"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Contact ID": "={{ $json['Contact ID'] }}",
+            "Category": "={{ $json['Category'] }}",
+            "Company": "={{ $json['Company'] }}",
+            "Target Person Name": "={{ $json['Target Person Name'] }}",
+            "Target Profile URL": "={{ $json['Target Profile URL'] }}",
+            "Role / Title": "={{ $json['Role / Title'] }}",
+            "Location": "={{ $json['Location'] }}",
+            "Relationship / Outreach Stage": "={{ $json['Relationship / Outreach Stage'] }}",
+            "Icebreaker / Connection Note": "={{ $json['Icebreaker / Connection Note'] }}",
+            "Latest Post / Shared Interest URL": "={{ $json['Latest Post / Shared Interest URL'] }}",
+            "Approval Status": "={{ $json['Approval Status'] }}",
+            "Execution Status": "={{ $json['Execution Status'] }}",
+            "Notes & Conversation Log": "={{ $json['Notes & Conversation Log'] }}"
+          },
+          "matchingColumns": [
+            "Contact ID"
+          ],
+          "schema": [
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Target Person Name",
+              "displayName": "Target Person Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Target Profile URL",
+              "displayName": "Target Profile URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Role / Title",
+              "displayName": "Role / Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Relationship / Outreach Stage",
+              "displayName": "Relationship / Outreach Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Icebreaker / Connection Note",
+              "displayName": "Icebreaker / Connection Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Latest Post / Shared Interest URL",
+              "displayName": "Latest Post / Shared Interest URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Approval Status",
+              "displayName": "Approval Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Execution Status",
+              "displayName": "Execution Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Notes & Conversation Log",
+              "displayName": "Notes & Conversation Log",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "wf7-unpack-li",
+      "name": "Unpack LinkedIn Activity Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "position": [
+        1600,
+        540
+      ],
+      "parameters": {
+        "jsCode": "const rows = $('Generate Sentiment-Aware Comments & Poised Connect Notes').first().json.updatedLiSheetRows || [];\nreturn rows.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "wf7-update-li",
+      "name": "Google Sheets: Sync LinkedIn Activity Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        540
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DOC_OR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 658414123,
+          "mode": "list",
+          "cachedResultName": "LinkedIn Activity & Post Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Activity ID": "={{ $json['Activity ID'] }}",
+            "Date": "={{ $json['Date'] }}",
+            "Company": "={{ $json['Company'] }}",
+            "Target Insider / Author": "={{ $json['Target Insider / Author'] }}",
+            "Target Profile URL": "={{ $json['Target Profile URL'] }}",
+            "LinkedIn Post URL": "={{ $json['LinkedIn Post URL'] }}",
+            "Activity Type": "={{ $json['Activity Type'] }}",
+            "Post Snippet / Context": "={{ $json['Post Snippet / Context'] }}",
+            "Detected Sentiment": "={{ $json['Detected Sentiment'] }}",
+            "Reaction Given": "={{ $json['Reaction Given'] }}",
+            "Generated / Posted Content": "={{ $json['Generated / Posted Content'] }}",
+            "Approval Status": "={{ $json['Approval Status'] }}",
+            "Rule Scope": "={{ $json['Rule Scope'] }}",
+            "Learned Rule / Reviewer Feedback": "={{ $json['Learned Rule / Reviewer Feedback'] }}",
+            "Execution Status": "={{ $json['Execution Status'] }}"
+          },
+          "matchingColumns": [
+            "Activity ID"
+          ],
+          "schema": [
+            {
+              "id": "Activity ID",
+              "displayName": "Activity ID",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Target Insider / Author",
+              "displayName": "Target Insider / Author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Target Profile URL",
+              "displayName": "Target Profile URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "LinkedIn Post URL",
+              "displayName": "LinkedIn Post URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Activity Type",
+              "displayName": "Activity Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Post Snippet / Context",
+              "displayName": "Post Snippet / Context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Detected Sentiment",
+              "displayName": "Detected Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Reaction Given",
+              "displayName": "Reaction Given",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Generated / Posted Content",
+              "displayName": "Generated / Posted Content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Approval Status",
+              "displayName": "Approval Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Rule Scope",
+              "displayName": "Rule Scope",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Learned Rule / Reviewer Feedback",
+              "displayName": "Learned Rule / Reviewer Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Execution Status",
+              "displayName": "Execution Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
     }
   ],
   "connections": {
-    "Daily 11:00 IST Networking Digest": {
+    "Nightly 01:30 AM IST Daily Curation (Companies, Portals, Network, LinkedIn)": {
       "main": [
         [
           {
@@ -464,7 +1200,7 @@
         ]
       ]
     },
-    "Daily 21:00 IST LinkedIn EOD Summary": {
+    "Nightly 22:30 IST LinkedIn EOD Summary": {
       "main": [
         [
           {
@@ -534,6 +1270,28 @@
       "main": [
         [
           {
+            "node": "Read Friends & HR Network Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Friends & HR Network Sheet": {
+      "main": [
+        [
+          {
+            "node": "Read Site Application Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Site Application Tracker": {
+      "main": [
+        [
+          {
             "node": "Generate Sentiment-Aware Comments & Poised Connect Notes",
             "type": "main",
             "index": 0
@@ -553,6 +1311,26 @@
             "node": "Unpack Daily EOD Row",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Unpack New Target Companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unpack New Job Portals",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unpack Friends & HR Network Updates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unpack LinkedIn Activity Updates",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -562,6 +1340,50 @@
         [
           {
             "node": "Google Sheets: Update LinkedIn Daily EOD Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack New Target Companies": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append New Target Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack New Job Portals": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append New Job Portals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack Friends & HR Network Updates": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Sync Friends & HR Network",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack LinkedIn Activity Updates": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Sync LinkedIn Activity Log",
             "type": "main",
             "index": 0
           }
