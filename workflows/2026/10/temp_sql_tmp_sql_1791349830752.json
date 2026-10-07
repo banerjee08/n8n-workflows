@@ -1,0 +1,68 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Temp SQL tmp-sql-1791349830752",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-07T05:10:31.054Z",
+  "updatedAt": "2026-10-07T05:10:31.054Z",
+  "isArchived": false,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "w1",
+      "name": "Webhook",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "tmp-sql-1791349830752",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "p1",
+      "name": "Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT json_agg(column_name) AS cols FROM information_schema.columns WHERE table_name = 'quant_code_versions';",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
