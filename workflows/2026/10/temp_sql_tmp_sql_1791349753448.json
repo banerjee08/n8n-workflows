@@ -1,0 +1,68 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Temp SQL tmp-sql-1791349753448",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-07T05:09:13.653Z",
+  "updatedAt": "2026-10-07T05:09:13.653Z",
+  "isArchived": false,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "w1",
+      "name": "Webhook",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "tmp-sql-1791349753448",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "p1",
+      "name": "Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nDROP TABLE IF EXISTS quant_daily_blogs;\nCREATE TABLE quant_daily_blogs (\n    day_number INT PRIMARY KEY,\n    published_date DATE NOT NULL,\n    stage_badge VARCHAR(80) NOT NULL,\n    aligned_concept VARCHAR(160) NOT NULL,\n    read_time VARCHAR(32) DEFAULT '5 min read',\n    title TEXT NOT NULL,\n    subtitle TEXT NOT NULL,\n    body_text TEXT NOT NULL,\n    build_along_step TEXT NOT NULL,\n    read_url TEXT,\n    yt_url TEXT,\n    coursera_url TEXT,\n    created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO quant_daily_blogs (day_number, published_date, stage_badge, aligned_concept, read_time, title, subtitle, body_text, build_along_step, read_url, yt_url, coursera_url)\nVALUES\n(0, '2026-10-01', 'Day 00 • Start Here (Genesis)', 'Aligned: Zero-to-Pro Blueprint & 30-Day Paper Sandbox Setup', '5 min read',\n 'Day 0: Why We Are Building a Systematic Market Engine From Scratch (Instead of Guessing)',\n 'The Genesis Note: How anyone starting at absolute zero can learn Indian market mechanics, build disciplined rules, and avoid emotional traps.',\n 'Welcome to Day 0 of ArthaPulse. Most beginners enter the Indian stock market backwards: they download a broker app, watch a 60-second social media tip, and immediately risk hard-earned savings without understanding how exchanges, transaction taxes, or drawdowns work. Within months, emotional FOMO and hidden fees erode their capital. Here, we do the exact opposite. Starting from Day 0, every single daily post aligns 1-to-1 with the exact concept we are studying in our curriculum—so anyone building and learning alongside us can start from scratch, verify on real NSE charts, and build a calm systematic checklist before ever risking a rupee.',\n 'Create a clean \"Day 0 Trading & Learning Ledger\" (a simple spreadsheet or notebook) with 3 personal rules: (1) Zero impulsive trades on tips, (2) Minimum 30 trading days of paper-testing any rule before live capital, and (3) Complete 1 concept + 1 chart observation per day.',\n 'https://zerodha.com/varsity/module/introduction-to-stock-markets/',\n 'https://www.youtube.com/watch?v=Xn7KWR9EOGQ',\n 'https://www.coursera.org/learn/financial-markets-global'),\n\n(1, '2026-10-02', 'Day 01 • Stage 1 Foundation', 'Aligned: Concept 1 (L1_1) — Index Basket (NIFTYBEES) vs. Single-Stock Risk', '5 min read',\n 'Day 1: How NSE, BSE & Depositories Work — And Why Your First Basket Beats a Single Stock Gamble',\n 'Understanding India''s T+1 market plumbing (NSE/BSE + CDSL/NSDL) and why owning the Top 50 Indian enterprises via an Index ETF eliminates company blowup risk.',\n 'When you buy a share in India, your broker routes the order to an exchange (NSE or BSE), and on T+1 settlement your shares are credited to your Demat vault at a central depository (CDSL or NSDL). Beginners often put 100% of a small account into a single \"hot\" company—meaning one bad earnings report or governance shock can wipe out 30% overnight. By starting with a broad Index ETF basket (which holds India''s 50 largest companies across banking, IT, energy, and consumer goods inside a single unit), you capture India''s structural GDP growth with zero single-company blowup risk.',\n 'Open any free charting platform (TradingView or NSE India), pull up NIFTYBEES (Nifty 50 ETF) alongside any single volatile mid-cap stock over a 5-year window, and compare their worst peak-to-trough drop.',\n 'https://zerodha.com/varsity/chapter/the-stock-markets-index/',\n 'https://www.youtube.com/watch?v=Xn7KWR9EOGQ',\n 'https://www.coursera.org/learn/financial-markets-global'),\n\n(2, '2026-10-03', 'Day 02 • Stage 1 Foundation', 'Aligned: Concept 2 (L1_2) — Multi-Vault Capital Allocation (Core / Swing / Cash)', '5 min read',\n 'Day 2: The 3-Vault Portfolio Blueprint — Why We Never Put 100% of Capital in One Style',\n 'How splitting capital across a Core Trend Vault (50%), a Pullback Swing Vault (35%), and a Liquid Crash Reserve (15%) keeps you resilient in every market weather.',\n 'Even great investors struggle when they rely on a single market regime. If you are 100% in aggressive momentum stocks, a sudden correction hurts deeply; if you are 100% in cash, inflation quietly erodes your purchasing power during bull markets. By dividing capital into three complementary vaults—(A) Core Index & Gold Trend, (B) Quality Pullback Swings, and (C) Liquid Cash Dry Powder—your portfolio earns steadily during calm uptrends while keeping cash ready when market fear creates bargains.',\n 'In your Day 0 spreadsheet, take a hypothetical ₹10,000 or ₹50,000 portfolio and write down the exact rupee split for Vault A (50%), Vault B (35%), and Vault C (15%).',\n 'https://zerodha.com/varsity/module/personalfinance/',\n 'https://www.youtube.com/watch?v=PHe0bXAIuk0',\n 'https://www.coursera.org/specializations/investment-portfoliomanagement'),\n\n(3, '2026-10-04', 'Day 03 • Stage 1 Foundation', 'Aligned: Concept 3 (L1_3) — The ₹15.93 Depository Toll & Minimum Profit Hurdle', '4 min read',\n 'Day 3: The Silent Wealth Killer in India — How Depository & Statutory Fees Eat Impatient Traders',\n 'Doing the exact rupee math on CDSL/NSDL DP exit charges (~₹15.93), STT (0.1%), and stamp duty—and why small accounts must filter out tiny trades.',\n 'Every time you sell delivery shares from your Demat account, your depository participant levies a flat exit charge (~₹15.93 including GST) regardless of whether you sold ₹1,00,000 or ₹2,000 worth of stock—on top of 0.1% Securities Transaction Tax (STT) and exchange fees. If you buy ₹3,000 of a stock and sell it for a ₹12 gross gain, you actually lose money (-₹3.93 net) after the exit toll! Systematic investors enforce a strict \"4× Fee Firewall\": never enter a delivery swing unless the realistic target profit is at least 4 times larger than total round-trip friction.',\n 'Add a \"Friction Hurdle Calculator\" row to your sheet: Minimum Target Gain = 4 × (₹15.93 + 0.0022 × PositionSize). Test what percentage move a ₹3,000 vs. ₹25,000 trade needs just to clear the 4× fee hurdle.',\n 'https://zerodha.com/varsity/chapter/clearing-and-settlement-process/',\n 'https://www.youtube.com/watch?v=Xn7KWR9EOGQ',\n 'https://www.coursera.org/specializations/investment-portfoliomanagement'),\n\n(4, '2026-10-05', 'Day 04 • Stage 2 Chart Literacy', 'Aligned: Concept 4 (L2_1) — Candlestick Anatomy & Opening 15-Minute Spread Filter', '5 min read',\n 'Day 4: Reading Candlesticks Without Jargon — And Why We Never Chase the 9:15 AM Opening Bell',\n 'How a single daily candle summarizes the 6-hour tug-of-war between buyers and sellers, and why waiting 15 minutes after market open saves you from slippage.',\n 'A daily candlestick simply records four prices between 9:15 AM and 3:30 PM IST: Open, High, Low, and Close. When the 3:30 PM Close is higher than the 9:15 AM Open, buyers won the session (Green/Bullish). However, the first 15 minutes of trading (9:15 AM to 9:30 AM) are dominated by overnight emotional orders and wide bid-ask spreads. Waiting for the opening noise to settle ensures you pay fair institutional prices rather than chasing an artificial morning spike.',\n 'Look at a 15-minute chart of any Nifty 50 stock over the past week. Compare the high/low range of the 9:15–9:30 AM candle against the calm candles between 10:00 AM and 3:15 PM.',\n 'https://zerodha.com/varsity/module/technical-analysis/',\n 'https://www.youtube.com/watch?v=eynxyoKgpng',\n 'https://www.coursera.org/specializations/trading-strategies-emerging-markets'),\n\n(5, '2026-10-06', 'Day 05 • Stage 2 Chart Literacy', 'Aligned: Concept 5 (L2_2) — The 200-Day Moving Average Institutional Floor', '5 min read',\n 'Day 5: The Invisible Gravity of the 200-Day Moving Average — Separating Uptrends from Value Traps',\n 'Why buying a stock just because it crashed 40% is usually a trap, and how the 1-year average price acts as an objective compass.',\n 'Beginners love hunting for stocks that have fallen 40% or 50%, assuming they are \"cheap.\" Often, those companies are suffering structural earnings decay. The 200-Day Moving Average (200-DMA) plots the average closing price over roughly one full trading year (~200 sessions). When a stock or index trades steadily above a rising 200-DMA, long-term institutional funds are net accumulators. Making \"Price > 200-DMA\" your first checklist rule immediately filters out collapsing value traps.',\n 'Add the \"Moving Average (Length = 200)\" indicator on your chart and check 5 well-known Indian companies. Note which ones are riding above their 200-DMA escalator and which are trapped underneath.',\n 'https://zerodha.com/varsity/chapter/moving-averages/',\n 'https://www.youtube.com/watch?v=eynxyoKgpng',\n 'https://www.coursera.org/learn/financial-markets-global'),\n\n(6, '2026-10-07', 'Day 06 • Stage 3 Swing Structure', 'Aligned: Concept 6 (L3_1) — RSI(14) Oversold Pullbacks Inside an Uptrend', '5 min read',\n 'Day 6: Buying the Dip Scientifically — Combining the 200-DMA Trend Filter with the RSI(14) Rubber Band',\n 'How to measure short-term crowd fear objectively inside a long-term uptrend instead of buying random dips.',\n 'Even the strongest uptrending companies experience temporary 4% to 7% pullbacks when impatient traders take profits or react to short-term noise. The 14-day Relative Strength Index (RSI) measures whether that short-term rubber band is stretched to an oversold extreme (typically below 30–35). The secret is never using RSI alone: an RSI below 30 in a stock below its 200-DMA can keep crashing, whereas an RSI dip below 30–35 while Price stays above a rising 200-DMA highlights a healthy pullback inside a strong long-term trend.',\n 'Combine two indicators on your chart: SMA(200) and RSI(14). Scroll back 12 months on NIFTYBEES and mark every date where Price was above SMA(200) while RSI(14) dipped below 35.',\n 'https://zerodha.com/varsity/chapter/indicators-part-1/',\n 'https://www.youtube.com/watch?v=WEDIj9JBTC8',\n 'https://www.coursera.org/learn/behavioral-investing');\n\nSELECT COUNT(*) AS seeded_blogs FROM quant_daily_blogs;\n",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
