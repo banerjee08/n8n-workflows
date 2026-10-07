@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-28T08:48:53.855Z",
-  "updatedAt": "2026-10-06T08:54:39.641Z",
+  "updatedAt": "2026-10-07T10:26:22.646Z",
   "isArchived": false,
-  "versionCounter": 15,
+  "versionCounter": 17,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -277,7 +277,7 @@
         2592
       ],
       "parameters": {
-        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Grounded Cover Letter Context').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Generator after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-2.5-flash',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Prepare Grounded Cover Letter Context').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Generator after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
       }
     },
     {
@@ -639,7 +639,7 @@
         3216
       ],
       "parameters": {
-        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-3.5-flash-lite',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Reviewer after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
+        "jsCode": "const FALLBACK_MODELS = [\n  'gemini-2.5-flash',\n  'gemini-2.5-flash-lite',\n  'gemini-2.5-flash',\n  'gemini-2.0-flash-lite',\n  'gemini-2.0-flash',\n  'gemini-1.5-flash',\n  'gemma-2-27b-it'\n];\nconst upstream = $('Merge CL Feedback & Cached Paragraphs').last().json;\nconst staticData = $getWorkflowStaticData('node');\nconst rowKey = String(upstream.sNo || upstream.resumeId || 'row');\nif (staticData.lastRowKey !== rowKey) {\n  staticData.lastRowKey = rowKey;\n  staticData.failCount = 0;\n}\nstaticData.failCount = (staticData.failCount || 0) + 1;\nif (staticData.failCount > 14) {\n  throw new Error(`All 7 fallback AI models overloaded at CL Reviewer after ${staticData.failCount} switches.`);\n}\nconst nextModel = FALLBACK_MODELS[staticData.failCount % FALLBACK_MODELS.length];\nreturn [{ json: { ...upstream, _activeModel: nextModel, _failoverAttempt: staticData.failCount } }];"
       }
     },
     {
