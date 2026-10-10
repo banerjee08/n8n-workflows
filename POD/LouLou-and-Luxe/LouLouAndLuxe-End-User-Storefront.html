@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-preset="botiga">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LouLou &amp; Luxe (loulouandluxe.com) — Custom Gifting, Social Club Apparel &amp; Boutique Fits</title>
+  <!-- Google Fonts: Cormorant Garamond (Editorial Luxury Serif) + Plus Jakarta Sans (Clean Modern UI) + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5.3 CSS Base (for authentic bootScore / WooCommerce grid & utility compatibility) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ============================================================================
+       LOULOU & LUXE COMMERCIAL WOOCOMMERCE / BOOTSTRAP 5 THEME ENGINE
+       Presets: 1. Botiga Atelier (Editorial Luxury)
+                2. Blocksy Modern (Nordic Minimalist)
+                3. bootScore BS5 (Classic High-Converting Storefront)
+       Modes:   Light & Dark ("Midnight Atelier")
+       ============================================================================ */
+    :root,
+    html[data-theme="light"][data-preset="botiga"] {
+      --bg-canvas: #FAF8F5;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F3EFEA;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #18181B;
+      --text-secondary: #52525B;
+      --text-muted: #71717A;
+      --border-hairline: #E6E1DA;
+      --border-strong: #D4CDC3;
+      --accent-primary: #18181B;
+      --accent-primary-hover: #3F3F46;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #9E4758;
+      --accent-brand-soft: #F9EFF1;
+      --accent-gold: #B4833E;
+      --accent-sage: #2D5A43;
+      --accent-sage-soft: #ECFDF3;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --card-radius: 4px;
+      --btn-radius: 3px;
+    }
+
+    html[data-theme="light"][data-preset="blocksy"] {
+      --bg-canvas: #FFFFFF;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F8FAFC;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --border-hairline: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --accent-primary: #0F172A;
+      --accent-primary-hover: #1E293B;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #0D6E52;
+      --accent-brand-soft: #ECFDF5;
+      --accent-gold: #D97706;
+      --accent-sage: #0D6E52;
+      --accent-sage-soft: #ECFDF5;
+      --font-display: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --card-radius: 8px;
+      --btn-radius: 6px;
+    }
+
+    html[data-theme="light"][data-preset="bootscore"] {
+      --bg-canvas: #F8F9FA;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F1F3F5;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-muted: #6C757D;
+      --border-hairline: #DEE2E6;
+      --border-strong: #CED4DA;
+      --accent-primary: #1F2937;
+      --accent-primary-hover: #111827;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #881337;
+      --accent-brand-soft: #FFF1F2;
+      --accent-gold: #B45309;
+      --accent-sage: #15803D;
+      --accent-sage-soft: #F0FDF4;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --card-radius: 6px;
+      --btn-radius: 6px;
+    }
+
+    html[data-theme="dark"] {
+      --bg-canvas: #0C0D10;
+      --bg-surface: #14161B;
+      --bg-subtle: #1C1F26;
+      --bg-elevated: #1E222A;
+      --text-primary: #F4F4F6;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-hairline: #272A34;
+      --border-strong: #3F4454;
+      --accent-primary: #F4F4F6;
+      --accent-primary-hover: #E4E4E7;
+      --accent-primary-text: #0C0D10;
+      --accent-brand: #E58C9E;
+      --accent-brand-soft: #2A1920;
+      --accent-gold: #EAB308;
+      --accent-sage: #4ADE80;
+      --accent-sage-soft: #11261B;
+    }
+
+    /* ============================================================================
+       FIX #5: STICKY FOOTER ARCHITECTURE (ALWAYS PUSHED TO BOTTOM OF VIEWPORT)
+       ============================================================================ */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    #app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #main-content {
+      flex: 1 0 auto;
+      width: 100%;
+    }
+
+    #site-footer {
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    /* Typography helpers */
+    .font-editorial {
+      font-family: var(--font-display);
+    }
+    .font-sans-ui {
+      font-family: var(--font-sans);
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Surface & Border utilities */
+    .vb-surface {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--card-radius);
+    }
+    .vb-subtle {
+      background-color: var(--bg-subtle);
+    }
+    .vb-border-b {
+      border-bottom: 1px solid var(--border-hairline);
+    }
+    .vb-border-t {
+      border-top: 1px solid var(--border-hairline);
+    }
+    .vb-border {
+      border: 1px solid var(--border-hairline);
+    }
+
+    /* Buttons */
+    .vb-btn-primary {
+      background-color: var(--accent-primary);
+      color: var(--accent-primary-text);
+      border-radius: var(--btn-radius);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: all 0.18s ease;
+    }
+    .vb-btn-primary:hover {
+      background-color: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+    .vb-btn-outline {
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--btn-radius);
+      font-weight: 500;
+      transition: all 0.18s ease;
+    }
+    .vb-btn-outline:hover {
+      border-color: var(--text-primary);
+      background-color: var(--bg-subtle);
+    }
+
+    /* 3:4 Editorial Fashion Product Card */
+    .vb-product-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    }
+    .vb-product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.08);
+    }
+    .vb-aspect-3-4 {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      background-color: var(--bg-subtle);
+    }
+    .vb-aspect-3-4 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .vb-product-card:hover .vb-aspect-3-4 img {
+      transform: scale(1.04);
+    }
+    .vb-quick-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px;
+      background: linear-gradient(to top, rgba(15, 15, 20, 0.78), rgba(15, 15, 20, 0));
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.22s ease;
+    }
+    .vb-product-card:hover .vb-quick-bar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Custom Monogram Live Preview Badge on Garment */
+    .monogram-preview-pill {
+      position: absolute;
+      bottom: 54px;
+      left: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #18181B;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(158, 71, 88, 0.35);
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 0.85rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    a {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-shell">
+    <!-- ==========================================================================
+         1. TOP EDITORIAL ANNOUNCEMENT & THEME ARCHITECTURE SWITCHER BAR
+         ========================================================================== -->
+    <div style="background-color: #18181B; color: #F4F4F6;" class="text-xs py-2 px-4 border-b border-zinc-800">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <span class="uppercase tracking-widest font-semibold text-[11px]" style="color: #E5B8C2;">LouLou &amp; Luxe (`loulouandluxe.com`)</span>
+          <span class="hidden md:inline text-zinc-400">|</span>
+          <span class="text-zinc-200">Local Print Hubs (US, CA, UK, AU, DE, SG) &bull; Free Tracked Shipping over $75 &bull; Code <strong class="font-mono-code text-white underline cursor-pointer" onclick="quickApplyPromo('BLOOM15')" title="Click to apply BLOOM15">BLOOM15</strong> (15% Off)</span>
+        </div>
+
+        <!-- Region/Currency + WooCommerce Theme Preset Switcher + Light/Dark Toggle -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5" title="Single-Backend Root + Subfolder Regional Architecture">
+            <span class="text-[11px] text-zinc-400">Storefront:</span>
+            <select id="region-cluster-select" class="bg-transparent text-zinc-100 text-[11px] font-medium focus:outline-none cursor-pointer">
+              <option value="US_CA_USD" class="bg-zinc-900 text-white">🇺🇸 USA (loulouandluxe.com • $ USD)</option>
+              <option value="US_CA_CAD" class="bg-zinc-900 text-white">🇨🇦 Canada (loulouandluxe.com/ca/ • $ CAD)</option>
+              <option value="UK_IE" class="bg-zinc-900 text-white">🇬🇧🇮🇪 UK &amp; Ireland (loulouandluxe.com/uk/ • £ GBP)</option>
+              <option value="AU_NZ" class="bg-zinc-900 text-white">🇦🇺 Australia (loulouandluxe.com/au/ • $ AUD)</option>
+              <option value="DE_EU" class="bg-zinc-900 text-white">🇩🇪🇪🇺 Germany / EU (loulouandluxe.com/de/ • € EUR)</option>
+              <option value="SG_APAC" class="bg-zinc-900 text-white">🇸🇬 Singapore (loulouandluxe.com/sg/ • $ SGD)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5">
+            <span class="text-[11px] text-zinc-400">Theme:</span>
+            <select id="preset-select" onchange="changeThemePreset(this.value)" class="bg-transparent text-zinc-100 text-[11px] font-medium focus:outline-none cursor-pointer">
+              <option value="botiga" class="bg-zinc-900 text-white">Botiga Atelier (Luxury Editorial)</option>
+              <option value="blocksy" class="bg-zinc-900 text-white">Blocksy Minimal (Nordic Studio)</option>
+              <option value="bootscore" class="bg-zinc-900 text-white">bootScore BS5 (Classic Commerce)</option>
+            </select>
+          </div>
+
+          <button onclick="toggleTheme()" id="theme-toggle-btn" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-100 transition text-[11px] font-medium border border-zinc-700">
+            <span id="theme-icon">☾</span>
+            <span id="theme-label">Midnight Mode</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         2. MAIN COMMERCIAL STOREFRONT HEADER (MEGA-NAV + SEARCH + WISHLIST/BAG)
+         ========================================================================== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md vb-border-b" style="background-color: color-mix(in srgb, var(--bg-surface) 92%, transparent);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-20 gap-6">
+          <!-- Brand Wordmark -->
+          <div class="flex items-center gap-8">
+            <button onclick="switchTab('catalog')" class="text-left group focus:outline-none">
+              <div class="font-editorial text-3xl sm:text-4xl font-semibold tracking-tight leading-none" style="color: var(--text-primary);">
+                LouLou &amp; Luxe
+              </div>
+              <div class="text-[10px] uppercase tracking-[0.22em] mt-1" style="color: var(--text-muted);">
+                New York &bull; London &bull; Berlin &bull; Sydney &bull; Singapore
+              </div>
+            </button>
+
+            <!-- Primary Category Links (Desktop — Printify-Shaped 18-34 Lifestyle + Custom Gifting) -->
+            <nav class="hidden lg:flex items-center gap-5 text-xs font-medium" style="color: var(--text-secondary);">
+              <button onclick="filterCategory('All')" id="nav-cat-All" class="hover:opacity-100 transition py-1 border-b-2 border-current font-semibold" style="color: var(--text-primary);">All (12)</button>
+              <button onclick="filterCategory('Trending & Social Club')" id="nav-cat-Trending & Social Club" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Trending &amp; Social Club</button>
+              <button onclick="filterCategory('Bachelorette & City Edit')" id="nav-cat-Bachelorette & City Edit" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Bachelorette &amp; City Edit</button>
+              <button onclick="filterCategory('Birth-Flower & Monogram')" id="nav-cat-Birth-Flower & Monogram" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Birth-Flower &amp; Monogram</button>
+              <button onclick="filterCategory('Dresses & Everyday Fits')" id="nav-cat-Dresses & Everyday Fits" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Dresses &amp; Fits</button>
+              <button onclick="filterCategory('3-Piece Sets & 40oz Tumblers')" id="nav-cat-3-Piece Sets & 40oz Tumblers" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">3-Piece Sets &amp; 40oz Tumblers</button>
+            </nav>
+          </div>
+
+          <!-- Search + Customer Utility Icons -->
+          <div class="flex items-center gap-3 sm:gap-4 flex-1 max-w-md justify-end">
+            <div class="relative hidden sm:block flex-1 max-w-xs">
+              <input
+                id="search-input"
+                type="text"
+                oninput="handleSearch(this.value)"
+                placeholder="Search pilates, book club, bachelorette, 40oz..."
+                class="w-full pl-9 pr-3 py-2 text-xs vb-surface focus:outline-none"
+                style="color: var(--text-primary);"
+              />
+              <svg class="w-4 h-4 absolute left-3 top-2.5" style="color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-4.35-4.35M16.65 10.825a5.825 5.825 0 11-11.65 0 5.825 5.825 0 0111.65 0z"/>
+              </svg>
+            </div>
+
+            <!-- Saved / Wishlist -->
+            <button onclick="switchTab('wishlist')" id="tab-btn-wishlist" class="relative p-2 rounded hover:opacity-80 transition flex items-center gap-1.5 text-xs font-medium" style="color: var(--text-primary);" title="Saved Favorites">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span class="hidden md:inline">Saved</span>
+              <span id="wishlist-count-badge" class="px-1.5 py-0.5 text-[10px] rounded-full font-semibold" style="background-color: var(--bg-subtle); color: var(--text-primary);">2</span>
+            </button>
+
+            <!-- My Orders -->
+            <button onclick="switchTab('orders')" id="tab-btn-orders" class="relative p-2 rounded hover:opacity-80 transition flex items-center gap-1.5 text-xs font-medium" style="color: var(--text-primary);" title="Orders & Returns">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+              </svg>
+              <span class="hidden md:inline">Orders</span>
+            </button>
+
+            <!-- Shopping Bag / Checkout -->
+            <button onclick="switchTab('cart')" id="tab-btn-cart" class="vb-btn-primary px-3.5 py-2 flex items-center gap-2 text-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-9-4h4"/>
+              </svg>
+              <span>Bag</span>
+              <span id="cart-count-badge" class="px-1.5 py-0.2 rounded text-[11px] font-mono-code" style="background-color: rgba(255,255,255,0.2);">2</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ==========================================================================
+         3. MAIN CONTENT AREA (flex: 1 0 auto — GUARANTEES FOOTER STAYS AT BOTTOM)
+         ========================================================================== -->
+    <main id="main-content" class="pb-16">
+
+      <!-- ========================================================================
+           VIEW A: SHOP CATALOG (EDITORIAL HERO + FILTER BAR + 3:4 FASHION GRID)
+           ======================================================================== -->
+      <section id="view-catalog" class="block">
+        <!-- Editorial Split Lookbook Hero -->
+        <div class="vb-border-b" style="background-color: var(--bg-subtle);">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div class="lg:col-span-6 space-y-5">
+                <div class="inline-flex items-center gap-2 px-3 py-1 text-[11px] uppercase tracking-[0.2em] font-semibold vb-surface" style="color: var(--accent-brand);">
+                  <span>Trending Social Club &bull; Girls' Trips &bull; Custom Gifting</span>
+                </div>
+                <h1 class="font-editorial text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.08] tracking-tight" style="color: var(--text-primary);">
+                  Made for Your Era, Your Crew &amp; Every Weekend Plan.
+                </h1>
+                <p class="text-sm sm:text-base leading-relaxed max-w-xl" style="color: var(--text-secondary);">
+                  From Matcha &amp; Pilates Club fleeces, BookTok sipper cans, and Espresso Martini baby tees to custom City/Date Bachelorette totes, Birth-Flower embroidery, and 3-piece gift sets—fulfilled locally in the USA &amp; Canada.
+                </p>
+                <div class="flex flex-wrap items-center gap-3 pt-2">
+                  <a href="#collection-grid" class="vb-btn-primary px-6 py-3 text-xs uppercase tracking-widest inline-block">
+                    Shop All 5 Edits
+                  </a>
+                  <button onclick="openPersonalizerModal(1)" class="vb-btn-outline px-5 py-3 text-xs uppercase tracking-widest">
+                    Try Live Customizer
+                  </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-4 vb-border-t text-xs" style="color: var(--text-secondary);">
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">Comfort Colors&reg; &amp; Lane Seven</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">Boutique-Grade Blanks</div>
+                  </div>
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">USA &amp; Canada Local Hubs</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">2–4 Business Day Dispatch</div>
+                  </div>
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">Group Party Perks</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">5+ Items = 20% Off (`GROUP20`)</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Editorial Dual Lookbook Imagery -->
+              <div class="lg:col-span-6 grid grid-cols-2 gap-4">
+                <div class="vb-surface p-2">
+                  <div class="vb-aspect-3-4 rounded-sm overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=85"
+                      onerror="this.onerror=null;this.src=window.getFallbackSvg('Weekend Resort Midi','#F3E5E8');"
+                      alt="Cut & Sew Midi Dress"
+                    />
+                  </div>
+                  <div class="pt-2.5 px-1 flex items-center justify-between text-xs">
+                    <span class="font-editorial italic text-sm" style="color: var(--text-primary);">01 / Weekend Resort Midi</span>
+                    <span class="font-medium" style="color: var(--text-secondary);">$68.00</span>
+                  </div>
+                </div>
+                <div class="vb-surface p-2 mt-6">
+                  <div class="vb-aspect-3-4 rounded-sm overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=85"
+                      onerror="this.onerror=null;this.src=window.getFallbackSvg('Social Club Crewneck','#E5ECE9');"
+                      alt="Custom Embroidered Crewneck"
+                    />
+                  </div>
+                  <div class="pt-2.5 px-1 flex items-center justify-between text-xs">
+                    <span class="font-editorial italic text-sm" style="color: var(--text-primary);">02 / Custom Embroidered Knit</span>
+                    <span class="font-medium" style="color: var(--text-secondary);">$62.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collection Toolbar (Filter Pills + Sort + Live Monogram Input) -->
+        <div id="collection-grid" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+          <!-- High-AOV Group Gifting & Bachelorette Tier Banner -->
+          <div class="vb-surface p-4 mb-6 flex flex-wrap items-center justify-between gap-3 border-l-4" style="border-left-color: var(--accent-brand);">
+            <div class="text-xs">
+              <span class="uppercase tracking-widest font-semibold text-[10px] px-2 py-0.5 rounded mr-2" style="background-color: var(--accent-brand-soft); color: var(--accent-brand);">Group Party Order (5+ Items = 20% Off)</span>
+              <strong style="color: var(--text-primary);">Planning a Bachelorette, 25th/30th Birthday Trip, Run/Pilates Club, or Book Club?</strong>
+              <span style="color: var(--text-secondary);"> Order 5+ personalized pieces &amp; get <strong>20% OFF</strong> with code <strong class="font-mono-code underline cursor-pointer" onclick="quickApplyPromo('GROUP20')">GROUP20</strong>.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="filterCategory('Bachelorette & City Edit')" class="vb-btn-outline px-3 py-1.5 text-[11px]">Bachelorette &amp; City Edit</button>
+              <button onclick="filterCategory('3-Piece Sets & 40oz Tumblers')" class="vb-btn-primary px-3 py-1.5 text-[11px]">3-Piece Gift Sets</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 vb-border-b">
+            <div>
+              <h2 class="font-editorial text-3xl font-semibold" style="color: var(--text-primary);">
+                Curated North America Printify Collection
+              </h2>
+              <p class="text-xs mt-0.5" style="color: var(--text-muted);">
+                Showing <span id="catalog-count-label">12</span> verified USA &amp; Canada Printify blueprints &bull; Live monogram, birth-flower &amp; city/date preview below
+              </p>
+            </div>
+
+            <!-- Live Global Monogram Previewer Bar -->
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="vb-surface px-3 py-1.5 flex items-center gap-2">
+                <span class="text-[11px] uppercase tracking-wider font-semibold" style="color: var(--accent-brand);">Live Personalize:</span>
+                <input
+                  id="global-monogram-input"
+                  type="text"
+                  maxlength="26"
+                  oninput="updateGlobalMonogram(this.value)"
+                  placeholder="Name or City/Date (e.g. Sophia • Charleston '26)"
+                  class="bg-transparent text-xs focus:outline-none w-56"
+                  style="color: var(--text-primary);"
+                />
+                <button onclick="updateGlobalMonogram('')" class="text-[11px] underline" style="color: var(--text-muted);">Clear</button>
+              </div>
+
+              <select id="sort-select" onchange="handleSort(this.value)" class="vb-surface px-3 py-2 text-xs focus:outline-none cursor-pointer" style="color: var(--text-primary);">
+                <option value="featured">Sort: Featured Atelier</option>
+                <option value="rating">Sort: Highest Customer Rating</option>
+                <option value="price-asc">Sort: Price Low to High</option>
+                <option value="price-desc">Sort: Price High to Low</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Grid (4 columns on desktop, 3:4 editorial aspect ratio) -->
+          <div id="product-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================
+           VIEW B: SAVED FAVORITES / WISHLIST
+           ======================================================================== -->
+      <section id="view-wishlist" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div class="flex items-center justify-between pb-6 vb-border-b">
+          <div>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">Personal Atelier Wardrobe</span>
+            <h1 class="font-editorial text-3xl sm:text-4xl font-semibold mt-1" style="color: var(--text-primary);">Saved Favorites</h1>
+          </div>
+          <button onclick="switchTab('catalog')" class="vb-btn-outline px-4 py-2 text-xs">
+            &larr; Continue Shopping
+          </button>
+        </div>
+        <div id="wishlist-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- ========================================================================
+           VIEW C: SHOPPING BAG & 2-STEP PAYPAL EXPRESS / ADDRESS CONFIRMATION
+           Fixes #1 (Remove Undo Link), #2 (Address Confirmation Step), #3 (Remove Code Toggle)
+           ======================================================================== -->
+      <section id="view-cart" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <!-- Checkout Progress Stepper -->
+        <div class="vb-surface p-4 mb-8">
+          <div class="flex flex-wrap items-center justify-between gap-4 max-w-3xl mx-auto text-xs">
+            <button onclick="setCheckoutStep(1)" id="step-indicator-1" class="flex items-center gap-2.5 font-semibold cursor-pointer">
+              <span id="step-badge-1" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px]" style="background-color: var(--accent-primary); color: var(--accent-primary-text);">1</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 1: Shopping Bag</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Review items &amp; promo code</div>
+              </div>
+            </button>
+
+            <div class="hidden sm:block h-px flex-1 mx-2" style="background-color: var(--border-strong);"></div>
+
+            <button onclick="attemptGoToStep2()" id="step-indicator-2" class="flex items-center gap-2.5 font-medium cursor-pointer">
+              <span id="step-badge-2" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] vb-border" style="color: var(--text-secondary);">2</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 2: Confirm Receiver Address</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Verify shipping &amp; recipient details</div>
+              </div>
+            </button>
+
+            <div class="hidden sm:block h-px flex-1 mx-2" style="background-color: var(--border-strong);"></div>
+
+            <div id="step-indicator-3" class="flex items-center gap-2.5 font-medium opacity-60">
+              <span id="step-badge-3" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] vb-border" style="color: var(--text-secondary);">3</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 3: Order Confirmed</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Instant receipt &amp; tracking</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <!-- LEFT 8 COLUMNS: EITHER STEP 1 (BAG ITEMS + UNDO LINK) OR STEP 2 (RECEIVER ADDRESS CONFIRMATION) -->
+          <div class="lg:col-span-8 space-y-6">
+
+            <!-- STEP 1 PANEL: SHOPPING BAG ITEMS -->
+            <div id="checkout-step-1-panel" class="space-y-4">
+              <div class="flex items-center justify-between pb-3 vb-border-b">
+                <h1 class="font-editorial text-3xl font-semibold" style="color: var(--text-primary);">
+                  Your Shopping Bag (<span id="bag-header-count">2</span>)
+                </h1>
+                <button onclick="switchTab('catalog')" class="text-xs underline" style="color: var(--text-secondary);">
+                  + Add more items
+                </button>
+              </div>
+
+              <!-- FIX #1: Inline "Removed by mistake? Add it back" Undo Banner Container -->
+              <div id="cart-undo-container" class="space-y-2"></div>
+
+              <!-- Cart Items List -->
+              <div id="cart-items-list" class="space-y-4"></div>
+
+              <!-- REMARKETING CACHE DRAWER: Persisted in localStorage ('vibebloom_removed_cart_cache') with 15% OFF COMEBACK15 Incentive -->
+              <div id="removed-remarketing-cache-box" class="hidden vb-surface p-5 space-y-3 border-l-4" style="border-left-color: var(--accent-gold);">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span class="text-[10px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded" style="background-color: var(--bg-subtle); color: var(--accent-gold);">
+                      Cached for Remarketing &bull; Browser &amp; Edge Cache (vibebloom_removed_cart_cache)
+                    </span>
+                    <h3 class="font-editorial text-xl font-semibold mt-1" style="color: var(--text-primary);">
+                      Still Thinking About These Removed Pieces? Take 15% Off (`COMEBACK15`)
+                    </h3>
+                  </div>
+                  <button onclick="clearRemovedRemarketingCache()" class="text-[11px] underline" style="color: var(--text-muted);">
+                    Clear Cache
+                  </button>
+                </div>
+                <div id="removed-remarketing-items-list" class="space-y-2"></div>
+              </div>
+            </div>
+
+            <!-- STEP 2 PANEL: UNIVERSAL RECEIVER ADDRESS VERIFICATION (MANDATORY FOR ALL PAYMENT METHODS) -->
+            <div id="checkout-step-2-panel" class="hidden space-y-6">
+              <!-- Universal Pre-Checkout Banner: Applies to Credit/Debit Card, Apple/Google Pay, PayPal Express, and Pay in 4 -->
+              <div class="vb-surface p-5 border-l-4" style="border-left-color: var(--accent-sage);">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+                      Step 2 of 2 &bull; Universal Address Verification Gate
+                    </span>
+                    <span id="selected-payment-method-badge" class="text-xs font-semibold" style="color: var(--text-primary);">
+                      Credit / Debit Card (Stripe / WooPay)
+                    </span>
+                  </div>
+                  <button onclick="setCheckoutStep(1)" class="text-xs underline font-medium" style="color: var(--text-secondary);">
+                    &larr; Back to Shopping Bag
+                  </button>
+                </div>
+                <p class="text-xs mt-2 mb-0" style="color: var(--text-secondary);">
+                  <strong>Universal Protection Across All Payment Methods:</strong> No matter which payment method you choose (Card, Apple/Google Pay, PayPal Express, or Pay in 4), your payment is <strong>never</strong> captured until you verify the receiver's delivery address below.
+                </p>
+
+                <!-- Payment Method Selector Tabs inside Step 2 (All 4 Require Receiver Address Verification) -->
+                <div class="pt-4 mt-3 vb-border-t">
+                  <div class="text-[11px] font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">
+                    Active Payment Method (Switch Anytime — Address Verification Required for All):
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <button onclick="selectStep2PaymentMethod('Credit / Debit Card (Stripe / WooPay)')" id="pm-btn-card" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Credit / Debit Card</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Visa, MC, Amex</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('Apple Pay / Google Pay Express')" id="pm-btn-wallet" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Apple / Google Pay</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Biometric Token</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('PayPal Express')" id="pm-btn-paypal" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">PayPal Express</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Pre-Authorized</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('PayPal Pay in 4 (Interest-Free)')" id="pm-btn-bnpl" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Pay in 4 BNPL</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">4x Interest-Free</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Receiver's Shipping Address Confirmation & Live Carrier Validator (ALL Payment Methods) -->
+              <div class="vb-surface p-6 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-4 vb-border-b">
+                  <div>
+                    <h2 class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">
+                      Verify Receiver's Shipping Address (Mandatory for All Orders)
+                    </h2>
+                    <p class="text-xs mt-0.5 mb-0" style="color: var(--text-muted);">
+                      Whether shipping to yourself or sending a custom gift, verify the recipient's exact postal address below.
+                    </p>
+                  </div>
+                  <button onclick="toggleAddressEditor()" id="toggle-address-edit-btn" class="vb-btn-outline px-3.5 py-1.5 text-xs">
+                    Edit Receiver Address
+                  </button>
+                </div>
+
+                <!-- Read-Only Confirmed Address View -->
+                <div id="address-display-card" class="p-4 rounded vb-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div class="space-y-1 text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-sm" id="disp-receiver-name" style="color: var(--text-primary);">Sophia Reynolds</span>
+                      <span id="disp-address-status-pill" class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded font-semibold" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+                        USPS / UPS / DHL Verified
+                      </span>
+                    </div>
+                    <div id="disp-receiver-street" style="color: var(--text-secondary);">742 Evergreen Terrace, Apt 4B</div>
+                    <div id="disp-receiver-city" style="color: var(--text-secondary);">Austin, TX 78701, United States</div>
+                    <div class="pt-1 text-[11px]" style="color: var(--text-muted);">
+                      Carrier SMS Notifications: <span id="disp-receiver-phone">(512) 555-0194</span> &bull; Note: <span id="disp-receiver-note">Leave with front desk concierge</span>
+                    </div>
+                  </div>
+                  <div id="disp-carrier-check" class="flex items-center gap-2 text-xs font-medium" style="color: var(--accent-sage);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>Postal Format &amp; Print Hub Route Verified</span>
+                  </div>
+                </div>
+
+                <!-- Editable Receiver Address Form -->
+                <div id="address-edit-form" class="hidden space-y-4 pt-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Receiver's Full Name *</label>
+                      <input id="inp-receiver-name" type="text" value="Sophia Reynolds" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Receiver's Phone (for Tracking SMS) *</label>
+                      <input id="inp-receiver-phone" type="text" value="(512) 555-0194" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Street Address &amp; Apt/Suite *</label>
+                      <input id="inp-receiver-street" type="text" value="742 Evergreen Terrace, Apt 4B" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">City *</label>
+                      <input id="inp-receiver-city" type="text" value="Austin" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">State / Province *</label>
+                        <input id="inp-receiver-state" type="text" value="TX" class="w-full px-3 py-2 text-xs vb-surface" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">ZIP / Postal Code *</label>
+                        <input id="inp-receiver-zip" type="text" value="78701" class="w-full px-3 py-2 text-xs vb-surface" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Country / Region *</label>
+                      <select id="inp-receiver-country" class="w-full px-3 py-2 text-xs vb-surface">
+                        <option value="United States">United States (Local US Print Hub)</option>
+                        <option value="United Kingdom">United Kingdom (Local UK Print Hub)</option>
+                        <option value="Germany (EU)">Germany / EU (Local EU Print Hub — VAT Included)</option>
+                        <option value="Canada">Canada (Local ON Print Hub)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Delivery Instructions / Gift Note</label>
+                      <input id="inp-receiver-note" type="text" value="Leave with front desk concierge" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                  </div>
+                  <div id="address-validation-error" class="hidden text-xs font-medium" style="color: var(--accent-brand);"></div>
+                  <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="saveReceiverAddress()" class="vb-btn-primary px-4 py-2 text-xs">
+                      Verify &amp; Save Receiver Address
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mandatory Universal Receiver Address Confirmation Checkbox -->
+                <div class="p-3.5 rounded vb-surface flex items-start gap-3" style="border-color: var(--border-strong);">
+                  <input
+                    id="chk-universal-address-verified"
+                    type="checkbox"
+                    checked
+                    onchange="toggleAddressVerifiedCheckbox(this.checked)"
+                    class="mt-0.5 cursor-pointer"
+                  />
+                  <label for="chk-universal-address-verified" class="text-xs cursor-pointer leading-relaxed" style="color: var(--text-primary);">
+                    <strong>Mandatory Address Verification:</strong> I confirm that the <strong>Receiver's Name</strong> and <strong>Shipping Address</strong> above are accurate for this order (required across Credit/Debit Card, Apple/Google Pay, and PayPal checkouts).
+                  </label>
+                </div>
+
+                <!-- Shipping Speed Selector -->
+                <div class="pt-4 vb-border-t space-y-2.5">
+                  <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-secondary);">Select Shipping Speed</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="vb-surface p-3 flex items-center justify-between cursor-pointer">
+                      <div class="flex items-center gap-2.5">
+                        <input type="radio" name="shipping_speed" value="standard" checked onchange="setShippingSpeed('standard')" />
+                        <div class="text-xs">
+                          <div class="font-semibold" style="color: var(--text-primary);">Standard Tracked Delivery</div>
+                          <div class="text-[11px]" style="color: var(--text-muted);">Est. 3–5 business days</div>
+                        </div>
+                      </div>
+                      <span class="text-xs font-semibold" id="std-ship-price-label" style="color: var(--accent-sage);">FREE</span>
+                    </label>
+                    <label class="vb-surface p-3 flex items-center justify-between cursor-pointer">
+                      <div class="flex items-center gap-2.5">
+                        <input type="radio" name="shipping_speed" value="express" onchange="setShippingSpeed('express')" />
+                        <div class="text-xs">
+                          <div class="font-semibold" style="color: var(--text-primary);">Priority Express Air</div>
+                          <div class="text-[11px]" style="color: var(--text-muted);">Est. 1–2 business days</div>
+                        </div>
+                      </div>
+                      <span class="text-xs font-semibold" style="color: var(--text-primary);">$14.99</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Compact Item Verification List before Finalizing -->
+                <div class="pt-4 vb-border-t space-y-2">
+                  <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-secondary);">Items Shipping to This Receiver</div>
+                  <div id="step2-items-preview" class="space-y-2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT 4 COLUMNS: ORDER SUMMARY + PROMO TOGGLE (FIX #3) + STEP-AWARE CTA (FIX #2) -->
+          <div class="lg:col-span-4">
+            <div class="vb-surface p-6 space-y-5 sticky top-28">
+              <h2 class="font-editorial text-2xl font-semibold pb-3 vb-border-b" style="color: var(--text-primary);">
+                Order Summary
+              </h2>
+
+              <!-- FIX #3: Promo Code Input where button toggles between "Apply Code" and "Remove Code" -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="promo-input" class="font-medium" style="color: var(--text-secondary);">Promotional Code</label>
+                  <span class="text-[11px]" style="color: var(--text-muted);">Try <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('BLOOM15')">BLOOM15</strong> or <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('COMEBACK15')">COMEBACK15</strong></span>
+                </div>
+                <div class="flex gap-2">
+                  <input
+                    id="promo-input"
+                    type="text"
+                    value="BLOOM15"
+                    placeholder="Enter code (e.g. BLOOM15)"
+                    class="flex-1 px-3 py-2 text-xs font-mono-code uppercase vb-surface focus:outline-none"
+                    style="color: var(--text-primary);"
+                  />
+                  <button
+                    id="promo-action-btn"
+                    onclick="handlePromoButtonClick()"
+                    class="px-4 py-2 text-xs font-semibold rounded transition"
+                  >
+                    Apply Code
+                  </button>
+                </div>
+                <div id="promo-feedback-msg" class="text-[11px] min-h-[16px]"></div>
+              </div>
+
+              <!-- Financial Totals Breakdown -->
+              <div class="space-y-2.5 pt-3 vb-border-t text-xs">
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Subtotal</span>
+                  <span id="summary-subtotal" class="font-medium" style="color: var(--text-primary);">$0.00</span>
+                </div>
+                <div id="summary-discount-row" class="hidden flex justify-between" style="color: var(--accent-sage);">
+                  <span id="summary-discount-label">Promo Discount (BLOOM15 -15%)</span>
+                  <span id="summary-discount-amount" class="font-semibold">-$0.00</span>
+                </div>
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Tracked Shipping</span>
+                  <span id="summary-shipping" class="font-medium" style="color: var(--text-primary);">FREE</span>
+                </div>
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Estimated Tax (US/EU Auto-Calculated)</span>
+                  <span id="summary-tax" class="font-medium" style="color: var(--text-primary);">$0.00</span>
+                </div>
+                <div class="flex justify-between pt-3 vb-border-t text-base font-semibold" style="color: var(--text-primary);">
+                  <span>Total</span>
+                  <span id="summary-total">$0.00</span>
+                </div>
+              </div>
+
+              <!-- STEP 1 ACTION BUTTONS: EVERY payment method routes to Step 2 (Mandatory Receiver Address Verification) -->
+              <div id="step-1-cta-group" class="space-y-2.5 pt-2">
+                <div class="text-[11px] font-medium text-center pb-1" style="color: var(--text-muted);">
+                  All checkout methods verify Receiver Address in Step 2 before charging:
+                </div>
+
+                <button
+                  onclick="startCheckoutWithMethod('Credit / Debit Card (Stripe / WooPay)')"
+                  class="w-full py-3 px-4 text-xs uppercase tracking-wider vb-btn-primary flex items-center justify-center gap-2"
+                >
+                  <span>Checkout with Card</span>
+                  <span class="text-[10px] opacity-80">&rarr; Verify Address</span>
+                </button>
+
+                <button
+                  onclick="startCheckoutWithMethod('Apple Pay / Google Pay Express')"
+                  class="w-full py-2.5 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 vb-btn-outline"
+                >
+                  <span>Apple Pay / Google Pay</span>
+                  <span class="text-[10px] opacity-75">&rarr; Verify Address</span>
+                </button>
+
+                <button
+                  onclick="startCheckoutWithMethod('PayPal Express')"
+                  class="w-full py-3 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 transition shadow-sm"
+                  style="background-color: #FFC439; color: #111827;"
+                >
+                  <span>Checkout with <strong>PayPal</strong> Express</span>
+                  <span class="text-[11px] opacity-80">&rarr; Verify Address</span>
+                </button>
+
+                <button
+                  onclick="startCheckoutWithMethod('PayPal Pay in 4 (Interest-Free)')"
+                  class="w-full py-2.5 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 vb-btn-outline"
+                >
+                  <span>Pay in 4 Interest-Free</span>
+                  <span class="text-[10px] opacity-75">&rarr; Verify Address</span>
+                </button>
+              </div>
+
+              <!-- STEP 2 ACTION BUTTONS: Finalize Order ONLY AFTER Receiver Address is Verified -->
+              <div id="step-2-cta-group" class="hidden space-y-2.5 pt-2">
+                <div class="p-2.5 rounded text-[11px] vb-subtle" style="color: var(--text-secondary);">
+                  Verified Receiver: <strong id="cta-receiver-summary" style="color: var(--text-primary);">Sophia Reynolds — Austin, TX 78701</strong>
+                </div>
+                <div id="step2-unverified-warning" class="hidden text-[11px] font-medium p-2 rounded" style="background-color: var(--accent-brand-soft); color: var(--accent-brand);">
+                  Please save your address edits and check the Receiver Address Confirmation box to place your order.
+                </div>
+                <button
+                  id="final-place-order-btn"
+                  onclick="confirmAndPlaceFinalOrder()"
+                  class="w-full py-3.5 px-4 text-xs uppercase tracking-wider vb-btn-primary shadow-md"
+                >
+                  Confirm Verified Address &amp; Place Order (<span id="final-place-order-amount">$0.00</span>)
+                </button>
+                <button
+                  onclick="setCheckoutStep(1)"
+                  class="w-full py-2 text-xs vb-btn-outline"
+                >
+                  &larr; Edit Items in Bag
+                </button>
+              </div>
+
+              <!-- Buyer Protection Trust Footer -->
+              <div class="pt-3 vb-border-t space-y-1.5 text-[11px]" style="color: var(--text-muted);">
+                <div class="flex items-center gap-2">
+                  <span>&#10003;</span>
+                  <span>Universal Receiver Address Verification (Card, Apple/Google Pay &amp; PayPal)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span>&#10003;</span>
+                  <span>Free 1-Hour Self-Service Cancellation Window</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================
+           VIEW D: CUSTOMER ORDERS, TRACKING & SELF-SERVICE RETURNS
+           ======================================================================== -->
+      <section id="view-orders" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-6 vb-border-b">
+          <div>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">Customer Care Portal</span>
+            <h1 class="font-editorial text-3xl sm:text-4xl font-semibold mt-1" style="color: var(--text-primary);">My Orders &amp; Tracking</h1>
+          </div>
+          <button onclick="switchTab('catalog')" class="vb-btn-outline px-4 py-2 text-xs">
+            &larr; Back to Shop
+          </button>
+        </div>
+
+        <div id="orders-list-container" class="space-y-4 pt-6">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==========================================================================
+         4. PERSONALIZATION STUDIO MODAL (LIVE GARMENT MONOGRAM / EMBROIDERY)
+         ========================================================================== -->
+    <div id="personalizer-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color: rgba(12, 13, 16, 0.72); backdrop-filter: blur(4px);">
+      <div class="vb-surface max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6">
+        <div class="flex items-start justify-between gap-4 pb-4 vb-border-b">
+          <div>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">LouLou &amp; Luxe Custom Atelier</span>
+            <h3 id="modal-product-title" class="font-editorial text-3xl font-semibold mt-0.5" style="color: var(--text-primary);">Personalize Garment</h3>
+          </div>
+          <button onclick="closePersonalizerModal()" class="text-sm px-2.5 py-1 vb-btn-outline">&times; Close</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+          <div class="sm:col-span-5">
+            <div class="vb-aspect-3-4 rounded overflow-hidden vb-border relative">
+              <img id="modal-product-img" src="" alt="Preview" class="w-full h-full object-cover" />
+              <div id="modal-live-badge" class="monogram-preview-pill">Sophia R.</div>
+            </div>
+          </div>
+          <div class="sm:col-span-7 space-y-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Select Size</label>
+              <div id="modal-size-pills" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
+                Custom Embroidery / Floral Script (Complimentary)
+              </label>
+              <input
+                id="modal-custom-text"
+                type="text"
+                maxlength="24"
+                oninput="updateModalPreviewText(this.value)"
+                placeholder="Leave blank or enter name/monogram..."
+                class="w-full px-3.5 py-2.5 text-xs vb-surface focus:outline-none"
+                style="color: var(--text-primary);"
+              />
+              <p class="text-[11px] mt-1" style="color: var(--text-muted);">
+                Stitched in botanical metallic-silk thread or printed with OEKO-TEX&reg; eco ink.
+              </p>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+              <div id="modal-product-price" class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">$64.00</div>
+              <button onclick="confirmModalAddToCart()" class="vb-btn-primary px-6 py-3 text-xs uppercase tracking-widest">
+                Add to Shopping Bag
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         5. FIX #5: STICKY EDITORIAL FOOTER (PINNED TO BOTTOM VIA margin-top: auto)
+         ========================================================================== -->
+    <footer id="site-footer" class="vb-border-t" style="background-color: var(--bg-surface);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 vb-border-b text-xs">
+          <div class="space-y-3">
+            <div class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">LouLou &amp; Luxe</div>
+            <p class="leading-relaxed" style="color: var(--text-secondary);">
+              Social club apparel, bachelorette &amp; hen party edits, custom birth-flower embroidery, and 3-piece gift sets crafted locally across the US, Canada, UK, Australia, Germany &amp; Singapore.
+            </p>
+            <div class="text-[11px]" style="color: var(--text-muted);">
+              OEKO-TEX&reg; Standard 100 &bull; GDPR, CCPA &amp; PIPEDA Compliant
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">Printify-Backed Collections</div>
+            <ul class="space-y-1.5 list-none p-0 m-0" style="color: var(--text-secondary);">
+              <li><button onclick="filterCategory('Trending & Social Club')" class="hover:underline">Pilates, BookTok &amp; Social Club</button></li>
+              <li><button onclick="filterCategory('Bachelorette & City Edit')" class="hover:underline">Bachelorette &amp; Girls' Trip City Edit</button></li>
+              <li><button onclick="filterCategory('Birth-Flower & Monogram')" class="hover:underline">Birth-Flower &amp; Monogram Studio</button></li>
+              <li><button onclick="filterCategory('Dresses & Everyday Fits')" class="hover:underline">Cut &amp; Sew Dresses &amp; Baby Tees</button></li>
+              <li><button onclick="filterCategory('3-Piece Sets & 40oz Tumblers')" class="hover:underline">3-Piece Gift Sets &amp; 40oz Tumblers</button></li>
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">Customer Care &amp; Policies</div>
+            <ul class="space-y-1.5 list-none p-0 m-0" style="color: var(--text-secondary);">
+              <li><button onclick="switchTab('orders')" class="hover:underline">Track Order &amp; 1-Hour Free Cancel</button></li>
+              <li><button onclick="switchTab('orders')" class="hover:underline">30-Day Defective Print Replacement</button></li>
+              <li><span>Global Local Printify Hubs (US, CA, UK, AU, DE, SG)</span></li>
+              <li><span>Universal Address Verification &amp; Buyer Protection</span></li>
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">WooCommerce + Printify Architecture</div>
+            <p class="leading-relaxed" style="color: var(--text-secondary);">
+              Powered by WooCommerce + Bootstrap 5 (`bootScore` / `Botiga` / `Blocksy` starter tokens) on `loulouandluxe.com` synced to live Printify global providers.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-6 flex flex-wrap items-center justify-between gap-4 text-[11px]" style="color: var(--text-muted);">
+          <div>&copy; 2026 LouLou &amp; Luxe (`loulouandluxe.com`). All rights reserved.</div>
+          <div class="flex items-center gap-4">
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>Cookie Preferences (GDPR/CCPA/PIPEDA)</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ============================================================================
+       STOREFRONT INTERACTIVE STATE ENGINE (SHAPED BY LIVE PRINTIFY CATALOG)
+       ============================================================================ -->
+  <script>
+    const REMOVED_CART_CACHE_KEY = 'vibebloom_removed_cart_cache';
+
+    // Reliable SVG Fallback Generator if an external photo fails to load
+    window.getFallbackSvg = function(title, bgHex) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+        <rect width="600" height="800" fill="${bgHex || '#F3EFEA'}"/>
+        <circle cx="300" cy="340" r="140" fill="#FFFFFF" fill-opacity="0.65"/>
+        <path d="M300 220 C330 270, 380 290, 300 390 C220 290, 270 270, 300 220 Z" fill="#9E4758" fill-opacity="0.35"/>
+        <text x="300" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#18181B">${title}</text>
+        <text x="300" y="595" text-anchor="middle" font-family="sans-serif" font-size="13" letter-spacing="3" fill="#71717A">LOULOU &amp; LUXE</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    };
+
+    const PRODUCTS = [
+      {
+        id: 1,
+        blueprintId: 578,
+        printifyBlank: "Bella+Canvas 7505 Women's Cropped Fleece",
+        provider: "SwiftPOD (USA)",
+        title: "'Matcha & Pilates Social Club' Custom Est. Year Pullover",
+        category: "Trending & Social Club",
+        price: 56.00,
+        rating: 4.9,
+        reviews: 248,
+        badge: "BP #578 • Viral TikTok Fit",
+        swatch: "Matcha Sage / Cream Stitch",
+        sizes: ["S", "M", "L", "XL"],
+        image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 2,
+        blueprintId: 5358,
+        printifyBlank: "Bella+Canvas Women's Micro-Rib Baby Tee",
+        provider: "Fulfill Engine (USA)",
+        title: "'Tini Bit Older' Espresso Martini Custom Age/Name Baby Tee",
+        category: "Trending & Social Club",
+        price: 38.00,
+        rating: 4.9,
+        reviews: 192,
+        badge: "BP #5358 • 21st/25th/30th Hit",
+        swatch: "Espresso Cream Micro-Rib",
+        sizes: ["XS", "S", "M", "L", "XL"],
+        image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 3,
+        blueprintId: 1989,
+        printifyBlank: "16oz Glass Can w/ Bamboo Lid & Straw",
+        provider: "Fulfill Engine Engraving (USA)",
+        title: "BookTok 'Night Court Reading Club' 16oz Iced Coffee Can",
+        category: "Trending & Social Club",
+        price: 34.00,
+        rating: 4.9,
+        reviews: 219,
+        badge: "BP #1989 • BookTok Bestseller",
+        swatch: "Etched Celestial Glass",
+        sizes: ["16 oz w/ Straw & Lid"],
+        image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 4,
+        blueprintId: 1296,
+        printifyBlank: "Comfort Colors 1566 Garment-Dyed Crewneck",
+        provider: "SwiftPOD / Printify Choice (USA)",
+        title: "Comfort Colors 1566 'Last Toast on the Coast' City & Year Sweater",
+        category: "Bachelorette & City Edit",
+        price: 60.00,
+        rating: 4.9,
+        reviews: 205,
+        badge: "BP #1296 • Custom US/CA City",
+        swatch: "Coastal Hydrangea Blue",
+        sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
+        image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 5,
+        blueprintId: 1288,
+        printifyBlank: "Oversized T-Bottom Weekender Bag",
+        provider: "MWW On Demand (NC, USA)",
+        title: "'Girls' Trip Social Club' Custom Destination Weekender Tote",
+        category: "Bachelorette & City Edit",
+        price: 54.00,
+        rating: 4.9,
+        reviews: 164,
+        badge: "BP #1288 • Nashville / Banff / Miami",
+        swatch: "Warm Alabaster & Navy Stripe",
+        sizes: ["Weekender XL (24x13\")"],
+        image: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 6,
+        blueprintId: 1687,
+        printifyBlank: "Lane Seven LS16004 Nantucket Fleece",
+        provider: "Fulfill Engine Embroidery (USA)",
+        title: "Custom Birth-Flower Bouquet & Pet Ears Embroidered Crewneck",
+        category: "Birth-Flower & Monogram",
+        price: 62.00,
+        rating: 5.0,
+        reviews: 276,
+        badge: "BP #1687 • Custom Embroidery",
+        swatch: "Oatmeal Heather / Silk Stitch",
+        sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+        image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 7,
+        blueprintId: 2022,
+        printifyBlank: "UV-Printed PU Leather Jewelry Organizer",
+        provider: "Lumient / Printify Choice (USA)",
+        title: "Custom Name & Birth-Flower Travel Jewelry Case",
+        category: "Birth-Flower & Monogram",
+        price: 34.00,
+        rating: 5.0,
+        reviews: 312,
+        badge: "BP #2022 • #1 Bridesmaid Gift",
+        swatch: "Warm Cream Vegan Leather",
+        sizes: ["Travel Zip Case (4x4\")"],
+        image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 8,
+        blueprintId: 1262,
+        printifyBlank: "Cut & Sew All-Over-Print Skater Dress",
+        provider: "Miami Sublimation / Printify Choice (USA)",
+        title: "Amalfi Citrus & Botanical Cut-and-Sew Flared Midi Dress",
+        category: "Dresses & Everyday Fits",
+        price: 68.00,
+        rating: 4.9,
+        reviews: 168,
+        badge: "BP #1262 • Vacation Edit",
+        swatch: "Ivory & Mediterranean Toile",
+        sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+        image: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 9,
+        blueprintId: 276,
+        printifyBlank: "Cut & Sew Racerback Sundress (AOP)",
+        provider: "MWW On Demand (NC, USA)",
+        title: "Weekend Farmers Market Racerback Summer Sundress",
+        category: "Dresses & Everyday Fits",
+        price: 56.00,
+        rating: 4.8,
+        reviews: 114,
+        badge: "BP #276 • 58% Margin",
+        swatch: "Sunlit Gingham & Flora",
+        sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+        image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 10,
+        blueprintId: 1670,
+        printifyBlank: "Koozie Group 40oz Insulated Quencher",
+        provider: "Fulfill Engine Laser Studio (USA)",
+        title: "Custom Name & Icon Laser-Engraved 40oz Insulated Tumbler",
+        category: "3-Piece Sets & 40oz Tumblers",
+        price: 52.00,
+        rating: 4.9,
+        reviews: 241,
+        badge: "BP #1670 • Laser Engraved",
+        swatch: "Matte Petal Cream",
+        sizes: ["40 oz w/ Handle & Straw"],
+        image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 11,
+        blueprintId: 49,
+        printifyBlank: "Bundle: BP #49 Crewneck + BP #1989 Glass Can + BP #1313 Tote",
+        provider: "USA & Ontario CA Multi-Hub Bundle",
+        title: "The 'Sunday Reset' 3-Piece Custom Gift Set (Sweater + Sipper + Tote)",
+        category: "3-Piece Sets & 40oz Tumblers",
+        price: 94.00,
+        rating: 5.0,
+        reviews: 158,
+        badge: "3-Piece Bundle • Save 15%",
+        swatch: "Matched Custom Trio",
+        sizes: ["S Set", "M Set", "L Set", "XL Set"],
+        image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 12,
+        blueprintId: 1288,
+        printifyBlank: "Bundle: BP #5358 Baby Tee + BP #1288 Weekender + BP #2022 Case",
+        provider: "USA & Ontario CA Multi-Hub Bundle",
+        title: "The 'Bachelorette VIP' 3-Piece Custom City Set (Tee + Weekender + Case)",
+        category: "3-Piece Sets & 40oz Tumblers",
+        price: 106.00,
+        rating: 5.0,
+        reviews: 134,
+        badge: "3-Piece Bundle • Save $20",
+        swatch: "Custom City + Bride/Crew Names",
+        sizes: ["XS Set", "S Set", "M Set", "L Set", "XL Set"],
+        image: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=900&q=85"
+      }
+    ];
+
+    function loadRemovedRemarketingCache() {
+      try {
+        const raw = localStorage.getItem(REMOVED_CART_CACHE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function persistRemovedRemarketingCache(entries) {
+      try {
+        localStorage.setItem(REMOVED_CART_CACHE_KEY, JSON.stringify(entries.slice(0, 10)));
+      } catch (e) {}
+    }
+
+    let state = {
+      activeTab: 'catalog',
+      category: 'All',
+      search: '',
+      sort: 'featured',
+      globalMonogram: '',
+      wishlist: [1, 7],
+      cart: [
+        {
+          cartItemId: 'ci-1',
+          productId: 1,
+          size: 'M',
+          customText: 'Sophia • Austin Pilates Club',
+          qty: 1
+        },
+        {
+          cartItemId: 'ci-2',
+          productId: 11,
+          size: 'M Set',
+          customText: 'Sophia • Sunday Reset Trio',
+          qty: 1
+        }
+      ],
+      // FIX #1: Immediate Undo stack + Persistent Remarketing Cache ('vibebloom_removed_cart_cache')
+      recentlyRemoved: loadRemovedRemarketingCache(),
+      // FIX #3: Promo state — toggles button between "Apply Code" and "Remove Code"
+      promoApplied: true,
+      promoCode: 'BLOOM15',
+      promoDiscountRate: 0.15,
+      // FIX #2: Universal 2-Step Checkout State (1 = Bag, 2 = Mandatory Receiver Address Verification for ALL payment methods)
+      checkoutStep: 1,
+      selectedPaymentMethod: 'Credit / Debit Card (Stripe / WooPay)',
+      shippingSpeed: 'standard',
+      editingAddress: false,
+      universalAddressConfirmed: true,
+      receiverAddress: {
+        name: 'Sophia Reynolds',
+        phone: '(512) 555-0194',
+        street: '742 Evergreen Terrace, Apt 4B',
+        city: 'Austin',
+        state: 'TX',
+        zip: '78701',
+        country: 'United States',
+        note: 'Leave with front desk concierge'
+      },
+      orders: [
+        {
+          id: 'VB-90482',
+          date: 'Oct 10, 2026',
+          status: 'In Printify Production (SwiftPOD & Fulfill Engine USA Hub)',
+          canCancelFree: true,
+          paymentMethod: 'PayPal Express',
+          receiver: 'Sophia Reynolds — 742 Evergreen Terrace, Apt 4B, Austin, TX 78701',
+          total: 127.50,
+          items: [
+            { title: "'Matcha & Pilates Social Club' Cropped Pullover (BP #578)", size: 'M', customText: 'Sophia • Austin Pilates Club', qty: 1, price: 56.00 },
+            { title: "The 'Sunday Reset' 3-Piece Custom Gift Set (BP #49+#1989+#1313)", size: 'M Set', customText: 'Sophia • Sunday Reset Trio', qty: 1, price: 94.00 }
+          ]
+        }
+      ],
+      modalProductId: 1,
+      modalSelectedSize: 'M',
+      modalCustomText: ''
+    };
+
+    // Theme & Preset Controls
+    function changeThemePreset(preset) {
+      document.documentElement.setAttribute('data-preset', preset);
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('theme-icon').textContent = next === 'dark' ? '☀' : '☾';
+      document.getElementById('theme-label').textContent = next === 'dark' ? 'Light Atelier' : 'Midnight Mode';
+    }
+
+    // Navigation
+    function switchTab(tab) {
+      state.activeTab = tab;
+      ['catalog', 'wishlist', 'cart', 'orders'].forEach(t => {
+        const el = document.getElementById(`view-${t}`);
+        if (el) el.classList.toggle('hidden', t !== tab);
+      });
+      if (tab === 'catalog') renderCatalog();
+      if (tab === 'wishlist') renderWishlist();
+      if (tab === 'cart') renderCartAndCheckout();
+      if (tab === 'orders') renderOrders();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function filterCategory(cat) {
+      state.category = cat;
+      ['All', 'Trending & Social Club', 'Bachelorette & City Edit', 'Birth-Flower & Monogram', 'Dresses & Everyday Fits', '3-Piece Sets & 40oz Tumblers'].forEach(c => {
+        const btn = document.getElementById(`nav-cat-${c}`);
+        if (btn) {
+          if (c === cat) {
+            btn.classList.add('border-current', 'font-semibold');
+            btn.classList.remove('border-transparent');
+          } else {
+            btn.classList.remove('border-current', 'font-semibold');
+            btn.classList.add('border-transparent');
+          }
+        }
+      });
+      if (state.activeTab !== 'catalog') {
+        switchTab('catalog');
+      } else {
+        renderCatalog();
+      }
+    }
+
+    function handleSearch(val) {
+      state.search = val.trim().toLowerCase();
+      if (state.activeTab !== 'catalog') switchTab('catalog');
+      else renderCatalog();
+    }
+
+    function handleSort(val) {
+      state.sort = val;
+      renderCatalog();
+    }
+
+    function updateGlobalMonogram(val) {
+      state.globalMonogram = val;
+      const inp = document.getElementById('global-monogram-input');
+      if (inp && inp.value !== val) inp.value = val;
+      renderCatalog();
+    }
+
+    // Catalog Renderer (3:4 Fashion Cards with Printify Blueprint & Blank Details)
+    function renderCatalog() {
+      let list = PRODUCTS.filter(p => {
+        const matchCat = state.category === 'All' || p.category === state.category;
+        const matchSearch = !state.search ||
+          p.title.toLowerCase().includes(state.search) ||
+          p.category.toLowerCase().includes(state.search) ||
+          (p.printifyBlank && p.printifyBlank.toLowerCase().includes(state.search));
+        return matchCat && matchSearch;
+      });
+
+      if (state.sort === 'price-asc') list.sort((a, b) => a.price - b.price);
+      if (state.sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+      if (state.sort === 'rating') list.sort((a, b) => b.rating - a.rating);
+
+      document.getElementById('catalog-count-label').textContent = list.length;
+
+      const grid = document.getElementById('product-grid-container');
+      grid.innerHTML = list.map(p => {
+        const wished = state.wishlist.includes(p.id);
+        const liveText = state.globalMonogram.trim();
+        return `
+          <article class="vb-product-card flex flex-col justify-between">
+            <div>
+              <div class="vb-aspect-3-4">
+                <img
+                  src="${p.image}"
+                  alt="${p.title}"
+                  onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');"
+                />
+                <div class="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase tracking-widest font-semibold rounded-sm" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                  ${p.badge}
+                </div>
+                <button
+                  onclick="toggleWishlist(${p.id})"
+                  class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition"
+                  style="background-color: var(--bg-surface); color: ${wished ? 'var(--accent-brand)' : 'var(--text-primary)'};"
+                  title="Save to Wishlist"
+                >
+                  ${wished ? '&#9829;' : '&#9825;'}
+                </button>
+                ${liveText ? `<div class="monogram-preview-pill">&ldquo;${liveText}&rdquo;</div>` : ''}
+                <div class="vb-quick-bar flex gap-2">
+                  <button onclick="quickAddToCart(${p.id})" class="flex-1 py-2 text-[11px] font-semibold uppercase tracking-wider rounded-sm" style="background-color: #FFFFFF; color: #18181B;">
+                    + Quick Add
+                  </button>
+                  <button onclick="openPersonalizerModal(${p.id})" class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider rounded-sm border border-white text-white">
+                    Personalize
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-4 space-y-1.5">
+                <div class="flex items-center justify-between text-[11px]" style="color: var(--text-muted);">
+                  <span>${p.category}</span>
+                  <span>&#9733; ${p.rating} (${p.reviews})</span>
+                </div>
+                <h3 class="font-editorial text-xl font-semibold leading-snug" style="color: var(--text-primary);">
+                  ${p.title}
+                </h3>
+                <div class="text-[11px] font-medium" style="color: var(--accent-brand);">
+                  ${p.printifyBlank}
+                </div>
+                <div class="text-xs" style="color: var(--text-secondary);">
+                  Shade: <span class="font-medium">${p.swatch}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-4 pb-4 pt-2 flex items-center justify-between vb-border-t">
+              <span class="font-semibold text-sm" style="color: var(--text-primary);">$${p.price.toFixed(2)}</span>
+              <button onclick="openPersonalizerModal(${p.id})" class="text-xs font-semibold underline" style="color: var(--accent-brand);">
+                Personalize &rarr;
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // Wishlist
+    function toggleWishlist(productId) {
+      const idx = state.wishlist.indexOf(productId);
+      if (idx >= 0) state.wishlist.splice(idx, 1);
+      else state.wishlist.push(productId);
+      updateHeaderBadges();
+      if (state.activeTab === 'catalog') renderCatalog();
+      if (state.activeTab === 'wishlist') renderWishlist();
+    }
+
+    function renderWishlist() {
+      const container = document.getElementById('wishlist-grid-container');
+      const items = PRODUCTS.filter(p => state.wishlist.includes(p.id));
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full vb-surface p-12 text-center space-y-3">
+            <div class="font-editorial text-2xl" style="color: var(--text-primary);">Your Saved Wardrobe is Empty</div>
+            <p class="text-xs max-w-md mx-auto" style="color: var(--text-secondary);">Tap the heart icon on any botanical dress, sweater, or tote to save it for later.</p>
+            <button onclick="switchTab('catalog')" class="vb-btn-primary px-5 py-2.5 text-xs uppercase tracking-widest">Explore Collection</button>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = items.map(p => `
+        <article class="vb-product-card flex flex-col justify-between">
+          <div class="vb-aspect-3-4">
+            <img src="${p.image}" alt="${p.title}" onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');" />
+          </div>
+          <div class="p-4 space-y-2">
+            <h3 class="font-editorial text-xl font-semibold" style="color: var(--text-primary);">${p.title}</h3>
+            <div class="text-sm font-semibold">$${p.price.toFixed(2)}</div>
+            <div class="flex gap-2 pt-2">
+              <button onclick="quickAddToCart(${p.id})" class="flex-1 vb-btn-primary py-2 text-xs">Move to Bag</button>
+              <button onclick="toggleWishlist(${p.id})" class="vb-btn-outline px-3 py-2 text-xs">Remove</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Personalizer Modal
+    function openPersonalizerModal(productId) {
+      const p = PRODUCTS.find(x => x.id === productId) || PRODUCTS[0];
+      state.modalProductId = p.id;
+      state.modalSelectedSize = p.sizes[Math.min(1, p.sizes.length - 1)];
+      state.modalCustomText = state.globalMonogram || 'Sophia R.';
+
+      document.getElementById('modal-product-title').textContent = p.title;
+      document.getElementById('modal-product-img').src = p.image;
+      document.getElementById('modal-product-price').textContent = `$${p.price.toFixed(2)}`;
+      document.getElementById('modal-custom-text').value = state.modalCustomText;
+      updateModalPreviewText(state.modalCustomText);
+      renderModalSizePills(p);
+      document.getElementById('personalizer-modal').classList.remove('hidden');
+    }
+
+    function renderModalSizePills(p) {
+      const container = document.getElementById('modal-size-pills');
+      container.innerHTML = p.sizes.map(sz => {
+        const active = sz === state.modalSelectedSize;
+        return `<button onclick="selectModalSize('${sz}')" class="px-3.5 py-1.5 text-xs rounded-sm font-medium transition ${active ? 'vb-btn-primary' : 'vb-btn-outline'}">${sz}</button>`;
+      }).join('');
+    }
+
+    function selectModalSize(sz) {
+      state.modalSelectedSize = sz;
+      const p = PRODUCTS.find(x => x.id === state.modalProductId);
+      if (p) renderModalSizePills(p);
+    }
+
+    function updateModalPreviewText(val) {
+      state.modalCustomText = val;
+      const badge = document.getElementById('modal-live-badge');
+      if (val.trim()) {
+        badge.textContent = `“${val.trim()}”`;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function closePersonalizerModal() {
+      document.getElementById('personalizer-modal').classList.add('hidden');
+    }
+
+    function confirmModalAddToCart() {
+      state.cart.push({
+        cartItemId: 'ci-' + Date.now(),
+        productId: state.modalProductId,
+        size: state.modalSelectedSize,
+        customText: state.modalCustomText.trim() || 'No Monogram (Standard Studio Piece)',
+        qty: 1
+      });
+      closePersonalizerModal();
+      updateHeaderBadges();
+      state.checkoutStep = 1;
+      switchTab('cart');
+    }
+
+    function quickAddToCart(productId) {
+      const p = PRODUCTS.find(x => x.id === productId);
+      if (!p) return;
+      state.cart.push({
+        cartItemId: 'ci-' + Date.now(),
+        productId: p.id,
+        size: p.sizes[0],
+        customText: state.globalMonogram.trim() || 'Standard Studio Edition',
+        qty: 1
+      });
+      updateHeaderBadges();
+      state.checkoutStep = 1;
+      switchTab('cart');
+    }
+
+    // ============================================================================
+    // FIX #1 + REMARKETING CACHE: CART REMOVE WITH INLINE UNDO + PERSISTENT CACHE
+    // ============================================================================
+    function removeCartItem(cartItemId) {
+      const index = state.cart.findIndex(item => item.cartItemId === cartItemId);
+      if (index === -1) return;
+      const removedItem = state.cart[index];
+      const product = PRODUCTS.find(p => p.id === removedItem.productId);
+
+      // Save to recentlyRemoved stack AND persist to localStorage ('vibebloom_removed_cart_cache') for remarketing/promo incentives
+      state.recentlyRemoved.unshift({
+        restoreId: 'undo-' + Date.now(),
+        originalIndex: index,
+        item: { ...removedItem },
+        productTitle: product ? product.title : 'Item',
+        unitPrice: product ? product.price : 48.00,
+        incentivePromoCode: 'COMEBACK15',
+        removedAtIso: new Date().toISOString()
+      });
+      persistRemovedRemarketingCache(state.recentlyRemoved);
+
+      state.cart.splice(index, 1);
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    function undoRemoveCartItem(restoreId, applyComebackIncentive = false) {
+      const rIdx = state.recentlyRemoved.findIndex(r => r.restoreId === restoreId);
+      if (rIdx === -1) return;
+      const entry = state.recentlyRemoved[rIdx];
+      const insertPos = Math.min(entry.originalIndex ?? state.cart.length, state.cart.length);
+      state.cart.splice(insertPos, 0, entry.item);
+      state.recentlyRemoved.splice(rIdx, 1);
+      persistRemovedRemarketingCache(state.recentlyRemoved);
+
+      if (applyComebackIncentive) {
+        state.promoApplied = true;
+        state.promoCode = 'COMEBACK15';
+        state.promoDiscountRate = 0.15;
+      }
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    function dismissUndoBanner(restoreId) {
+      // Dismisses the inline top banner, or removes from cache if clicked in cache drawer
+      const entry = state.recentlyRemoved.find(r => r.restoreId === restoreId);
+      if (entry && !entry.dismissedInline) {
+        entry.dismissedInline = true;
+      } else {
+        state.recentlyRemoved = state.recentlyRemoved.filter(r => r.restoreId !== restoreId);
+      }
+      persistRemovedRemarketingCache(state.recentlyRemoved);
+      renderCartAndCheckout();
+    }
+
+    function clearRemovedRemarketingCache() {
+      state.recentlyRemoved = [];
+      persistRemovedRemarketingCache([]);
+      renderCartAndCheckout();
+    }
+
+    function updateCartQty(cartItemId, delta) {
+      const item = state.cart.find(i => i.cartItemId === cartItemId);
+      if (!item) return;
+      const nextQty = item.qty + delta;
+      if (nextQty <= 0) {
+        removeCartItem(cartItemId);
+        return;
+      }
+      item.qty = nextQty;
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    // ============================================================================
+    // FIX #3: PROMO CODE TOGGLE ("Apply Code" <-> "Remove Code")
+    // ============================================================================
+    function handlePromoButtonClick() {
+      if (state.promoApplied) {
+        // Currently applied -> Clicking "Remove Code" removes the promo code!
+        state.promoApplied = false;
+        state.promoDiscountRate = 0;
+        renderCartAndCheckout();
+        const msg = document.getElementById('promo-feedback-msg');
+        if (msg) {
+          msg.style.color = 'var(--text-muted)';
+          msg.textContent = 'Promo code removed. You can enter a new code anytime.';
+        }
+      } else {
+        // Currently not applied -> Clicking "Apply Code" validates and applies the promo code!
+        const inputEl = document.getElementById('promo-input');
+        const rawCode = (inputEl ? inputEl.value : '').trim().toUpperCase();
+        const msg = document.getElementById('promo-feedback-msg');
+        if (!rawCode) {
+          if (msg) {
+            msg.style.color = 'var(--accent-brand)';
+            msg.textContent = 'Please enter a promo code (e.g. BLOOM15 or COMEBACK15).';
+          }
+          return;
+        }
+        if (rawCode === 'GROUP20') {
+          state.promoApplied = true;
+          state.promoCode = rawCode;
+          state.promoDiscountRate = 0.20;
+          renderCartAndCheckout();
+        } else if (rawCode === 'BLOOM15' || rawCode === 'WELCOME15' || rawCode === 'COMEBACK15') {
+          state.promoApplied = true;
+          state.promoCode = rawCode;
+          state.promoDiscountRate = 0.15;
+          renderCartAndCheckout();
+        } else if (rawCode === 'WELCOME10') {
+          state.promoApplied = true;
+          state.promoCode = rawCode;
+          state.promoDiscountRate = 0.10;
+          renderCartAndCheckout();
+        } else {
+          if (msg) {
+            msg.style.color = 'var(--accent-brand)';
+            msg.textContent = `Code "${rawCode}" is invalid. Try GROUP20 (20% off) or BLOOM15 / COMEBACK15 (15% off).`;
+          }
+        }
+      }
+    }
+
+    function quickApplyPromo(code) {
+      state.promoApplied = true;
+      state.promoCode = code;
+      state.promoDiscountRate = code === 'GROUP20' ? 0.20 : 0.15;
+      const inp = document.getElementById('promo-input');
+      if (inp) inp.value = code;
+      switchTab('cart');
+    }
+
+    // ============================================================================
+    // FIX #2: UNIVERSAL 2-STEP CHECKOUT WITH RECEIVER ADDRESS VERIFICATION (ALL PAYMENT METHODS)
+    // ============================================================================
+    function startCheckoutWithMethod(methodName) {
+      if (state.cart.length === 0) return;
+      state.selectedPaymentMethod = methodName;
+      state.checkoutStep = 2;
+      renderCartAndCheckout();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectStep2PaymentMethod(methodName) {
+      state.selectedPaymentMethod = methodName;
+      renderCartAndCheckout();
+    }
+
+    function setCheckoutStep(step) {
+      state.checkoutStep = step;
+      renderCartAndCheckout();
+    }
+
+    function attemptGoToStep2() {
+      if (state.cart.length === 0) return;
+      state.checkoutStep = 2;
+      renderCartAndCheckout();
+    }
+
+    function toggleAddressEditor() {
+      state.editingAddress = !state.editingAddress;
+      document.getElementById('address-edit-form').classList.toggle('hidden', !state.editingAddress);
+      document.getElementById('toggle-address-edit-btn').textContent = state.editingAddress ? 'Cancel Edit' : 'Edit Receiver Address';
+      renderCartAndCheckout();
+    }
+
+    function toggleAddressVerifiedCheckbox(checked) {
+      state.universalAddressConfirmed = checked;
+      renderCartAndCheckout();
+    }
+
+    function saveReceiverAddress() {
+      const name = document.getElementById('inp-receiver-name').value.trim();
+      const phone = document.getElementById('inp-receiver-phone').value.trim();
+      const street = document.getElementById('inp-receiver-street').value.trim();
+      const city = document.getElementById('inp-receiver-city').value.trim();
+      const stateVal = document.getElementById('inp-receiver-state').value.trim();
+      const zip = document.getElementById('inp-receiver-zip').value.trim();
+      const country = document.getElementById('inp-receiver-country').value;
+      const note = document.getElementById('inp-receiver-note').value.trim() || 'Standard front door delivery';
+
+      const errEl = document.getElementById('address-validation-error');
+      if (!name || street.length < 5 || !city || !stateVal || zip.length < 3) {
+        if (errEl) {
+          errEl.textContent = 'Address Verification Failed: Please enter a complete street address, city, state/province, and valid postal/ZIP code.';
+          errEl.classList.remove('hidden');
+        }
+        return;
+      }
+      if (errEl) errEl.classList.add('hidden');
+
+      state.receiverAddress = { name, phone: phone || '(512) 555-0194', street, city, state: stateVal, zip, country, note };
+      state.editingAddress = false;
+      state.universalAddressConfirmed = true;
+      const chk = document.getElementById('chk-universal-address-verified');
+      if (chk) chk.checked = true;
+      document.getElementById('address-edit-form').classList.add('hidden');
+      document.getElementById('toggle-address-edit-btn').textContent = 'Edit Receiver Address';
+      renderCartAndCheckout();
+    }
+
+    function setShippingSpeed(speed) {
+      state.shippingSpeed = speed;
+      renderCartAndCheckout();
+    }
+
+    function confirmAndPlaceFinalOrder() {
+      if (state.cart.length === 0) return;
+      const warnEl = document.getElementById('step2-unverified-warning');
+      if (state.editingAddress || !state.universalAddressConfirmed) {
+        if (warnEl) warnEl.classList.remove('hidden');
+        return;
+      }
+      if (warnEl) warnEl.classList.add('hidden');
+
+      const totals = computeTotals();
+      const addr = state.receiverAddress;
+      const newOrder = {
+        id: 'VB-' + Math.floor(10000 + Math.random() * 89999),
+        date: 'Just now (Oct 10, 2026)',
+        status: 'Receiver Address Verified • In 1-Hour Free Modification Window',
+        canCancelFree: true,
+        paymentMethod: state.selectedPaymentMethod,
+        receiver: `${addr.name} — ${addr.street}, ${addr.city}, ${addr.state} ${addr.zip}, ${addr.country}`,
+        total: totals.total,
+        items: state.cart.map(ci => {
+          const p = PRODUCTS.find(x => x.id === ci.productId);
+          return {
+            title: p ? p.title : 'LouLou & Luxe Piece',
+            size: ci.size,
+            customText: ci.customText,
+            qty: ci.qty,
+            price: p ? p.price : 48.00
+          };
+        })
+      };
+      state.orders.unshift(newOrder);
+      state.cart = [];
+      state.checkoutStep = 1;
+      updateHeaderBadges();
+      switchTab('orders');
+    }
+
+    function computeTotals() {
+      const subtotal = state.cart.reduce((sum, ci) => {
+        const p = PRODUCTS.find(x => x.id === ci.productId);
+        return sum + (p ? p.price * ci.qty : 0);
+      }, 0);
+      const discount = state.promoApplied ? +(subtotal * state.promoDiscountRate).toFixed(2) : 0;
+      const afterDiscount = Math.max(0, subtotal - discount);
+      let shipping = 0;
+      if (state.cart.length > 0) {
+        if (state.shippingSpeed === 'express') shipping = 14.99;
+        else shipping = afterDiscount >= 75 ? 0 : 5.99;
+      }
+      const tax = +(afterDiscount * 0.0825).toFixed(2);
+      const total = +(afterDiscount + shipping + tax).toFixed(2);
+      return { subtotal, discount, shipping, tax, total };
+    }
+
+    function renderCartAndCheckout() {
+      const totalQty = state.cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('bag-header-count').textContent = totalQty;
+
+      // Toggle Step 1 vs Step 2 panels
+      const step1Panel = document.getElementById('checkout-step-1-panel');
+      const step2Panel = document.getElementById('checkout-step-2-panel');
+      const step1Cta = document.getElementById('step-1-cta-group');
+      const step2Cta = document.getElementById('step-2-cta-group');
+      const badge1 = document.getElementById('step-badge-1');
+      const badge2 = document.getElementById('step-badge-2');
+
+      if (state.checkoutStep === 2 && state.cart.length > 0) {
+        step1Panel.classList.add('hidden');
+        step2Panel.classList.remove('hidden');
+        step1Cta.classList.add('hidden');
+        step2Cta.classList.remove('hidden');
+        badge1.style.backgroundColor = 'var(--accent-sage)';
+        badge1.style.color = '#FFFFFF';
+        badge1.innerHTML = '&#10003;';
+        badge2.style.backgroundColor = 'var(--accent-primary)';
+        badge2.style.color = 'var(--accent-primary-text)';
+      } else {
+        state.checkoutStep = 1;
+        step1Panel.classList.remove('hidden');
+        step2Panel.classList.add('hidden');
+        step1Cta.classList.remove('hidden');
+        step2Cta.classList.add('hidden');
+        badge1.style.backgroundColor = 'var(--accent-primary)';
+        badge1.style.color = 'var(--accent-primary-text)';
+        badge1.textContent = '1';
+        badge2.style.backgroundColor = 'transparent';
+        badge2.style.color = 'var(--text-secondary)';
+      }
+
+      // Highlight active payment method tab in Step 2
+      const pmMap = {
+        'Credit / Debit Card (Stripe / WooPay)': 'pm-btn-card',
+        'Apple Pay / Google Pay Express': 'pm-btn-wallet',
+        'PayPal Express': 'pm-btn-paypal',
+        'PayPal Pay in 4 (Interest-Free)': 'pm-btn-bnpl'
+      };
+      Object.entries(pmMap).forEach(([name, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (el) {
+          if (state.selectedPaymentMethod === name) {
+            el.style.borderColor = 'var(--accent-brand)';
+            el.style.backgroundColor = 'var(--accent-brand-soft)';
+          } else {
+            el.style.borderColor = 'var(--border-hairline)';
+            el.style.backgroundColor = 'var(--bg-surface)';
+          }
+        }
+      });
+
+      // 1. Render Immediate Undo Banners (FIX #1: "Removed it by mistake? Add it back")
+      const undoContainer = document.getElementById('cart-undo-container');
+      const activeUndoBanners = state.recentlyRemoved.filter(r => !r.dismissedInline);
+      undoContainer.innerHTML = activeUndoBanners.map(r => `
+        <div class="vb-surface px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs border-l-4" style="border-left-color: var(--accent-brand); background-color: var(--accent-brand-soft);">
+          <div>
+            <span style="color: var(--text-secondary);">Removed <strong style="color: var(--text-primary);">${r.productTitle}</strong> from your bag.</span>
+            <a
+              href="javascript:void(0)"
+              onclick="undoRemoveCartItem('${r.restoreId}', false)"
+              class="ml-2 font-semibold underline"
+              style="color: var(--accent-brand);"
+            >
+              Removed it by mistake? Add it back
+            </a>
+          </div>
+          <button onclick="dismissUndoBanner('${r.restoreId}')" class="text-[11px] opacity-60 hover:opacity-100" style="color: var(--text-primary);">&times;</button>
+        </div>
+      `).join('');
+
+      // 1B. Render Persistent Remarketing Cache Drawer ('vibebloom_removed_cart_cache' with 15% OFF COMEBACK15 Incentive)
+      const cacheBox = document.getElementById('removed-remarketing-cache-box');
+      const cacheList = document.getElementById('removed-remarketing-items-list');
+      if (state.recentlyRemoved.length > 0) {
+        cacheBox.classList.remove('hidden');
+        cacheList.innerHTML = state.recentlyRemoved.map(r => `
+          <div class="p-3 rounded vb-subtle flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div>
+              <span class="font-semibold" style="color: var(--text-primary);">${r.productTitle}</span>
+              <span class="ml-1.5" style="color: var(--text-muted);">(${r.item.size} &bull; &ldquo;${r.item.customText}&rdquo;)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                onclick="undoRemoveCartItem('${r.restoreId}', true)"
+                class="px-3 py-1.5 rounded text-[11px] font-semibold vb-btn-primary"
+              >
+                Restore + Apply 15% Off (COMEBACK15)
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        cacheBox.classList.add('hidden');
+      }
+
+      // 2. Render Cart Items
+      const listEl = document.getElementById('cart-items-list');
+      if (state.cart.length === 0) {
+        listEl.innerHTML = `
+          <div class="vb-surface p-10 text-center space-y-3">
+            <div class="font-editorial text-2xl" style="color: var(--text-primary);">Your Shopping Bag is Empty</div>
+            <p class="text-xs max-w-md mx-auto" style="color: var(--text-secondary);">Explore our botanical linen dresses, embroidered sweaters, and custom totes.</p>
+            <button onclick="switchTab('catalog')" class="vb-btn-primary px-5 py-2.5 text-xs uppercase tracking-widest">Shop Collection</button>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = state.cart.map(ci => {
+          const p = PRODUCTS.find(x => x.id === ci.productId) || PRODUCTS[0];
+          return `
+            <div class="vb-surface p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div class="flex gap-4 items-center">
+                <img
+                  src="${p.image}"
+                  alt="${p.title}"
+                  onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');"
+                  class="w-20 h-24 object-cover rounded-sm vb-border"
+                />
+                <div class="space-y-1">
+                  <div class="text-[11px] uppercase tracking-wider" style="color: var(--text-muted);">${p.category}</div>
+                  <h3 class="font-editorial text-xl font-semibold" style="color: var(--text-primary);">${p.title}</h3>
+                  <div class="text-xs" style="color: var(--text-secondary);">
+                    Size: <strong>${ci.size}</strong> &bull; Custom Detail: <span class="italic" style="color: var(--accent-brand);">&ldquo;${ci.customText}&rdquo;</span>
+                  </div>
+                  <div class="pt-1">
+                    <button
+                      onclick="removeCartItem('${ci.cartItemId}')"
+                      class="text-[11px] underline hover:opacity-80"
+                      style="color: var(--text-muted);"
+                    >
+                      Remove item
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3">
+                <div class="font-semibold text-sm" style="color: var(--text-primary);">$${(p.price * ci.qty).toFixed(2)}</div>
+                <div class="flex items-center vb-border rounded-sm">
+                  <button onclick="updateCartQty('${ci.cartItemId}', -1)" class="px-2.5 py-1 text-xs hover:opacity-75">&minus;</button>
+                  <span class="px-3 py-1 text-xs font-mono-code">${ci.qty}</span>
+                  <button onclick="updateCartQty('${ci.cartItemId}', 1)" class="px-2.5 py-1 text-xs hover:opacity-75">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 3. Update Step 2 Receiver Address Display & Item Preview
+      const addr = state.receiverAddress;
+      document.getElementById('selected-payment-method-badge').textContent = `${state.selectedPaymentMethod} • Address Verification Active`;
+      document.getElementById('disp-receiver-name').textContent = addr.name;
+      document.getElementById('disp-receiver-street').textContent = addr.street;
+      document.getElementById('disp-receiver-city').textContent = `${addr.city}, ${addr.state} ${addr.zip}, ${addr.country}`;
+      document.getElementById('disp-receiver-phone').textContent = addr.phone;
+      document.getElementById('disp-receiver-note').textContent = addr.note;
+      document.getElementById('cta-receiver-summary').textContent = `${addr.name} — ${addr.street}, ${addr.city}, ${addr.state} ${addr.zip}`;
+
+      const step2ItemsEl = document.getElementById('step2-items-preview');
+      step2ItemsEl.innerHTML = state.cart.map(ci => {
+        const p = PRODUCTS.find(x => x.id === ci.productId) || PRODUCTS[0];
+        return `
+          <div class="flex items-center justify-between text-xs py-1.5 vb-border-b">
+            <div>
+              <span class="font-semibold" style="color: var(--text-primary);">${ci.qty}&times; ${p.title}</span>
+              <span class="ml-2" style="color: var(--text-muted);">(${ci.size} &bull; &ldquo;${ci.customText}&rdquo;)</span>
+            </div>
+            <span class="font-medium" style="color: var(--text-primary);">$${(p.price * ci.qty).toFixed(2)}</span>
+          </div>
+        `;
+      }).join('');
+
+      // 4. Update Promo Code Button State (FIX #3: "Apply Code" vs "Remove Code")
+      const promoInput = document.getElementById('promo-input');
+      const promoBtn = document.getElementById('promo-action-btn');
+      const promoMsg = document.getElementById('promo-feedback-msg');
+
+      if (state.promoApplied) {
+        promoInput.value = state.promoCode;
+        promoInput.readOnly = true;
+        promoInput.style.opacity = '0.75';
+        promoBtn.textContent = 'Remove Code';
+        promoBtn.style.backgroundColor = 'var(--accent-brand-soft)';
+        promoBtn.style.color = 'var(--accent-brand)';
+        promoBtn.style.border = '1px solid var(--accent-brand)';
+        promoMsg.style.color = 'var(--accent-sage)';
+        promoMsg.innerHTML = `&#10003; Code <strong>${state.promoCode}</strong> (${Math.round(state.promoDiscountRate * 100)}% off) applied to your bag.`;
+      } else {
+        promoInput.readOnly = false;
+        promoInput.style.opacity = '1';
+        promoBtn.textContent = 'Apply Code';
+        promoBtn.style.backgroundColor = 'var(--accent-primary)';
+        promoBtn.style.color = 'var(--accent-primary-text)';
+        promoBtn.style.border = '1px solid transparent';
+      }
+
+      // 5. Compute & Render Totals
+      const totals = computeTotals();
+      document.getElementById('summary-subtotal').textContent = `$${totals.subtotal.toFixed(2)}`;
+      const discRow = document.getElementById('summary-discount-row');
+      if (state.promoApplied && totals.discount > 0) {
+        discRow.classList.remove('hidden');
+        document.getElementById('summary-discount-label').textContent = `Promo (${state.promoCode} -${Math.round(state.promoDiscountRate * 100)}%)`;
+        document.getElementById('summary-discount-amount').textContent = `-$${totals.discount.toFixed(2)}`;
+      } else {
+        discRow.classList.add('hidden');
+      }
+      document.getElementById('summary-shipping').textContent = totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`;
+      document.getElementById('summary-tax').textContent = `$${totals.tax.toFixed(2)}`;
+      document.getElementById('summary-total').textContent = `$${totals.total.toFixed(2)}`;
+      document.getElementById('final-place-order-amount').textContent = `$${totals.total.toFixed(2)}`;
+    }
+
+    // Orders & Self-Service Returns
+    function renderOrders() {
+      const container = document.getElementById('orders-list-container');
+      container.innerHTML = state.orders.map(o => `
+        <div class="vb-surface p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 vb-border-b">
+            <div>
+              <div class="text-xs font-mono-code font-semibold" style="color: var(--text-primary);">Order #${o.id} &bull; ${o.date}</div>
+              <div class="text-xs mt-0.5" style="color: var(--text-secondary);">
+                Confirmed Receiver: <strong style="color: var(--text-primary);">${o.receiver}</strong>
+              </div>
+            </div>
+            <span class="px-3 py-1 text-xs font-semibold rounded" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+              ${o.status}
+            </span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            ${o.items.map(it => `
+              <div class="flex justify-between">
+                <span><strong>${it.qty}&times; ${it.title}</strong> (${it.size} &bull; &ldquo;${it.customText}&rdquo;)</span>
+                <span>$${(it.price * it.qty).toFixed(2)}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="pt-3 vb-border-t flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div>
+              Paid via <strong>${o.paymentMethod}</strong> &bull; Total: <strong>$${o.total.toFixed(2)}</strong>
+            </div>
+            <div class="flex gap-2">
+              ${o.canCancelFree ? `<button onclick="cancelOrderWithinWindow('${o.id}')" class="vb-btn-outline px-3 py-1.5 text-xs">Cancel Order (Free 1-Hr Window)</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function cancelOrderWithinWindow(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (!ord) return;
+      ord.status = 'Cancelled & Full Refund Issued via ' + ord.paymentMethod;
+      ord.canCancelFree = false;
+      renderOrders();
+    }
+
+    function updateHeaderBadges() {
+      const cartQty = state.cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('cart-count-badge').textContent = cartQty;
+      document.getElementById('wishlist-count-badge').textContent = state.wishlist.length;
+    }
+
+    // Initialize on load
+    renderCatalog();
+    updateHeaderBadges();
+  </script>
+</body>
+</html>
