@@ -275,15 +275,25 @@
     <div style="background-color: #18181B; color: #F4F4F6;" class="text-xs py-2 px-4 border-b border-zinc-800">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-3">
-          <span class="uppercase tracking-widest font-semibold text-[11px]" style="color: #E5B8C2;">VibeBloom Atelier</span>
+          <span class="uppercase tracking-widest font-semibold text-[11px]" style="color: #E5B8C2;">VibeBloom North America (`vibebloom.com`)</span>
           <span class="hidden md:inline text-zinc-400">|</span>
-          <span class="text-zinc-200">Complimentary Tracked Shipping over $75 &bull; Code <strong class="font-mono-code text-white underline cursor-pointer" onclick="quickApplyPromo('BLOOM15')" title="Click to apply BLOOM15">BLOOM15</strong> for 15% Off</span>
+          <span class="text-zinc-200">USA &amp; Canada Local Print Hubs &bull; Free Tracked Shipping over $75 &bull; Code <strong class="font-mono-code text-white underline cursor-pointer" onclick="quickApplyPromo('BLOOM15')" title="Click to apply BLOOM15">BLOOM15</strong> (15% Off)</span>
         </div>
 
-        <!-- WooCommerce Theme Preset Switcher + Light/Dark Toggle -->
-        <div class="flex items-center gap-3">
+        <!-- Region/Currency + WooCommerce Theme Preset Switcher + Light/Dark Toggle -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5" title="Single-Backend Root + Subfolder Regional Architecture">
+            <span class="text-[11px] text-zinc-400">Storefront:</span>
+            <select id="region-cluster-select" class="bg-transparent text-zinc-100 text-[11px] font-medium focus:outline-none cursor-pointer">
+              <option value="US_CA_USD" class="bg-zinc-900 text-white">🇺🇸 USA (vibebloom.com • $ USD)</option>
+              <option value="US_CA_CAD" class="bg-zinc-900 text-white">🇨🇦 Canada (vibebloom.com • $ CAD)</option>
+              <option value="UK_IE" disabled class="bg-zinc-900 text-zinc-500">🇬🇧🇮🇪 UK &amp; Ireland (/uk/ • Phase 2)</option>
+              <option value="EU" disabled class="bg-zinc-900 text-zinc-500">🇪🇺 Europe (/eu/ • Phase 3)</option>
+            </select>
+          </div>
+
           <div class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5">
-            <span class="text-[11px] text-zinc-400">WooCommerce Theme:</span>
+            <span class="text-[11px] text-zinc-400">Theme:</span>
             <select id="preset-select" onchange="changeThemePreset(this.value)" class="bg-transparent text-zinc-100 text-[11px] font-medium focus:outline-none cursor-pointer">
               <option value="botiga" class="bg-zinc-900 text-white">Botiga Atelier (Luxury Editorial)</option>
               <option value="blocksy" class="bg-zinc-900 text-white">Blocksy Minimal (Nordic Studio)</option>
