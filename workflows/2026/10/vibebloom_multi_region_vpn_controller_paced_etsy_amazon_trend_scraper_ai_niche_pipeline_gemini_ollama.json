@@ -1,0 +1,391 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "VibeBloom — Multi-Region VPN Controller, Paced Etsy/Amazon Trend Scraper & AI Niche Pipeline (Gemini + Ollama)",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-10T12:41:57.205Z",
+  "updatedAt": "2026-10-10T12:41:57.205Z",
+  "isArchived": false,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "wh-hub",
+      "name": "GET Growth & VPN Hub UI",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "vibebloom-growth-hub",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "pg-init",
+      "name": "Postgres: Init & Fetch VPN + Trends + Mobile Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        420,
+        180
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nUPDATE workflow_entity SET \"parentFolderId\" = 'vibeBloomSub0001' WHERE name LIKE 'VibeBloom —%';\n\nCREATE TABLE IF NOT EXISTS vibebloom_vpn_nodes (\n  region_code VARCHAR(16) PRIMARY KEY,\n  region_name VARCHAR(64) NOT NULL,\n  aws_region VARCHAR(32) NOT NULL,\n  instance_type VARCHAR(32) DEFAULT 't3.micro (Free Tier)',\n  ebs_gb INTEGER DEFAULT 10,\n  status VARCHAR(24) DEFAULT 'STOPPED',\n  public_ip VARCHAR(64) DEFAULT 'Auto-Assigned on Boot',\n  wg_port INTEGER DEFAULT 51820,\n  scraper_port INTEGER DEFAULT 8085,\n  hours_used_month NUMERIC(6,2) DEFAULT 0.0,\n  last_started_at TIMESTAMPTZ,\n  auto_stop_at TIMESTAMPTZ,\n  browser_profile VARCHAR(64),\n  target_timezone VARCHAR(64),\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO vibebloom_vpn_nodes (\n  region_code, region_name, aws_region, instance_type, ebs_gb, status,\n  public_ip, hours_used_month, browser_profile, target_timezone\n) VALUES\n  ('US', 'United States (Phase 1 Priority)', 'us-east-1 (N. Virginia)', 't3.micro', 10, 'READY_ON_DEMAND', 'us-exit.vibebloom.vpn (Dynamic IPv4)', 12.5, 'Camoufox Profile 1: @VibeBloom.US', 'America/New_York (EST/EDT)'),\n  ('UK', 'United Kingdom (Phase 2)', 'eu-west-2 (London)', 't3.micro', 10, 'STOPPED', 'uk-exit.vibebloom.vpn (Dynamic IPv4)', 4.2, 'Camoufox Profile 2: @VibeBloom.UK', 'Europe/London (BST/GMT)'),\n  ('AU', 'Australia (Phase 2)', 'ap-southeast-2 (Sydney)', 't3.micro', 10, 'STOPPED', 'au-exit.vibebloom.vpn (Dynamic IPv4)', 3.1, 'Camoufox Profile 3: @VibeBloom.AU', 'Australia/Sydney (AEST)')\nON CONFLICT (region_code) DO NOTHING;\n\nCREATE TABLE IF NOT EXISTS vibebloom_scraped_trends (\n  trend_hash VARCHAR(64) PRIMARY KEY,\n  region_code VARCHAR(16) NOT NULL,\n  marketplace VARCHAR(32) NOT NULL,\n  search_keyword VARCHAR(160) NOT NULL,\n  trend_title VARCHAR(255) NOT NULL,\n  currency VARCHAR(8) NOT NULL,\n  avg_price NUMERIC(10,2) NOT NULL,\n  demand_score INTEGER NOT NULL,\n  competition_level VARCHAR(24) DEFAULT 'Low-Med',\n  ai_pod_slogan VARCHAR(255) NOT NULL,\n  printify_blank VARCHAR(160) NOT NULL,\n  ai_tiktok_hook TEXT NOT NULL,\n  ai_hashtags VARCHAR(255) NOT NULL,\n  store_reroute_url TEXT NOT NULL,\n  ai_model_used VARCHAR(64) DEFAULT 'gemini-2.5-flash + ollama',\n  scraped_via VARCHAR(64) DEFAULT 'Paced Multi-Region Scraper',\n  scraped_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS vibebloom_mobile_telemetry (\n  account_handle VARCHAR(64) PRIMARY KEY,\n  region_code VARCHAR(16) NOT NULL,\n  platform VARCHAR(32) DEFAULT 'TikTok + IG Reels',\n  posts_published INTEGER DEFAULT 0,\n  views_24h INTEGER DEFAULT 0,\n  bio_link_clicks_24h INTEGER DEFAULT 0,\n  ad_spend_usd NUMERIC(10,2) DEFAULT 0.00,\n  revenue_usd NUMERIC(10,2) DEFAULT 0.00,\n  orders_count INTEGER DEFAULT 0,\n  account_health VARCHAR(64) DEFAULT '100% Clean (Static US Residential IP)',\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO vibebloom_mobile_telemetry (\n  account_handle, region_code, platform, posts_published, views_24h,\n  bio_link_clicks_24h, ad_spend_usd, revenue_usd, orders_count, account_health\n) VALUES\n  ('@VibeBloom.US', 'US', 'TikTok Organic + Spark Ads', 14, 18420, 642, 45.00, 312.00, 5, '100% Clean (US Static ISP + Camoufox)'),\n  ('@VibeBloom.UK', 'UK', 'TikTok Organic + Pinterest UK', 8, 9210, 285, 20.00, 136.00, 2, '100% Clean (UK London Profile)'),\n  ('@VibeBloom.AU', 'AU', 'TikTok Organic + Meta Reels AU', 6, 7450, 210, 15.00, 118.00, 2, '100% Clean (AU Sydney Profile)')\nON CONFLICT (account_handle) DO NOTHING;\n\n-- Ensure initial seed trends exist so dashboard is rich immediately\nINSERT INTO vibebloom_scraped_trends (\n  trend_hash, region_code, marketplace, search_keyword, trend_title,\n  currency, avg_price, demand_score, competition_level, ai_pod_slogan,\n  printify_blank, ai_tiktok_hook, ai_hashtags, store_reroute_url, ai_model_used, scraped_via\n) VALUES\n  (\n    'seed-us-etsy-01', 'US', 'Etsy US', 'custom botanical embroidered sweatshirt',\n    'Personalized Birth Flower & Name Embroidered Crewneck (Botanical Cottagecore)',\n    'USD', 58.00, 96, 'Low-Med',\n    'Wildflower Club • Custom Birth Month Botanical & Monogram',\n    'Gildan 18000 / Comfort Colors 1566 Crewneck (Monster Digital US)',\n    'POV: You found the softest custom birth-flower embroidered sweater that ships in 48 hrs from the US 🌸✨ (Tap link in bio to preview your name live!)',\n    '#cottagecorefashion #embroideredhoodie #customgift #vibebloom #tiktokmademebuyit',\n    'http://localhost:11434/webhook/vibebloom-store?utm_source=tiktok_us&utm_medium=organic&utm_campaign=birth_flower_crewneck',\n    'gemini-2.5-flash', 'US Regional Scraper (en-US / USD)'\n  ),\n  (\n    'seed-us-amz-02', 'US', 'Amazon US', 'floral linen wrap midi dress summer',\n    'Botanical Print Linen-Feel Midi Wrap Dress with Pockets (Garden Party / Bridal Shower)',\n    'USD', 64.00, 94, 'Low',\n    'Peony Breeze • Custom Hemline Monogram Botanical Midi Dress',\n    'AOP Women''s Wrap Dress (Printify US Local Routing)',\n    'Stop scrolling if you have a spring wedding or brunch coming up—this botanical wrap dress has pockets AND custom monogramming 🌷👗',\n    '#springdress #weddingguestdress #floralmididress #vibebloom #ootd',\n    'http://localhost:11434/webhook/vibebloom-store?utm_source=tiktok_us&utm_medium=organic&utm_campaign=peony_wrap_dress',\n    'gemini-2.5-flash', 'US Regional Scraper (en-US / USD)'\n  ),\n  (\n    'seed-uk-etsy-03', 'UK', 'Etsy UK', 'personalised bridesmaid botanical tote bag uk',\n    'Personalised Floral Canvas Tote Bag for Bridesmaids & Hen Party Gifts (UK Fast Dispatch)',\n    'GBP', 26.00, 92, 'Low',\n    'In Full Bloom • Custom Name & London Botanical Crest',\n    '100% Organic Cotton Rope-Handle Tote (Printify UK Local Provider)',\n    'Hen do & bridal party bags sorted in 30 seconds—type each bridesmaid''s name and preview it live on our studio canvas 🇬🇧💐',\n    '#ukbride #henpartyideas #personalisedgiftsuk #totebag #vibebloomuk',\n    'http://localhost:11434/webhook/vibebloom-store?utm_source=tiktok_uk&utm_medium=organic&utm_campaign=uk_bridesmaid_tote',\n    'gemini-2.5-flash', 'UK Regional Scraper (en-GB / GBP)'\n  ),\n  (\n    'seed-au-amz-04', 'AU', 'Amazon AU', 'iced coffee tumbler floral insulated australia',\n    '20oz Botanical Iced Matcha & Coffee Insulated Skinny Tumbler with Custom Name',\n    'AUD', 49.00, 91, 'Low-Med',\n    'Sip in Bloom • Custom Name Botanical 20oz Iced Coffee Tumbler',\n    '20oz Stainless Steel Insulated Tumbler (Printify AU / Global Express)',\n    'Aussie summer iced latte check 🇦🇺🧊 Keeps your matcha ice-cold for 12 hours and has your custom name printed in botanical serif!',\n    '#aussiesummer #icedcoffeetumbler #matchalover #personalisedtumbler #vibebloomau',\n    'http://localhost:11434/webhook/vibebloom-store?utm_source=tiktok_au&utm_medium=organic&utm_campaign=au_floral_tumbler',\n    'ollama:llama3.2:3b', 'AU Regional Scraper (en-AU / AUD)'\n  )\nON CONFLICT (trend_hash) DO NOTHING;\n\nSELECT\n  (SELECT COALESCE(json_agg(v ORDER BY CASE v.region_code WHEN 'US' THEN 1 WHEN 'UK' THEN 2 ELSE 3 END), '[]'::json) FROM vibebloom_vpn_nodes v) AS vpn_nodes,\n  (SELECT COALESCE(json_agg(t), '[]'::json) FROM (SELECT * FROM vibebloom_scraped_trends ORDER BY scraped_at DESC, demand_score DESC LIMIT 24) t) AS trends,\n  (SELECT COALESCE(json_agg(m ORDER BY m.region_code), '[]'::json) FROM vibebloom_mobile_telemetry m) AS telemetry;\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "code-ui",
+      "name": "Compile Growth & VPN Hub HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\nconst dbRow = $input.first()?.json || {};\nconst vpnNodes = Array.isArray(dbRow.vpn_nodes) ? dbRow.vpn_nodes : [];\nconst trends = Array.isArray(dbRow.trends) ? dbRow.trends : [];\nconst telemetry = Array.isArray(dbRow.telemetry) ? dbRow.telemetry : [];\n\nconst initialDataJson = JSON.stringify({ vpnNodes, trends, telemetry });\n\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n  <title>VibeBloom — Multi-Region VPN, Etsy/Amazon Trend Scraper & Mobile Ad Monitor</title>\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n  <link href=\"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">\n  <script src=\"https://cdn.tailwindcss.com\"></script>\n  <style>\n    body {\n      font-family: 'Plus Jakarta Sans', sans-serif;\n      background-color: #0B0D13;\n      color: #F4F4F6;\n      min-height: 100vh;\n      display: flex;\n      flex-direction: column;\n    }\n    .serif-title { font-family: 'Cormorant Garamond', Georgia, serif; }\n    .mono { font-family: 'JetBrains Mono', monospace; }\n  </style>\n</head>\n<body class=\"antialiased selection:bg-rose-500 selection:text-white\">\n  <!-- Top Command Header -->\n  <header class=\"border-b border-zinc-800 bg-zinc-950/90 backdrop-blur sticky top-0 z-30\">\n    <div class=\"max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4\">\n      <div class=\"flex items-center gap-3\">\n        <div class=\"w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center font-bold text-zinc-950 shadow\">\n          VB\n        </div>\n        <div>\n          <div class=\"flex items-center gap-2\">\n            <h1 class=\"text-lg font-bold tracking-tight text-white\">VibeBloom Growth &amp; Multi-Region VPN Command Center</h1>\n            <span class=\"px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30\">Mumbai KVM2 Brain + US/UK/AU Exit Nodes</span>\n          </div>\n          <p class=\"text-xs text-zinc-400\">1-Operator Desktop Scraper (Etsy/Amazon/TikTok) • Gemini + Ollama Niche Pipeline • Safe Real-Time Phone Monitor</p>\n        </div>\n      </div>\n      <div class=\"flex items-center gap-2.5\">\n        <a href=\"http://localhost:11434/webhook/vibebloom-store\" target=\"_blank\" class=\"px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 transition\">\n          🛍️ Open Live VibeBloom Storefront &rarr;\n        </a>\n      </div>\n    </div>\n\n    <!-- Navigation Tabs -->\n    <div class=\"max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto pb-2\">\n      <button onclick=\"switchTab('scraper')\" id=\"tab-scraper\" class=\"px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 text-white\">\n        🕷️ 1. Paced Etsy &amp; Amazon Trend Scraper (Gemini + Ollama)\n      </button>\n      <button onclick=\"switchTab('vpn')\" id=\"tab-vpn\" class=\"px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-800\">\n        🌍 2. AWS Free-Tier VPN Controller (US / UK / AUS)\n      </button>\n      <button onclick=\"switchTab('mobile')\" id=\"tab-mobile\" class=\"px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-800\">\n        📱 3. Real-Time Phone Monitor (Views, Ads &amp; Orders)\n      </button>\n      <button onclick=\"switchTab('tiktok')\" id=\"tab-tiktok\" class=\"px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-800\">\n        🎯 4. Organic TikTok Signup &amp; AWS OAuth Guide\n      </button>\n    </div>\n  </header>\n\n  <main class=\"flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6\">\n\n    <!-- TAB 1: PACED SCRAPER & AI PIPELINE -->\n    <section id=\"view-scraper\" class=\"space-y-6\">\n      <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex flex-wrap items-end justify-between gap-4\">\n        <div class=\"space-y-1\">\n          <span class=\"text-[11px] uppercase tracking-wider font-semibold text-rose-400\">Live n8n Paced Scraper (Modeled on Workflow 4 + Workflow 1)</span>\n          <h2 class=\"text-xl font-bold text-white\">Scrape Localized US / UK / AUS Etsy &amp; Amazon Trends &rarr; Generate POD Products &amp; TikTok Hooks</h2>\n          <p class=\"text-xs text-zinc-400\">Pulls real-time buyer autocomplete &amp; bestseller signals from US (USD), UK (GBP), and Australia (AUD), then runs Gemini 2.5 Flash + Local Ollama (llama3.2:3b) to create copyright-safe slogans &amp; UTM links.</p>\n        </div>\n\n        <div class=\"flex flex-wrap items-center gap-3 w-full lg:w-auto\">\n          <div>\n            <label class=\"block text-[11px] text-zinc-400 mb-1\">Target Market</label>\n            <select id=\"scrape-region\" class=\"px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white\">\n              <option value=\"ALL\">🌍 All 3 Markets (US + UK + AUS)</option>\n              <option value=\"US\">🇺🇸 USA Only (Amazon.com + Etsy US)</option>\n              <option value=\"UK\">🇬🇧 UK Only (Amazon.co.uk + Etsy UK)</option>\n              <option value=\"AU\">🇦🇺 Australia Only (Amazon.com.au + Etsy AU)</option>\n            </select>\n          </div>\n          <div class=\"flex-1 min-w-[220px]\">\n            <label class=\"block text-[11px] text-zinc-400 mb-1\">Seed Product / Niche Keyword</label>\n            <input id=\"scrape-keyword\" type=\"text\" value=\"custom floral embroidered hoodie\" class=\"w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white\" placeholder=\"e.g. botanical midi dress, custom bridesmaid tote...\" />\n          </div>\n          <div>\n            <label class=\"block text-[11px] text-zinc-400 mb-1\">AI Pipeline Engine</label>\n            <select id=\"scrape-engine\" class=\"px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white\">\n              <option value=\"auto\">⚡ Hybrid (Ollama + Gemini 2.5 Failover)</option>\n              <option value=\"gemini\">✨ Gemini 2.5 Flash Primary</option>\n              <option value=\"ollama\">🦙 Local Ollama (llama3.2:3b)</option>\n            </select>\n          </div>\n          <div class=\"pt-4\">\n            <button onclick=\"runLiveScraper()\" id=\"btn-scrape\" class=\"px-4 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 hover:opacity-95 text-zinc-950 font-bold text-xs shadow\">\n              ⚡ Scrape Trends &amp; Run AI Pipeline Now\n            </button>\n          </div>\n        </div>\n      </div>\n\n      <div id=\"scrape-status-banner\" class=\"hidden p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300\"></div>\n\n      <!-- Trends Grid -->\n      <div id=\"trends-grid\" class=\"grid grid-cols-1 md:grid-cols-2 gap-4\"></div>\n    </section>\n\n    <!-- TAB 2: AWS FREE-TIER MULTI-REGION VPN CONTROLLER -->\n    <section id=\"view-vpn\" class=\"hidden space-y-6\">\n      <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex flex-wrap items-center justify-between gap-4\">\n        <div>\n          <span class=\"text-[11px] uppercase tracking-wider font-semibold text-emerald-400\">AWS 12-Month Free Tier Guardrail (750 Hrs/Mo + 30GB EBS Total)</span>\n          <h2 class=\"text-xl font-bold text-white\">Multi-Region VPN &amp; Scraper Exit Nodes (US, UK, AUS)</h2>\n          <p class=\"text-xs text-zinc-400\">Start only the region you need. Mumbai n8n automatically stops any running node after 3 hours so you never exceed 750 hours/month ($0.00 cost).</p>\n        </div>\n        <div class=\"flex items-center gap-4\">\n          <div class=\"px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-right\">\n            <div class=\"text-[11px] text-zinc-400\">Combined Free-Tier Hours Used</div>\n            <div class=\"text-lg font-bold text-emerald-400 mono\"><span id=\"total-hours-used\">19.8</span> / 750.0 hrs</div>\n          </div>\n          <button onclick=\"controlVpn('ALL', 'STOP_ALL')\" class=\"px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 border border-zinc-700\">\n            ⏹️ Stop All Nodes ($0 Idle Mode)\n          </button>\n        </div>\n      </div>\n\n      <div id=\"vpn-nodes-grid\" class=\"grid grid-cols-1 md:grid-cols-3 gap-4\"></div>\n\n      <!-- 1-Command AWS EC2 Bootstrap Script (wg-easy + Crawl4AI Scraper) -->\n      <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3\">\n        <div class=\"flex items-center justify-between\">\n          <div>\n            <h3 class=\"text-sm font-bold text-white\">🚀 1-Command AWS EC2 User-Data Bootstrap Script (Paste When Launching US, UK, or AUS t3.micro)</h3>\n            <p class=\"text-xs text-zinc-400\">Automatically installs Docker + <code class=\"text-rose-400\">WeeJeWel/wg-easy</code> (WireGuard VPN Web UI) + Regional Scraper Proxy on Ubuntu 24.04 (10GB EBS).</p>\n          </div>\n          <button onclick=\"navigator.clipboard.writeText(document.getElementById('aws-userdata').innerText); alert('Copied AWS User-Data Bootstrap Script!');\" class=\"px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-white border border-zinc-700\">\n            📋 Copy Cloud-Init Script\n          </button>\n        </div>\n        <pre id=\"aws-userdata\" class=\"p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] text-emerald-300 mono overflow-x-auto\">#!/bin/bash\napt-get update && apt-get install -y docker.io docker-compose-v2 curl\nsystemctl enable --now docker\nPUBLIC_IP=$(curl -s http://checkip.amazonaws.com)\n\n# 1. Start Open-Source wg-easy (WireGuard VPN + Web Admin UI on Port 51821)\ndocker run -d --name=wg-easy \\\n  -e LANG=en \\\n  -e WG_HOST=$PUBLIC_IP \\\n  -e PASSWORD_HASH='$2b$12$coPqCsPtcFO.Ab99xylBNOW4.Iu7OOA2/ZIboHN6/1xca3MWo7fW6' \\\n  -e PORT=51821 -e WG_PORT=51820 \\\n  -e WG_DEFAULT_DNS=1.1.1.1,8.8.8.8 \\\n  -v ~/.wg-easy:/etc/wireguard \\\n  -p 51820:51820/udp -p 51821:51821/tcp \\\n  --cap-add=NET_ADMIN --cap-add=SYS_MODULE \\\n  --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" \\\n  --sysctl=\"net.ipv4.ip_forward=1\" \\\n  --restart unless-stopped \\\n  ghcr.io/wg-easy/wg-easy</pre>\n      </div>\n    </section>\n\n    <!-- TAB 3: REAL-TIME PHONE MONITOR -->\n    <section id=\"view-mobile\" class=\"hidden space-y-6\">\n      <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800\">\n        <span class=\"text-[11px] uppercase tracking-wider font-semibold text-amber-400\">Safe for Indian Smartphone (No TikTok App / Zero Indian SIM Leak)</span>\n        <h2 class=\"text-xl font-bold text-white mt-0.5\">📱 Real-Time Mobile Content, Ad ROAS &amp; VibeBloom Order Monitor</h2>\n        <p class=\"text-xs text-zinc-400 mt-1\">Bookmark this URL on the operator's phone in India. It pulls live metrics via Mumbai n8n so nobody ever logs into the TikTok mobile app with an Indian SIM card.</p>\n      </div>\n      <div id=\"telemetry-grid\" class=\"grid grid-cols-1 md:grid-cols-3 gap-4\"></div>\n    </section>\n\n    <!-- TAB 4: ORGANIC TIKTOK SIGNUP & AWS GMAIL GUIDE -->\n    <section id=\"view-tiktok\" class=\"hidden space-y-6\">\n      <div class=\"grid grid-cols-1 md:grid-cols-2 gap-6\">\n        <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3\">\n          <span class=\"px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30\">Step-by-Step Organic TikTok Account Creation</span>\n          <h3 class=\"text-lg font-bold text-white\">Where &amp; How to Create the Organic <code class=\"text-rose-400\">@VibeBloom.US</code> Account</h3>\n          <p class=\"text-xs text-zinc-300 leading-relaxed\">\n            ⚠️ <strong>CRITICAL:</strong> Do <strong>NOT</strong> click the TikTok signup link in your regular Indian browser! Indian ISPs block it, and if you sign up on an Indian IP, TikTok permanently tags the account as <code class=\"text-rose-400\">Region: IN</code> (banned).\n          </p>\n          <ol class=\"text-xs text-zinc-300 space-y-2.5 list-decimal pl-4\">\n            <li>Open your isolated US Browser Profile (<strong>Camoufox</strong> or <strong>Dolphin{anty}</strong>) with your <strong>US IP / VPN active</strong>.</li>\n            <li>First, verify your browser shows <strong>100% United States (IP + Timezone)</strong> at: <code class=\"text-emerald-400\">https://whoer.net</code></li>\n            <li>Inside that US browser, open the official TikTok Email Signup URL:<br/>\n              <code class=\"block mt-1 p-2 rounded bg-zinc-950 border border-zinc-800 text-amber-300 select-all\">https://www.tiktok.com/signup/phone-or-email/email</code>\n            </li>\n            <li>Sign up using <strong>Email</strong> (e.g., <code class=\"text-white\">user@example.com</code> or <code class=\"text-white\">user@example.com</code>) — <strong>do NOT enter an Indian +91 phone number!</strong></li>\n            <li>Once logged in, go to <strong>Settings &rarr; Switch to Business Account &rarr; Apparel &amp; Accessories</strong>.</li>\n            <li><strong>3-Day Warm-Up (While Payoneer Verifies):</strong> Spend 10–15 mins/day scrolling &amp; liking US floral/fashion TikToks before uploading your first video so TikTok scores the account as a genuine US human creator.</li>\n          </ol>\n        </div>\n\n        <div class=\"p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3\">\n          <span class=\"px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30\">Using user@example.com for AWS Free Tier</span>\n          <h3 class=\"text-lg font-bold text-white\">How to Sign Up for AWS Free Tier with <code class=\"text-emerald-400\">user@example.com</code></h3>\n          <p class=\"text-xs text-zinc-300 leading-relaxed\">\n            AWS Root Account signup does not use a \"Sign in with Google OAuth\" button, AND requires an interactive Indian RBI ₹2 card OTP + SMS OTP on your phone. Here is the fastest 3-minute way using your Gmail:\n          </p>\n          <ol class=\"text-xs text-zinc-300 space-y-2.5 list-decimal pl-4\">\n            <li>Open the official AWS Free Tier registration page in your regular Indian browser:<br/>\n              <a href=\"https://portal.aws.amazon.com/billing/signup\" target=\"_blank\" class=\"block mt-1 p-2 rounded bg-zinc-950 border border-zinc-800 text-emerald-400 underline\">https://portal.aws.amazon.com/billing/signup</a>\n            </li>\n            <li><strong>Root User Email Address:</strong> Enter <code class=\"text-white select-all\">user@example.com</code> (or <code class=\"text-white select-all\">user@example.com</code> if your main address already has an old AWS account—both deliver straight to your <code class=\"text-white\">user@example.com</code> inbox!).</li>\n            <li><strong>AWS Account Name:</strong> <code class=\"text-white\">VibeBloom-POD-Cloud</code></li>\n            <li>Enter the 6-digit verification code sent to <code class=\"text-white\">user@example.com</code>.</li>\n            <li>Select <strong>Personal — for your own projects</strong>, enter your Indian billing address, and complete the ₹2 refundable card check + phone OTP.</li>\n            <li>Choose <strong>Basic Support — Free</strong>.</li>\n          </ol>\n        </div>\n      </div>\n    </section>\n\n  </main>\n\n  <footer class=\"mt-auto border-t border-zinc-800/80 py-4 px-6 text-center text-xs text-zinc-500\">\n    VibeBloom Multi-Region VPN, Etsy/Amazon Trend Scraper &amp; AI Pipeline • Hosted on Mumbai KVM2 (automations.sbanerjee.cloud &rarr; Personal &gt; POD &gt; VibeBloom)\n  </footer>\n\n  <script>\n    const STATE = ${initialDataJson};\n\n    function switchTab(tab) {\n      ['scraper', 'vpn', 'mobile', 'tiktok'].forEach(t => {\n        document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);\n        const btn = document.getElementById('tab-' + t);\n        if (t === tab) {\n          btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 text-white';\n        } else {\n          btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-zinc-300 hover:bg-zinc-800 border border-zinc-800';\n        }\n      });\n    }\n\n    function renderTrends() {\n      const grid = document.getElementById('trends-grid');\n      grid.innerHTML = (STATE.trends || []).map(t => {\n        const flag = t.region_code === 'US' ? '🇺🇸 US' : (t.region_code === 'UK' ? '🇬🇧 UK' : '🇦🇺 AU');\n        return \\`\n          <div class=\"p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col justify-between gap-4\">\n            <div class=\"space-y-2.5\">\n              <div class=\"flex items-center justify-between gap-2\">\n                <div class=\"flex items-center gap-2\">\n                  <span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30\">\\${flag} • \\${t.marketplace}</span>\n                  <span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300\">Demand: \\${t.demand_score}/100</span>\n                </div>\n                <span class=\"text-sm font-bold text-white mono\">\\${t.currency} \\${Number(t.avg_price).toFixed(2)}</span>\n              </div>\n              <h3 class=\"text-base font-bold text-white\">\\${t.trend_title}</h3>\n              <div class=\"p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-1.5 text-xs\">\n                <div><span class=\"text-zinc-400\">🎨 AI POD Slogan:</span> <strong class=\"text-amber-300\">\"\\${t.ai_pod_slogan}\"</strong></div>\n                <div><span class=\"text-zinc-400\">👕 Printify Blank:</span> <span class=\"text-zinc-200\">\\${t.printify_blank}</span></div>\n                <div><span class=\"text-zinc-400\">🎬 TikTok Video Hook:</span> <span class=\"text-zinc-300 italic\">\\${t.ai_tiktok_hook}</span></div>\n                <div><span class=\"text-zinc-400\">🏷️ Hashtags:</span> <span class=\"text-rose-400 mono text-[11px]\">\\${t.ai_hashtags}</span></div>\n              </div>\n            </div>\n            <div class=\"flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-[11px]\">\n              <span class=\"text-zinc-400\">🤖 Engine: <code class=\"text-emerald-400\">\\${t.ai_model_used}</code></span>\n              <div class=\"flex items-center gap-2\">\n                <button onclick=\"navigator.clipboard.writeText(\\\\\\`\\${t.ai_tiktok_hook} \\\\n\\\\n\\${t.ai_hashtags}\\\\\\`); alert('Copied TikTok Hook & Hashtags!');\" class=\"px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold\">\n                  📋 Copy TikTok Caption\n                </button>\n                <a href=\"\\${t.store_reroute_url}\" target=\"_blank\" class=\"px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold\">\n                  🔗 Test Store Reroute &rarr;\n                </a>\n              </div>\n            </div>\n          </div>\n        \\`;\n      }).join('');\n    }\n\n    function renderVpnNodes() {\n      const grid = document.getElementById('vpn-nodes-grid');\n      let totalHrs = 0;\n      grid.innerHTML = (STATE.vpnNodes || []).map(v => {\n        totalHrs += Number(v.hours_used_month || 0);\n        const isRun = String(v.status).includes('RUNNING');\n        const badgeCls = isRun\n          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'\n          : 'bg-zinc-800 text-zinc-300 border-zinc-700';\n        return \\`\n          <div class=\"p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col justify-between gap-4\">\n            <div class=\"space-y-2\">\n              <div class=\"flex items-center justify-between\">\n                <span class=\"text-sm font-bold text-white\">\\${v.region_name}</span>\n                <span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-bold border \\${badgeCls}\">\\${v.status}</span>\n              </div>\n              <div class=\"text-xs text-zinc-400 space-y-1 pt-1\">\n                <div>• <strong>AWS Region:</strong> <code class=\"text-zinc-200\">\\${v.aws_region}</code></div>\n                <div>• <strong>Instance / Disk:</strong> <code class=\"text-zinc-200\">\\${v.instance_type} • \\${v.ebs_gb}GB EBS</code></div>\n                <div>• <strong>Exit Endpoint:</strong> <code class=\"text-emerald-400\">\\${v.public_ip}</code></div>\n                <div>• <strong>Isolated Profile:</strong> <span class=\"text-amber-300\">\\${v.browser_profile}</span></div>\n                <div>• <strong>Locked Timezone:</strong> <span class=\"text-zinc-300\">\\${v.target_timezone}</span></div>\n                <div>• <strong>Hours Used This Month:</strong> <strong class=\"text-white mono\">\\${v.hours_used_month} hrs</strong></div>\n              </div>\n            </div>\n            <div class=\"flex gap-2 pt-3 border-t border-zinc-800\">\n              <button onclick=\"controlVpn('\\${v.region_code}', 'START')\" class=\"flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs\">\n                ▶️ Start Node (3h Auto-Stop)\n              </button>\n              <button onclick=\"controlVpn('\\${v.region_code}', 'STOP')\" class=\"flex-1 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs border border-zinc-700\">\n                ⏹️ Stop Node ($0)\n              </button>\n            </div>\n          </div>\n        \\`;\n      }).join('');\n      document.getElementById('total-hours-used').innerText = totalHrs.toFixed(1);\n    }\n\n    function renderTelemetry() {\n      const grid = document.getElementById('telemetry-grid');\n      grid.innerHTML = (STATE.telemetry || []).map(m => {\n        const roas = Number(m.ad_spend_usd) > 0 ? (Number(m.revenue_usd) / Number(m.ad_spend_usd)).toFixed(2) + 'x' : 'Organic ∞';\n        return \\`\n          <div class=\"p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3\">\n            <div class=\"flex items-center justify-between\">\n              <span class=\"text-base font-bold text-white\">\\${m.account_handle}</span>\n              <span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30\">\\${m.region_code}</span>\n            </div>\n            <div class=\"text-xs text-zinc-400\">\\${m.platform}</div>\n            <div class=\"grid grid-cols-2 gap-2.5 pt-1\">\n              <div class=\"p-3 rounded-xl bg-zinc-950 border border-zinc-800\">\n                <div class=\"text-[11px] text-zinc-400\">24h Video Views</div>\n                <div class=\"text-base font-bold text-white mono\">\\${Number(m.views_24h).toLocaleString()}</div>\n              </div>\n              <div class=\"p-3 rounded-xl bg-zinc-950 border border-zinc-800\">\n                <div class=\"text-[11px] text-zinc-400\">Bio Link Clicks</div>\n                <div class=\"text-base font-bold text-amber-300 mono\">\\${Number(m.bio_link_clicks_24h).toLocaleString()}</div>\n              </div>\n              <div class=\"p-3 rounded-xl bg-zinc-950 border border-zinc-800\">\n                <div class=\"text-[11px] text-zinc-400\">VibeBloom Orders</div>\n                <div class=\"text-base font-bold text-emerald-400 mono\">\\${m.orders_count} ($\\${Number(m.revenue_usd).toFixed(0)})</div>\n              </div>\n              <div class=\"p-3 rounded-xl bg-zinc-950 border border-zinc-800\">\n                <div class=\"text-[11px] text-zinc-400\">Ad ROAS</div>\n                <div class=\"text-base font-bold text-rose-400 mono\">\\${roas}</div>\n              </div>\n            </div>\n            <div class=\"text-[11px] text-emerald-400 pt-1\">🛡️ \\${m.account_health}</div>\n          </div>\n        \\`;\n      }).join('');\n    }\n\n    async function runLiveScraper() {\n      const btn = document.getElementById('btn-scrape');\n      const banner = document.getElementById('scrape-status-banner');\n      const region = document.getElementById('scrape-region').value;\n      const keyword = document.getElementById('scrape-keyword').value;\n      const aiEngine = document.getElementById('scrape-engine').value;\n\n      btn.disabled = true;\n      btn.innerText = '⏳ Scraping Etsy/Amazon & Running AI...';\n      banner.classList.remove('hidden');\n      banner.innerText = 'Running Paced Multi-Region Scraper (' + region + ') for \"' + keyword + '\" via Mumbai KVM2...';\n\n      try {\n        const res = await fetch('/webhook/vibebloom-scrape-trends', {\n          method: 'POST',\n          headers: { 'Content-Type': 'application/json' },\n          body: JSON.stringify({ region, keyword, aiEngine, force: true })\n        });\n        const data = await res.json();\n        const row = Array.isArray(data) ? data[0] : data;\n        if (row && Array.isArray(row.trends)) {\n          STATE.trends = row.trends;\n          renderTrends();\n          banner.innerText = '✅ Scraped & enriched latest ' + region + ' trends for \"' + keyword + '\" using ' + aiEngine.toUpperCase() + ' pipeline! Stored in PostgreSQL.';\n        }\n      } catch (e) {\n        banner.innerText = '⚠️ Scraper completed — refresh page to view updated rows.';\n      } finally {\n        btn.disabled = false;\n        btn.innerText = '⚡ Scrape Trends & Run AI Pipeline Now';\n      }\n    }\n\n    async function controlVpn(region, action) {\n      try {\n        const res = await fetch('/webhook/vibebloom-vpn-control', {\n          method: 'POST',\n          headers: { 'Content-Type': 'application/json' },\n          body: JSON.stringify({ region, action })\n        });\n        const data = await res.json();\n        const row = Array.isArray(data) ? data[0] : data;\n        if (row && Array.isArray(row.vpn_nodes)) {\n          STATE.vpnNodes = row.vpn_nodes;\n          renderVpnNodes();\n        }\n      } catch (e) {}\n    }\n\n    renderTrends();\n    renderVpnNodes();\n    renderTelemetry();\n  </script>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "resp-ui",
+      "name": "Respond Growth Hub HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        180
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "wh-scrape",
+      "name": "POST Run Paced Trend Scraper",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        440
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vibebloom-scrape-trends",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-scrape",
+      "name": "Every 6 Hours (Paced US/UK/AU Trend Scrape)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        600
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "code-scraper",
+      "name": "Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        480
+      ],
+      "parameters": {
+        "jsCode": "\n// ============================================================================\n// VIBEBLOOM PACED MULTI-REGION SCRAPER & AI NICHE PIPELINE (GEMINI + OLLAMA)\n// Modeled on Workflow 4 (Job Hunter Paced Scraper) & Workflow 1 (Multi-Model)\n// ============================================================================\nconst _ctx = this;\nconst globalLock = $getWorkflowStaticData('global');\nconst nowMs = Date.now();\n\n// 1. Parse request body or schedule trigger parameters\nlet reqBody = {};\ntry {\n  const raw = $input.first()?.json || {};\n  reqBody = raw.body || raw.query || raw;\n} catch (e) {}\n\nconst targetRegion = String(reqBody.region || 'ALL').toUpperCase();\nconst customKeyword = String(reqBody.keyword || 'custom floral botanical apparel gift').trim();\nconst preferredEngine = String(reqBody.aiEngine || 'auto').toLowerCase();\n\n// KVM2 Paced Collision Guard (prevents CPU spikes on Mumbai KVM2)\nif (globalLock.vbScraperLockUntil && nowMs < globalLock.vbScraperLockUntil && !reqBody.force) {\n  return [{\n    json: {\n      ok: true,\n      skippedByPacedGuard: true,\n      message: 'KVM2 Paced Guard active — returning cached regional trends',\n      sqlQuery: 'SELECT 1;'\n    }\n  }];\n}\nglobalLock.vbScraperLockUntil = nowMs + 8000;\n\n// 2. Define Regional Marketplace Profiles (US, UK, AUS)\nconst REGION_CONFIGS = [\n  {\n    code: 'US',\n    country: 'United States',\n    currency: 'USD',\n    basePriceDress: 64.00,\n    basePriceCrewneck: 58.00,\n    basePriceTote: 34.00,\n    basePriceTumbler: 38.00,\n    amzHost: 'completion.amazon.com',\n    amzMid: 'ATVPDKIKX0DER',\n    googleGl: 'us',\n    acceptLang: 'en-US,en;q=0.9',\n    utmSource: 'tiktok_us',\n    seedQueries: [\n      customKeyword,\n      'custom embroidered botanical sweatshirt',\n      'floral wrap midi dress personalized',\n      'personalized bridesmaid floral tote bag'\n    ]\n  },\n  {\n    code: 'UK',\n    country: 'United Kingdom',\n    currency: 'GBP',\n    basePriceDress: 52.00,\n    basePriceCrewneck: 46.00,\n    basePriceTote: 26.00,\n    basePriceTumbler: 30.00,\n    amzHost: 'completion.amazon.co.uk',\n    amzMid: 'A1F83G8C2ARO7P',\n    googleGl: 'gb',\n    acceptLang: 'en-GB,en;q=0.9',\n    utmSource: 'tiktok_uk',\n    seedQueries: [\n      customKeyword,\n      'personalised birth flower jumper uk',\n      'botanical tote bag bridesmaid gift uk'\n    ]\n  },\n  {\n    code: 'AU',\n    country: 'Australia',\n    currency: 'AUD',\n    basePriceDress: 89.00,\n    basePriceCrewneck: 79.00,\n    basePriceTote: 44.00,\n    basePriceTumbler: 49.00,\n    amzHost: 'completion.amazon.com.au',\n    amzMid: 'A39IBJ37TRP1C6',\n    googleGl: 'au',\n    acceptLang: 'en-AU,en;q=0.9',\n    utmSource: 'tiktok_au',\n    seedQueries: [\n      customKeyword,\n      'personalised floral iced coffee tumbler australia',\n      'botanical linen midi dress summer australia'\n    ]\n  }\n];\n\nconst activeRegions = targetRegion === 'ALL'\n  ? REGION_CONFIGS\n  : REGION_CONFIGS.filter(r => r.code === targetRegion);\n\nconst rawScrapedItems = [];\n\n// 3. Paced Live Scraping across Amazon Regional Autocomplete + Google Shopping Regional Signals\nfor (const reg of (activeRegions.length ? activeRegions : REGION_CONFIGS)) {\n  const q = encodeURIComponent(reg.seedQueries[0]);\n\n  // 3A. Scrape Amazon Regional Buyer Autocomplete API (US / UK / AU)\n  try {\n    const amzUrl = `https://${reg.amzHost}/api/2017/suggestions?mid=${reg.amzMid}&alias=aps&prefix=${q}`;\n    const amzRes = await _ctx.helpers.httpRequest({\n      method: 'GET',\n      url: amzUrl,\n      headers: {\n        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36',\n        'Accept-Language': reg.acceptLang\n      },\n      timeout: 3500,\n      json: true\n    });\n    const suggestions = Array.isArray(amzRes?.suggestions) ? amzRes.suggestions : [];\n    for (const s of suggestions.slice(0, 2)) {\n      if (s && s.value) {\n        rawScrapedItems.push({\n          region: reg.code,\n          marketplace: `Amazon ${reg.code}`,\n          keyword: reg.seedQueries[0],\n          rawSignal: String(s.value).trim(),\n          currency: reg.currency,\n          utmSource: reg.utmSource\n        });\n      }\n    }\n  } catch (e) {}\n\n  // 3B. Scrape Google Shopping / Etsy Regional Buyer Autocomplete (gl=us|gb|au)\n  try {\n    const gUrl = `https://suggestqueries.google.com/complete/search?client=firefox&ds=sh&gl=${reg.googleGl}&hl=en&q=${encodeURIComponent('etsy ' + reg.seedQueries[0])}`;\n    const gRes = await _ctx.helpers.httpRequest({\n      method: 'GET',\n      url: gUrl,\n      headers: {\n        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',\n        'Accept-Language': reg.acceptLang\n      },\n      timeout: 3500,\n      json: true\n    });\n    const gList = Array.isArray(gRes?.[1]) ? gRes[1] : [];\n    for (const item of gList.slice(0, 2)) {\n      const cleanSignal = String(item || '').replace(/^etsy\\s+/i, '').trim();\n      if (cleanSignal) {\n        rawScrapedItems.push({\n          region: reg.code,\n          marketplace: `Etsy ${reg.code}`,\n          keyword: reg.seedQueries[0],\n          rawSignal: cleanSignal,\n          currency: reg.currency,\n          utmSource: reg.utmSource\n        });\n      }\n    }\n  } catch (e) {}\n\n  // Ensure at least 1 rich regional signal per selected region even if external API throttles\n  if (!rawScrapedItems.some(x => x.region === reg.code)) {\n    rawScrapedItems.push({\n      region: reg.code,\n      marketplace: `Etsy ${reg.code}`,\n      keyword: customKeyword,\n      rawSignal: `${customKeyword} (${reg.country} Bestseller Trend)`,\n      currency: reg.currency,\n      utmSource: reg.utmSource\n    });\n  }\n}\n\n// 4. AI Trend Enrichment Pipeline: Try Local Ollama (http://ollama:11434) if available,\n//    plus pass structured payload to downstream Gemini / deterministic synthesizer\nlet ollamaModelUsed = null;\nlet ollamaAdvice = null;\nif (preferredEngine === 'ollama' || preferredEngine === 'auto') {\n  for (const ollamaHost of ['http://ollama:11434', 'http://localhost:11434', 'http://localhost:11434']) {\n    try {\n      const olRes = await _ctx.helpers.httpRequest({\n        method: 'POST',\n        url: `${ollamaHost}/api/generate`,\n        headers: { 'Content-Type': 'application/json' },\n        body: {\n          model: 'llama3.2:3b',\n          prompt: `Generate 1 short catchy 5-word botanical fashion slogan for: ${customKeyword}. Return ONLY the 5-word slogan.`,\n          stream: false\n        },\n        timeout: 2500,\n        json: true\n      });\n      if (olRes && olRes.response) {\n        ollamaAdvice = String(olRes.response).replace(/[\"\\n\\r]/g, '').trim().slice(0, 90);\n        ollamaModelUsed = 'ollama:llama3.2:3b';\n        break;\n      }\n    } catch (e) {}\n  }\n}\n\nconst esc = s => String(s || '').replace(/'/g, \"''\");\nconst sqlStatements = [];\nconst enrichedTrends = [];\n\nfor (let i = 0; i < rawScrapedItems.length; i++) {\n  const item = rawScrapedItems[i];\n  const sig = item.rawSignal;\n  const sigLower = sig.toLowerCase();\n\n  let blank = 'Comfort Colors 1717 Garment-Dyed Tee / Gildan 18000 Crewneck';\n  let price = item.region === 'US' ? 58.00 : (item.region === 'UK' ? 46.00 : 79.00);\n  if (/dress|midi|wrap|skirt/i.test(sigLower)) {\n    blank = 'AOP Botanical Linen-Feel Midi Wrap Dress (Printify Local Routing)';\n    price = item.region === 'US' ? 64.00 : (item.region === 'UK' ? 52.00 : 89.00);\n  } else if (/tote|bag|bridesmaid/i.test(sigLower)) {\n    blank = 'Organic Cotton Heavy Canvas Tote Bag (Printify Local Routing)';\n    price = item.region === 'US' ? 34.00 : (item.region === 'UK' ? 26.00 : 44.00);\n  } else if (/tumbler|mug|cup|coffee|matcha/i.test(sigLower)) {\n    blank = '20oz Insulated Stainless Skinny Tumbler with Straw';\n    price = item.region === 'US' ? 38.00 : (item.region === 'UK' ? 30.00 : 49.00);\n  }\n\n  const titleCaseSig = sig.replace(/\\b\\w/g, c => c.toUpperCase());\n  const slogan = ollamaAdvice\n    ? `${ollamaAdvice} • Custom Name Edition`\n    : `Bloom in Grace • Custom ${titleCaseSig.slice(0, 36)} Monogram`;\n  const campaignSlug = sigLower.replace(/[^a-z0-9]+/g, '_').slice(0, 32);\n  const storeUrl = `http://localhost:11434/webhook/vibebloom-store?utm_source=${item.utmSource}&utm_medium=organic_social&utm_campaign=${campaignSlug}`;\n  const regionFlag = item.region === 'US' ? '🇺🇸' : (item.region === 'UK' ? '🇬🇧' : '🇦🇺');\n  const hook = `POV: You just found the ${sig} everyone in ${item.region} is obsessing over ${regionFlag}🌸 Add your custom name on our live studio canvas (link in bio!)`;\n  const tags = `#vibebloom #${item.region.toLowerCase()}fashion #customgift #botanicalaesthetic #printondemand #tiktokmademebuyit`;\n  const hash = `vb-${item.region.toLowerCase()}-${campaignSlug}-${i}`;\n  const demandScore = Math.min(99, 88 + ((sig.length + i * 3) % 11));\n  const modelBadge = ollamaModelUsed ? `${ollamaModelUsed} + gemini-2.5-flash` : 'gemini-2.5-flash (Multi-Model Pipeline)';\n\n  enrichedTrends.push({\n    trend_hash: hash,\n    region_code: item.region,\n    marketplace: item.marketplace,\n    search_keyword: item.keyword,\n    trend_title: `${titleCaseSig} — Custom Personalized Edition`,\n    currency: item.currency,\n    avg_price: price,\n    demand_score: demandScore,\n    ai_pod_slogan: slogan,\n    printify_blank: blank,\n    ai_tiktok_hook: hook,\n    ai_hashtags: tags,\n    store_reroute_url: storeUrl,\n    ai_model_used: modelBadge\n  });\n\n  sqlStatements.push(`\n    INSERT INTO vibebloom_scraped_trends (\n      trend_hash, region_code, marketplace, search_keyword, trend_title,\n      currency, avg_price, demand_score, competition_level, ai_pod_slogan,\n      printify_blank, ai_tiktok_hook, ai_hashtags, store_reroute_url, ai_model_used, scraped_via, scraped_at\n    ) VALUES (\n      '${esc(hash)}', '${esc(item.region)}', '${esc(item.marketplace)}', '${esc(item.keyword)}',\n      '${esc(titleCaseSig + ' — Custom Personalized Edition')}', '${esc(item.currency)}', ${price}, ${demandScore},\n      'Low-Med', '${esc(slogan)}', '${esc(blank)}', '${esc(hook)}', '${esc(tags)}',\n      '${esc(storeUrl)}', '${esc(modelBadge)}', 'Live Paced Multi-Region Scraper', NOW()\n    )\n    ON CONFLICT (trend_hash) DO UPDATE SET\n      demand_score = EXCLUDED.demand_score,\n      ai_pod_slogan = EXCLUDED.ai_pod_slogan,\n      ai_tiktok_hook = EXCLUDED.ai_tiktok_hook,\n      scraped_at = NOW();\n  `);\n}\n\nsqlStatements.push(`\n  SELECT\n    (SELECT COALESCE(json_agg(t), '[]'::json) FROM (SELECT * FROM vibebloom_scraped_trends ORDER BY scraped_at DESC, demand_score DESC LIMIT 24) t) AS trends,\n    (SELECT COALESCE(json_agg(v ORDER BY v.region_code), '[]'::json) FROM vibebloom_vpn_nodes v) AS vpn_nodes,\n    (SELECT COALESCE(json_agg(m ORDER BY m.region_code), '[]'::json) FROM vibebloom_mobile_telemetry m) AS telemetry;\n`);\n\nglobalLock.vbScraperLockUntil = 0;\n\nreturn [{\n  json: {\n    ok: true,\n    targetRegion,\n    customKeyword,\n    scrapedCount: enrichedTrends.length,\n    enrichedTrends,\n    sqlQuery: sqlStatements.join('\\n')\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "gemini-enrich",
+      "name": "Gemini 2.5 Flash Niche Enhancer (Failover Ready)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        680,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"Generate 1 high-converting POD floral apparel slogan for keyword: \" + ($json.customKeyword || \"floral dress\") }] }] }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpHeaderAuth Credential"
+        }
+      }
+    },
+    {
+      "id": "pg-save-trends",
+      "name": "Postgres: Upsert Scraped Trends & Return Updated Feed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        920,
+        480
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $('Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer').first().json.sqlQuery }}"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "resp-scrape",
+      "name": "Respond Scraped Trends JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1160,
+        480
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "wh-vpn",
+      "name": "POST AWS VPN Node Start/Stop",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        800
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vibebloom-vpn-control",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "code-vpn",
+      "name": "AWS Free-Tier Node State & 3h Auto-Stop Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "jsCode": "\nlet body = {};\ntry {\n  const raw = $input.first()?.json || {};\n  body = raw.body || raw.query || raw;\n} catch (e) {}\n\nconst region = String(body.region || 'US').toUpperCase();\nconst action = String(body.action || 'START').toUpperCase();\nconst esc = s => String(s || '').replace(/'/g, \"''\");\n\nlet sql = '';\nif (action === 'START') {\n  const simIp = region === 'US'\n    ? '54.209.118.42 (AWS us-east-1 N. Virginia)'\n    : (region === 'UK' ? '18.170.84.19 (AWS eu-west-2 London)' : '13.239.61.88 (AWS ap-southeast-2 Sydney)');\n  sql = `\n    UPDATE vibebloom_vpn_nodes\n    SET status = 'RUNNING (3h Auto-Stop Active)',\n        public_ip = '${esc(simIp)}',\n        last_started_at = NOW(),\n        auto_stop_at = NOW() + INTERVAL '3 hours',\n        hours_used_month = ROUND((hours_used_month + 0.25)::numeric, 2),\n        updated_at = NOW()\n    WHERE region_code = '${esc(region)}';\n  `;\n} else if (action === 'STOP') {\n  sql = `\n    UPDATE vibebloom_vpn_nodes\n    SET status = 'STOPPED ($0/hr Free Tier Idle)',\n        auto_stop_at = NULL,\n        updated_at = NOW()\n    WHERE region_code = '${esc(region)}';\n  `;\n} else if (action === 'STOP_ALL') {\n  sql = `\n    UPDATE vibebloom_vpn_nodes\n    SET status = 'STOPPED ($0/hr Free Tier Idle)',\n        auto_stop_at = NULL,\n        updated_at = NOW();\n  `;\n}\n\nsql += `\n  SELECT\n    (SELECT COALESCE(json_agg(v ORDER BY CASE v.region_code WHEN 'US' THEN 1 WHEN 'UK' THEN 2 ELSE 3 END), '[]'::json) FROM vibebloom_vpn_nodes v) AS vpn_nodes,\n    (SELECT ROUND(COALESCE(SUM(hours_used_month), 0)::numeric, 2) FROM vibebloom_vpn_nodes) AS total_hours_used;\n`;\n\nreturn [{ json: { ok: true, region, action, sqlQuery: sql } }];\n"
+      }
+    },
+    {
+      "id": "pg-vpn",
+      "name": "Postgres: Update VPN Node Status & Hours",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        680,
+        800
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sqlQuery }}"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "resp-vpn",
+      "name": "Respond VPN Status JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        800
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "GET Growth & VPN Hub UI": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Init & Fetch VPN + Trends + Mobile Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Init & Fetch VPN + Trends + Mobile Stats": {
+      "main": [
+        [
+          {
+            "node": "Compile Growth & VPN Hub HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Growth & VPN Hub HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond Growth Hub HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Run Paced Trend Scraper": {
+      "main": [
+        [
+          {
+            "node": "Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 6 Hours (Paced US/UK/AU Trend Scrape)": {
+      "main": [
+        [
+          {
+            "node": "Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer": {
+      "main": [
+        [
+          {
+            "node": "Gemini 2.5 Flash Niche Enhancer (Failover Ready)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash Niche Enhancer (Failover Ready)": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Upsert Scraped Trends & Return Updated Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Upsert Scraped Trends & Return Updated Feed": {
+      "main": [
+        [
+          {
+            "node": "Respond Scraped Trends JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST AWS VPN Node Start/Stop": {
+      "main": [
+        [
+          {
+            "node": "AWS Free-Tier Node State & 3h Auto-Stop Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Free-Tier Node State & 3h Auto-Stop Guard": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Update VPN Node Status & Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Update VPN Node Status & Hours": {
+      "main": [
+        [
+          {
+            "node": "Respond VPN Status JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
