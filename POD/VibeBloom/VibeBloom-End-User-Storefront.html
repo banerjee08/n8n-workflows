@@ -1,898 +1,1837 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light" data-preset="botiga">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VibeBloom — Custom Floral Apparel, Dresses &amp; Dopamine Lifestyle Shop</title>
+  <title>VibeBloom Atelier — Botanical Custom Apparel &amp; Accessories</title>
+  <!-- Google Fonts: Cormorant Garamond (Editorial Luxury Serif) + Plus Jakarta Sans (Clean Modern UI) + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5.3 CSS Base (for authentic bootScore / WooCommerce grid & utility compatibility) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ============================================================================
+       VIBEBLOOM COMMERCIAL WOOCOMMERCE / BOOTSTRAP 5 THEME ENGINE
+       Presets: 1. Botiga Atelier (Editorial Luxury)
+                2. Blocksy Modern (Nordic Minimalist)
+                3. bootScore BS5 (Classic High-Converting Storefront)
+       Modes:   Light & Dark ("Midnight Atelier")
+       ============================================================================ */
+    :root,
+    html[data-theme="light"][data-preset="botiga"] {
+      --bg-canvas: #FAF8F5;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F3EFEA;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #18181B;
+      --text-secondary: #52525B;
+      --text-muted: #71717A;
+      --border-hairline: #E6E1DA;
+      --border-strong: #D4CDC3;
+      --accent-primary: #18181B;
+      --accent-primary-hover: #3F3F46;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #9E4758;
+      --accent-brand-soft: #F9EFF1;
+      --accent-gold: #B4833E;
+      --accent-sage: #2D5A43;
+      --accent-sage-soft: #ECFDF3;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --card-radius: 4px;
+      --btn-radius: 3px;
+    }
+
+    html[data-theme="light"][data-preset="blocksy"] {
+      --bg-canvas: #FFFFFF;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F8FAFC;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --border-hairline: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --accent-primary: #0F172A;
+      --accent-primary-hover: #1E293B;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #0D6E52;
+      --accent-brand-soft: #ECFDF5;
+      --accent-gold: #D97706;
+      --accent-sage: #0D6E52;
+      --accent-sage-soft: #ECFDF5;
+      --font-display: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --card-radius: 8px;
+      --btn-radius: 6px;
+    }
+
+    html[data-theme="light"][data-preset="bootscore"] {
+      --bg-canvas: #F8F9FA;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F1F3F5;
+      --bg-elevated: #FFFFFF;
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-muted: #6C757D;
+      --border-hairline: #DEE2E6;
+      --border-strong: #CED4DA;
+      --accent-primary: #1F2937;
+      --accent-primary-hover: #111827;
+      --accent-primary-text: #FFFFFF;
+      --accent-brand: #881337;
+      --accent-brand-soft: #FFF1F2;
+      --accent-gold: #B45309;
+      --accent-sage: #15803D;
+      --accent-sage-soft: #F0FDF4;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --card-radius: 6px;
+      --btn-radius: 6px;
+    }
+
+    html[data-theme="dark"] {
+      --bg-canvas: #0C0D10;
+      --bg-surface: #14161B;
+      --bg-subtle: #1C1F26;
+      --bg-elevated: #1E222A;
+      --text-primary: #F4F4F6;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-hairline: #272A34;
+      --border-strong: #3F4454;
+      --accent-primary: #F4F4F6;
+      --accent-primary-hover: #E4E4E7;
+      --accent-primary-text: #0C0D10;
+      --accent-brand: #E58C9E;
+      --accent-brand-soft: #2A1920;
+      --accent-gold: #EAB308;
+      --accent-sage: #4ADE80;
+      --accent-sage-soft: #11261B;
+    }
+
+    /* ============================================================================
+       FIX #5: STICKY FOOTER ARCHITECTURE (ALWAYS PUSHED TO BOTTOM OF VIEWPORT)
+       ============================================================================ */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    #app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #main-content {
+      flex: 1 0 auto;
+      width: 100%;
+    }
+
+    #site-footer {
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    /* Typography helpers */
+    .font-editorial {
+      font-family: var(--font-display);
+    }
+    .font-sans-ui {
+      font-family: var(--font-sans);
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Surface & Border utilities */
+    .vb-surface {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--card-radius);
+    }
+    .vb-subtle {
+      background-color: var(--bg-subtle);
+    }
+    .vb-border-b {
+      border-bottom: 1px solid var(--border-hairline);
+    }
+    .vb-border-t {
+      border-top: 1px solid var(--border-hairline);
+    }
+    .vb-border {
+      border: 1px solid var(--border-hairline);
+    }
+
+    /* Buttons */
+    .vb-btn-primary {
+      background-color: var(--accent-primary);
+      color: var(--accent-primary-text);
+      border-radius: var(--btn-radius);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: all 0.18s ease;
+    }
+    .vb-btn-primary:hover {
+      background-color: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+    .vb-btn-outline {
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--btn-radius);
+      font-weight: 500;
+      transition: all 0.18s ease;
+    }
+    .vb-btn-outline:hover {
+      border-color: var(--text-primary);
+      background-color: var(--bg-subtle);
+    }
+
+    /* 3:4 Editorial Fashion Product Card */
+    .vb-product-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    }
+    .vb-product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.08);
+    }
+    .vb-aspect-3-4 {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      background-color: var(--bg-subtle);
+    }
+    .vb-aspect-3-4 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .vb-product-card:hover .vb-aspect-3-4 img {
+      transform: scale(1.04);
+    }
+    .vb-quick-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px;
+      background: linear-gradient(to top, rgba(15, 15, 20, 0.78), rgba(15, 15, 20, 0));
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.22s ease;
+    }
+    .vb-product-card:hover .vb-quick-bar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Custom Monogram Live Preview Badge on Garment */
+    .monogram-preview-pill {
+      position: absolute;
+      bottom: 54px;
+      left: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #18181B;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(158, 71, 88, 0.35);
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 0.85rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    a {
+      text-decoration: none;
+    }
+  </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-200">
-  <div id="app-shell" class="min-h-screen transition-colors duration-300" style="background-color: #FFFDFB; color: #001F3F;">
-
-    <!-- Top Shopper Announcement Bar -->
-    <div class="w-full py-2 px-4 text-xs font-bold text-center flex flex-wrap items-center justify-center gap-3" style="background-color: #001F3F; color: #FFFDFB;">
-      <span>🌸 FREE STANDARD SHIPPING ON ORDERS OVER <span id="top-free-ship-amt">$75</span></span>
-      <span>•</span>
-      <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold" style="background-color: #98FB98; color: #001F3F;">USE CODE: BLOOM15 FOR 15% OFF</span>
-      <span>•</span>
-      <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold" style="background-color: #FFCCCB; color: #001F3F;">FREE 2-HR ORDER EDIT OR CANCEL</span>
-    </div>
-
-    <!-- Amazon / Etsy Style Storefront Header -->
-    <header id="main-header" class="sticky top-0 z-30 border-b px-6 py-3.5 space-y-3 transition-colors duration-300" style="background-color: rgba(255, 253, 251, 0.96); border-color: #E2D9E8;">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-        <!-- Brand Logo -->
-        <button onclick="switchShopView('shop')" class="flex items-center gap-3 text-left">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border-2 shadow-sm" style="background-color: #FFCCCB; color: #001F3F; border-color: #001F3F;">
-            VB
-          </div>
-          <div>
-            <span class="text-xl font-extrabold tracking-tight block leading-none">VibeBloom</span>
-            <span class="text-xs opacity-75">Custom Apparel &amp; Gifts</span>
-          </div>
-        </button>
-
-        <!-- Etsy / Amazon Style Search Bar -->
-        <div class="flex-1 max-w-xl min-w-[240px]">
-          <div class="relative flex items-center">
-            <input
-              id="shop-search-input"
-              type="text"
-              oninput="filterCatalog()"
-              placeholder="Search dresses, hoodies, custom totes, tumblers, gifts..."
-              class="w-full pl-4 pr-20 py-2 rounded-full border text-xs font-bold focus:outline-none"
-              style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;"
-            />
-            <button onclick="filterCatalog()" class="absolute right-1.5 px-3 py-1 rounded-full text-xs font-extrabold" style="background-color: #FF8C00; color: #FFFDFB;">
-              Search
-            </button>
-          </div>
+<body>
+  <div id="app-shell">
+    <!-- ==========================================================================
+         1. TOP EDITORIAL ANNOUNCEMENT & THEME ARCHITECTURE SWITCHER BAR
+         ========================================================================== -->
+    <div style="background-color: #18181B; color: #F4F4F6;" class="text-xs py-2 px-4 border-b border-zinc-800">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <span class="uppercase tracking-widest font-semibold text-[11px]" style="color: #E5B8C2;">VibeBloom Atelier</span>
+          <span class="hidden md:inline text-zinc-400">|</span>
+          <span class="text-zinc-200">Complimentary Tracked Shipping over $75 &bull; Code <strong class="font-mono-code text-white underline cursor-pointer" onclick="quickApplyPromo('BLOOM15')" title="Click to apply BLOOM15">BLOOM15</strong> for 15% Off</span>
         </div>
 
-        <!-- Shopper Utilities: Currency, Light/Dark, Wishlist, My Orders, Cart -->
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="currency-select" onchange="changeCurrency(this.value)" aria-label="Select Currency" class="text-xs font-bold px-2.5 py-1.5 rounded-full border bg-transparent cursor-pointer" style="border-color: currentColor;">
-            <option value="USD">🇺🇸 USD ($)</option>
-            <option value="EUR">🇪🇺 EUR (€)</option>
-            <option value="GBP">🇬🇧 GBP (£)</option>
-            <option value="AUD">🇦🇺 AUD (A$)</option>
-          </select>
+        <!-- WooCommerce Theme Preset Switcher + Light/Dark Toggle -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5">
+            <span class="text-[11px] text-zinc-400">WooCommerce Theme:</span>
+            <select id="preset-select" onchange="changeThemePreset(this.value)" class="bg-transparent text-zinc-100 text-[11px] font-medium focus:outline-none cursor-pointer">
+              <option value="botiga" class="bg-zinc-900 text-white">Botiga Atelier (Luxury Editorial)</option>
+              <option value="blocksy" class="bg-zinc-900 text-white">Blocksy Minimal (Nordic Studio)</option>
+              <option value="bootscore" class="bg-zinc-900 text-white">bootScore BS5 (Classic Commerce)</option>
+            </select>
+          </div>
 
-          <button onclick="toggleKadenceTheme()" id="theme-toggle-pill" class="px-3 py-1.5 rounded-full text-xs font-extrabold border flex items-center gap-1 transition-transform hover:-translate-y-0.5" style="background-color: #FFF0EF; color: #001F3F; border-color: #001F3F;">
-            <span id="theme-icon">🌙</span>
-            <span id="theme-label">Midnight</span>
-          </button>
-
-          <button onclick="switchShopView('wishlist')" id="nav-btn-wishlist" class="px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1" style="border-color: currentColor;">
-            <span>❤️ Wishlist</span>
-            <span id="wishlist-badge" class="px-1.5 py-0.2 rounded-full text-xs font-extrabold" style="background-color: #FFCCCB; color: #001F3F;">2</span>
-          </button>
-
-          <button onclick="switchShopView('orders')" id="nav-btn-orders" class="px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1" style="border-color: currentColor;">
-            <span>📦 My Orders</span>
-          </button>
-
-          <button onclick="switchShopView('cart')" id="nav-btn-cart" class="px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 shadow-sm" style="background-color: #001F3F; color: #FFFDFB;">
-            <span>🛒 Cart</span>
-            <span id="cart-badge" class="px-1.5 py-0.2 rounded-full text-xs font-extrabold" style="background-color: #98FB98; color: #001F3F;">2</span>
+          <button onclick="toggleTheme()" id="theme-toggle-btn" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-100 transition text-[11px] font-medium border border-zinc-700">
+            <span id="theme-icon">☾</span>
+            <span id="theme-label">Midnight Mode</span>
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- Category Navigation Bar -->
-      <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto pt-1 pb-0.5">
-        <button onclick="setCategory('ALL')" id="cat-ALL" class="px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap" style="background-color: #001F3F; color: #FFFDFB;">
-          ✨ All Items (8)
-        </button>
-        <button onclick="setCategory('DRESSES')" id="cat-DRESSES" class="px-3.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap" style="border-color: currentColor;">
-          👗 Dresses &amp; Skirts
-        </button>
-        <button onclick="setCategory('TOPS')" id="cat-TOPS" class="px-3.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap" style="border-color: currentColor;">
-          🧥 Hoodies &amp; Tops
-        </button>
-        <button onclick="setCategory('BAGS')" id="cat-BAGS" class="px-3.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap" style="border-color: currentColor;">
-          👜 Totes &amp; Bags
-        </button>
-        <button onclick="setCategory('DRINKWARE')" id="cat-DRINKWARE" class="px-3.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap" style="border-color: currentColor;">
-          🥤 Tumblers &amp; Mugs
-        </button>
-        <button onclick="setCategory('ACCESSORIES')" id="cat-ACCESSORIES" class="px-3.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap" style="border-color: currentColor;">
-          📱 Phone Cases &amp; Gifts
-        </button>
+    <!-- ==========================================================================
+         2. MAIN COMMERCIAL STOREFRONT HEADER (MEGA-NAV + SEARCH + WISHLIST/BAG)
+         ========================================================================== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md vb-border-b" style="background-color: color-mix(in srgb, var(--bg-surface) 92%, transparent);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-20 gap-6">
+          <!-- Brand Wordmark -->
+          <div class="flex items-center gap-8">
+            <button onclick="switchTab('catalog')" class="text-left group focus:outline-none">
+              <div class="font-editorial text-3xl sm:text-4xl font-semibold tracking-tight leading-none" style="color: var(--text-primary);">
+                VibeBloom
+              </div>
+              <div class="text-[10px] uppercase tracking-[0.24em] mt-1" style="color: var(--text-muted);">
+                Botanical Custom Atelier
+              </div>
+            </button>
+
+            <!-- Primary Category Links (Desktop) -->
+            <nav class="hidden lg:flex items-center gap-6 text-sm font-medium" style="color: var(--text-secondary);">
+              <button onclick="filterCategory('All')" id="nav-cat-All" class="hover:opacity-100 transition py-1 border-b-2 border-current font-semibold" style="color: var(--text-primary);">All Collection</button>
+              <button onclick="filterCategory('Dresses')" id="nav-cat-Dresses" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Dresses</button>
+              <button onclick="filterCategory('Knitwear & Hoodies')" id="nav-cat-Knitwear & Hoodies" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Embroidered Sweaters</button>
+              <button onclick="filterCategory('Totes & Bags')" id="nav-cat-Totes & Bags" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Canvas Totes</button>
+              <button onclick="filterCategory('Drinkware')" id="nav-cat-Drinkware" class="hover:opacity-100 transition py-1 border-b-2 border-transparent">Botanical Drinkware</button>
+            </nav>
+          </div>
+
+          <!-- Search + Customer Utility Icons -->
+          <div class="flex items-center gap-3 sm:gap-4 flex-1 max-w-md justify-end">
+            <div class="relative hidden sm:block flex-1 max-w-xs">
+              <input
+                id="search-input"
+                type="text"
+                oninput="handleSearch(this.value)"
+                placeholder="Search linen dress, peony tote..."
+                class="w-full pl-9 pr-3 py-2 text-xs vb-surface focus:outline-none"
+                style="color: var(--text-primary);"
+              />
+              <svg class="w-4 h-4 absolute left-3 top-2.5" style="color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-4.35-4.35M16.65 10.825a5.825 5.825 0 11-11.65 0 5.825 5.825 0 0111.65 0z"/>
+              </svg>
+            </div>
+
+            <!-- Saved / Wishlist -->
+            <button onclick="switchTab('wishlist')" id="tab-btn-wishlist" class="relative p-2 rounded hover:opacity-80 transition flex items-center gap-1.5 text-xs font-medium" style="color: var(--text-primary);" title="Saved Favorites">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span class="hidden md:inline">Saved</span>
+              <span id="wishlist-count-badge" class="px-1.5 py-0.5 text-[10px] rounded-full font-semibold" style="background-color: var(--bg-subtle); color: var(--text-primary);">2</span>
+            </button>
+
+            <!-- My Orders -->
+            <button onclick="switchTab('orders')" id="tab-btn-orders" class="relative p-2 rounded hover:opacity-80 transition flex items-center gap-1.5 text-xs font-medium" style="color: var(--text-primary);" title="Orders & Returns">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+              </svg>
+              <span class="hidden md:inline">Orders</span>
+            </button>
+
+            <!-- Shopping Bag / Checkout -->
+            <button onclick="switchTab('cart')" id="tab-btn-cart" class="vb-btn-primary px-3.5 py-2 flex items-center gap-2 text-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-9-4h4"/>
+              </svg>
+              <span>Bag</span>
+              <span id="cart-count-badge" class="px-1.5 py-0.2 rounded text-[11px] font-mono-code" style="background-color: rgba(255,255,255,0.2);">2</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- ===================================================================
-         VIEW 1: END-USER SHOPPING CATALOG & LIVE PRODUCT CUSTOMIZER
-         =================================================================== -->
-    <main id="view-shop" class="max-w-7xl mx-auto px-6 py-6 space-y-8">
+    <!-- ==========================================================================
+         3. MAIN CONTENT AREA (flex: 1 0 auto — GUARANTEES FOOTER STAYS AT BOTTOM)
+         ========================================================================== -->
+    <main id="main-content" class="pb-16">
 
-      <!-- Shopper Seasonal Hero Banner -->
-      <section id="hero-banner" class="rounded-3xl p-6 sm:p-8 border flex flex-col lg:flex-row items-center justify-between gap-6 shadow-sm" style="background-color: #FFF0EF; border-color: #E2D9E8;">
-        <div class="space-y-3 max-w-2xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold" style="background-color: #E6E6FA; color: #001F3F;">
-            <span>🌷 SPRING / SUMMER DOPAMINE COLLECTION</span>
-            <span>•</span>
-            <span>★ 4.9 AVERAGE BUYER RATING (1,420+ REVIEWS)</span>
+      <!-- ========================================================================
+           VIEW A: SHOP CATALOG (EDITORIAL HERO + FILTER BAR + 3:4 FASHION GRID)
+           ======================================================================== -->
+      <section id="view-catalog" class="block">
+        <!-- Editorial Split Lookbook Hero -->
+        <div class="vb-border-b" style="background-color: var(--bg-subtle);">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div class="lg:col-span-6 space-y-5">
+                <div class="inline-flex items-center gap-2 px-3 py-1 text-[11px] uppercase tracking-[0.2em] font-semibold vb-surface" style="color: var(--accent-brand);">
+                  <span>Spring / Summer Botanical Edit</span>
+                </div>
+                <h1 class="font-editorial text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.08] tracking-tight" style="color: var(--text-primary);">
+                  Effortless Linen &amp; Custom Floral Heirloom Pieces.
+                </h1>
+                <p class="text-sm sm:text-base leading-relaxed max-w-xl" style="color: var(--text-secondary);">
+                  Designed in our botanical studio and custom-embroidered or printed to order in the US &amp; EU using OEKO-TEX&reg; certified organic fabrics. Add complimentary custom monogramming to any garment.
+                </p>
+                <div class="flex flex-wrap items-center gap-3 pt-2">
+                  <a href="#collection-grid" class="vb-btn-primary px-6 py-3 text-xs uppercase tracking-widest inline-block">
+                    Explore The Collection
+                  </a>
+                  <button onclick="openPersonalizerModal(1)" class="vb-btn-outline px-5 py-3 text-xs uppercase tracking-widest">
+                    Try Live Monogram Studio
+                  </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-4 vb-border-t text-xs" style="color: var(--text-secondary);">
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">OEKO-TEX&reg; Certified</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">100% Skin-Safe Eco Inks</div>
+                  </div>
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">US &amp; EU Local Fulfillment</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">2–4 Business Day Dispatch</div>
+                  </div>
+                  <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">30-Day Quality Guarantee</div>
+                    <div class="text-[11px]" style="color: var(--text-muted);">Instant Replacement or Refund</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Editorial Dual Lookbook Imagery -->
+              <div class="lg:col-span-6 grid grid-cols-2 gap-4">
+                <div class="vb-surface p-2">
+                  <div class="vb-aspect-3-4 rounded-sm overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=85"
+                      onerror="this.onerror=null;this.src=window.getFallbackSvg('Peony Linen Midi Dress','#F3E5E8');"
+                      alt="Peony Breeze Linen Wrap Midi Dress"
+                    />
+                  </div>
+                  <div class="pt-2.5 px-1 flex items-center justify-between text-xs">
+                    <span class="font-editorial italic text-sm" style="color: var(--text-primary);">01 / Peony Linen Midi</span>
+                    <span class="font-medium" style="color: var(--text-secondary);">$64.00</span>
+                  </div>
+                </div>
+                <div class="vb-surface p-2 mt-6">
+                  <div class="vb-aspect-3-4 rounded-sm overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=85"
+                      onerror="this.onerror=null;this.src=window.getFallbackSvg('Botanical Atelier Knit','#E5ECE9');"
+                      alt="Wildflower Embroidered Cashmere-Blend Pullover"
+                    />
+                  </div>
+                  <div class="pt-2.5 px-1 flex items-center justify-between text-xs">
+                    <span class="font-editorial italic text-sm" style="color: var(--text-primary);">02 / Atelier Embroidered Knit</span>
+                    <span class="font-medium" style="color: var(--text-secondary);">$58.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 class="text-2xl sm:text-4xl font-extrabold leading-tight">
-            Everyday Floral Joy, <span style="color: #FF8C00;">Personalized Just for You.</span>
-          </h1>
-          <p class="text-sm opacity-85 leading-relaxed">
-            Browse our signature floral dresses, cozy fleece hoodies, linen totes, and insulated tumblers. Customize any piece with your own slogan or monogram and preview it live before you buy!
-          </p>
         </div>
-        <div class="flex flex-wrap gap-3">
-          <a href="#product-studio-section" class="px-5 py-2.5 rounded-full text-xs font-extrabold shadow-sm" style="background-color: #001F3F; color: #FFFDFB;">
-            ✨ Customize Bestseller Now
-          </a>
-          <button onclick="switchShopView('orders')" class="px-4 py-2.5 rounded-full text-xs font-bold border" style="border-color: currentColor;">
-            📦 Track or Edit an Order
+
+        <!-- Collection Toolbar (Filter Pills + Sort + Live Monogram Input) -->
+        <div id="collection-grid" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 vb-border-b">
+            <div>
+              <h2 class="font-editorial text-3xl font-semibold" style="color: var(--text-primary);">
+                Curated Botanical Collection
+              </h2>
+              <p class="text-xs mt-0.5" style="color: var(--text-muted);">
+                Showing <span id="catalog-count-label">8</span> studio pieces &bull; Complimentary custom embroidery preview available below
+              </p>
+            </div>
+
+            <!-- Live Global Monogram Previewer Bar -->
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="vb-surface px-3 py-1.5 flex items-center gap-2">
+                <span class="text-[11px] uppercase tracking-wider font-semibold" style="color: var(--accent-brand);">Live Monogram:</span>
+                <input
+                  id="global-monogram-input"
+                  type="text"
+                  maxlength="22"
+                  oninput="updateGlobalMonogram(this.value)"
+                  placeholder="Type name or initials (e.g. Sophia R.)"
+                  class="bg-transparent text-xs focus:outline-none w-48"
+                  style="color: var(--text-primary);"
+                />
+                <button onclick="updateGlobalMonogram('')" class="text-[11px] underline" style="color: var(--text-muted);">Clear</button>
+              </div>
+
+              <select id="sort-select" onchange="handleSort(this.value)" class="vb-surface px-3 py-2 text-xs focus:outline-none cursor-pointer" style="color: var(--text-primary);">
+                <option value="featured">Sort: Featured Atelier</option>
+                <option value="rating">Sort: Highest Customer Rating</option>
+                <option value="price-asc">Sort: Price Low to High</option>
+                <option value="price-desc">Sort: Price High to Low</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Grid (4 columns on desktop, 3:4 editorial aspect ratio) -->
+          <div id="product-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================
+           VIEW B: SAVED FAVORITES / WISHLIST
+           ======================================================================== -->
+      <section id="view-wishlist" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div class="flex items-center justify-between pb-6 vb-border-b">
+          <div>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">Personal Atelier Wardrobe</span>
+            <h1 class="font-editorial text-3xl sm:text-4xl font-semibold mt-1" style="color: var(--text-primary);">Saved Favorites</h1>
+          </div>
+          <button onclick="switchTab('catalog')" class="vb-btn-outline px-4 py-2 text-xs">
+            &larr; Continue Shopping
           </button>
         </div>
-      </section>
-
-      <!-- Filter & Sort Bar + 8-Product B2C Grid -->
-      <section class="space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3" style="border-color: #E2D9E8;">
-          <div class="flex items-center gap-2">
-            <h2 class="text-lg font-extrabold">Shop VibeBloom Collection</h2>
-            <span id="catalog-count-label" class="text-xs px-2.5 py-0.5 rounded-full font-bold" style="background-color: #E6E6FA; color: #001F3F;">Showing 8 items</span>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <label for="sort-select" class="text-xs font-bold">Sort by:</label>
-            <select id="sort-select" onchange="filterCatalog()" class="text-xs font-bold px-3 py-1.5 rounded-xl border bg-transparent" style="border-color: currentColor;">
-              <option value="featured">Featured &amp; Bestselling</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Highest Customer Rating (★)</option>
-            </select>
-          </div>
+        <div id="wishlist-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+          <!-- Populated by JS -->
         </div>
-
-        <!-- Product Cards Grid -->
-        <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
       </section>
 
-      <!-- Active Product Detail & Etsy-Style Personalization Studio -->
-      <section id="product-studio-section" class="pt-4 border-t" style="border-color: #E2D9E8;">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span class="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-full" style="background-color: #98FB98; color: #001F3F;">
-              LIVE PRODUCT PREVIEW &amp; PERSONALIZATION
-            </span>
-            <h2 class="text-2xl font-extrabold mt-1">Customize &amp; Buy Your Selected Item</h2>
+      <!-- ========================================================================
+           VIEW C: SHOPPING BAG & 2-STEP PAYPAL EXPRESS / ADDRESS CONFIRMATION
+           Fixes #1 (Remove Undo Link), #2 (Address Confirmation Step), #3 (Remove Code Toggle)
+           ======================================================================== -->
+      <section id="view-cart" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <!-- Checkout Progress Stepper -->
+        <div class="vb-surface p-4 mb-8">
+          <div class="flex flex-wrap items-center justify-between gap-4 max-w-3xl mx-auto text-xs">
+            <button onclick="setCheckoutStep(1)" id="step-indicator-1" class="flex items-center gap-2.5 font-semibold cursor-pointer">
+              <span id="step-badge-1" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px]" style="background-color: var(--accent-primary); color: var(--accent-primary-text);">1</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 1: Shopping Bag</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Review items &amp; promo code</div>
+              </div>
+            </button>
+
+            <div class="hidden sm:block h-px flex-1 mx-2" style="background-color: var(--border-strong);"></div>
+
+            <button onclick="attemptGoToStep2()" id="step-indicator-2" class="flex items-center gap-2.5 font-medium cursor-pointer">
+              <span id="step-badge-2" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] vb-border" style="color: var(--text-secondary);">2</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 2: Confirm Receiver Address</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Verify shipping &amp; recipient details</div>
+              </div>
+            </button>
+
+            <div class="hidden sm:block h-px flex-1 mx-2" style="background-color: var(--border-strong);"></div>
+
+            <div id="step-indicator-3" class="flex items-center gap-2.5 font-medium opacity-60">
+              <span id="step-badge-3" class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] vb-border" style="color: var(--text-secondary);">3</span>
+              <div class="text-left">
+                <div style="color: var(--text-primary);">Step 3: Order Confirmed</div>
+                <div class="text-[11px] font-normal" style="color: var(--text-muted);">Instant receipt &amp; tracking</div>
+              </div>
+            </div>
           </div>
-          <span class="text-xs font-bold opacity-75">📍 Printed locally in US, EU, UK &amp; AU • Arrives in 3–5 business days</span>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <!-- LEFT 6 COLS: GARMENT-SAFE STUDIO MOCKUP VIEWPORT (#FAF8F6) -->
-          <div class="lg:col-span-6 space-y-4">
-            <div class="p-6 rounded-3xl border-2 shadow-md" style="background-color: #FAF8F6; color: #001F3F; border-color: #E2D9E8;">
-              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <span class="text-xs font-extrabold px-2.5 py-1 rounded-full" style="background-color: #E6E6FA; color: #001F3F;">
-                  📸 True-Color Studio Lighting Preview
-                </span>
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full" style="background-color: #98FB98; color: #001F3F;">
-                  ✓ Free Personalization Included
-                </span>
+          <!-- LEFT 8 COLUMNS: EITHER STEP 1 (BAG ITEMS + UNDO LINK) OR STEP 2 (RECEIVER ADDRESS CONFIRMATION) -->
+          <div class="lg:col-span-8 space-y-6">
+
+            <!-- STEP 1 PANEL: SHOPPING BAG ITEMS -->
+            <div id="checkout-step-1-panel" class="space-y-4">
+              <div class="flex items-center justify-between pb-3 vb-border-b">
+                <h1 class="font-editorial text-3xl font-semibold" style="color: var(--text-primary);">
+                  Your Shopping Bag (<span id="bag-header-count">2</span>)
+                </h1>
+                <button onclick="switchTab('catalog')" class="text-xs underline" style="color: var(--text-secondary);">
+                  + Add more items
+                </button>
               </div>
 
-              <!-- Live SVG Product Preview -->
-              <div class="relative flex items-center justify-center py-4">
-                <svg id="garment-svg" viewBox="0 0 360 400" class="w-full max-w-sm h-80 drop-shadow-md">
-                  <path id="garment-body" d="M115,35 L150,35 C160,52 200,52 210,35 L245,35 L285,95 L255,115 L235,80 L235,175 L295,365 L65,365 L125,175 L125,80 L105,115 L75,95 Z" fill="#FFCCCB" stroke="#001F3F" stroke-width="3" stroke-linejoin="round" />
+              <!-- FIX #1: Inline "Removed by mistake? Add it back" Undo Banner Container -->
+              <div id="cart-undo-container" class="space-y-2"></div>
 
-                  <!-- Subtle 1.5" VB Floral Emblem -->
-                  <circle cx="222" cy="162" r="11" fill="#FFFDFB" stroke="#001F3F" stroke-width="1.5" />
-                  <text x="222" y="166" text-anchor="middle" font-size="9" font-weight="bold" fill="#001F3F">VB</text>
-
-                  <!-- Center Floral Artwork -->
-                  <g id="svg-pattern-group">
-                    <circle cx="180" cy="155" r="36" fill="#FFF0EF" stroke="#001F3F" stroke-width="2" />
-                    <text id="svg-pattern-icon" x="180" y="166" text-anchor="middle" font-size="30">🌸</text>
-                    <text id="svg-pattern-title" x="180" y="212" text-anchor="middle" font-size="11" font-weight="bold" fill="#001F3F">Peony Sunburst</text>
-                  </g>
-
-                  <!-- Custom 2" Hem / Personalized Slogan -->
-                  <rect x="92" y="325" width="176" height="26" rx="6" fill="rgba(255,255,255,0.72)" stroke="#FF8C00" stroke-width="1.2" />
-                  <text id="svg-hem-slogan" x="180" y="342" text-anchor="middle" font-size="12" font-weight="800" fill="#001F3F">
-                    Bloom Where You Are ✨
-                  </text>
-                </svg>
-              </div>
-
-              <div id="contrast-alert" class="hidden mt-2 p-3 rounded-xl text-xs font-bold border" style="background-color: #FEF2F2; color: #991B1B; border-color: #FCA5A5;">
-                ✨ Auto-Contrast Applied: Because you selected True Navy fabric, we automatically switched your custom text ink to Crisp White (#FFFDFB) for clear readability!
-              </div>
-
-              <div class="mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-2 text-xs" style="border-color: #E2D9E8;">
-                <span>🌿 100% Eco-Friendly Water-Based Ink</span>
-                <span>🚚 Ships in 1–2 Business Days</span>
-              </div>
+              <!-- Cart Items List -->
+              <div id="cart-items-list" class="space-y-4"></div>
             </div>
-          </div>
 
-          <!-- RIGHT 6 COLS: ETSY / AMAZON STYLE BUY BOX & PERSONALIZATION -->
-          <div class="lg:col-span-6 space-y-5">
-            <div id="pdp-buy-card" class="p-6 rounded-3xl border shadow-sm space-y-4 transition-colors" style="background-color: #E6E6FA; color: #001F3F; border-color: #D4C5E2;">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold px-2 py-0.5 rounded" style="background-color: #FF8C00; color: #FFFDFB;">#1 BESTSELLER</span>
-                    <span id="pdp-rating-text" class="text-xs font-extrabold">★★★★★ 4.9 (214 Verified Reviews)</span>
+            <!-- STEP 2 PANEL: FIX #2 — PAYPAL EXPRESS / CHECKOUT RECEIVER ADDRESS CONFIRMATION -->
+            <div id="checkout-step-2-panel" class="hidden space-y-6">
+              <!-- Pre-Authorized Payment Method Banner (Order NOT placed yet!) -->
+              <div class="vb-surface p-5 border-l-4" style="border-left-color: var(--accent-sage);">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+                      Step 2 of 2 &bull; Final Review Required
+                    </span>
+                    <span id="selected-payment-method-badge" class="text-xs font-semibold" style="color: var(--text-primary);">
+                      PayPal Express Authenticated (banerjee.sumanto08@gmail.com)
+                    </span>
                   </div>
-                  <h3 id="pdp-title" class="text-2xl font-extrabold mt-1">Peony Breeze Wrap Midi Dress</h3>
+                  <button onclick="setCheckoutStep(1)" class="text-xs underline font-medium" style="color: var(--text-secondary);">
+                    &larr; Back to Shopping Bag
+                  </button>
                 </div>
-                <div class="text-right">
-                  <div id="pdp-price" class="text-2xl font-extrabold" data-usd="54.99">$54.99</div>
-                  <span class="text-xs font-bold text-green-800">✓ In Stock &amp; Ready to Print</span>
+                <p class="text-xs mt-2 mb-0" style="color: var(--text-secondary);">
+                  <strong>Your card/PayPal has NOT been charged yet.</strong> Please confirm or edit the receiver's delivery address below before placing your order.
+                </p>
+              </div>
+
+              <!-- Receiver's Shipping Address Confirmation & Inline Editor -->
+              <div class="vb-surface p-6 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-4 vb-border-b">
+                  <div>
+                    <h2 class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">
+                      Confirm Receiver's Shipping Address
+                    </h2>
+                    <p class="text-xs mt-0.5 mb-0" style="color: var(--text-muted);">
+                      Sending a personalized gift or shipping to yourself? Verify the recipient's exact address below.
+                    </p>
+                  </div>
+                  <button onclick="toggleAddressEditor()" id="toggle-address-edit-btn" class="vb-btn-outline px-3.5 py-1.5 text-xs">
+                    Edit Receiver Address
+                  </button>
+                </div>
+
+                <!-- Read-Only Confirmed Address View -->
+                <div id="address-display-card" class="p-4 rounded vb-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div class="space-y-1 text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-sm" id="disp-receiver-name" style="color: var(--text-primary);">Sophia Reynolds</span>
+                      <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded font-semibold" style="background-color: var(--accent-brand-soft); color: var(--accent-brand);">Verified Destination</span>
+                    </div>
+                    <div id="disp-receiver-street" style="color: var(--text-secondary);">742 Evergreen Terrace, Apt 4B</div>
+                    <div id="disp-receiver-city" style="color: var(--text-secondary);">Austin, TX 78701, United States</div>
+                    <div class="pt-1 text-[11px]" style="color: var(--text-muted);">
+                      Carrier SMS Notifications: <span id="disp-receiver-phone">(512) 555-0194</span> &bull; Note: <span id="disp-receiver-note">Leave with front desk concierge</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs font-medium" style="color: var(--accent-sage);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>USPS / UPS Address Deliverable</span>
+                  </div>
+                </div>
+
+                <!-- Editable Receiver Address Form -->
+                <div id="address-edit-form" class="hidden space-y-4 pt-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Receiver's Full Name *</label>
+                      <input id="inp-receiver-name" type="text" value="Sophia Reynolds" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Receiver's Phone (for Tracking SMS) *</label>
+                      <input id="inp-receiver-phone" type="text" value="(512) 555-0194" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Street Address &amp; Apt/Suite *</label>
+                      <input id="inp-receiver-street" type="text" value="742 Evergreen Terrace, Apt 4B" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">City *</label>
+                      <input id="inp-receiver-city" type="text" value="Austin" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">State / Province *</label>
+                        <input id="inp-receiver-state" type="text" value="TX" class="w-full px-3 py-2 text-xs vb-surface" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">ZIP / Postal Code *</label>
+                        <input id="inp-receiver-zip" type="text" value="78701" class="w-full px-3 py-2 text-xs vb-surface" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Country / Region *</label>
+                      <select id="inp-receiver-country" class="w-full px-3 py-2 text-xs vb-surface">
+                        <option value="United States">United States (Local US Print Hub)</option>
+                        <option value="United Kingdom">United Kingdom (Local UK Print Hub)</option>
+                        <option value="Germany (EU)">Germany / EU (Local EU Print Hub — VAT Included)</option>
+                        <option value="Canada">Canada (Local ON Print Hub)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">Delivery Instructions / Gift Note</label>
+                      <input id="inp-receiver-note" type="text" value="Leave with front desk concierge" class="w-full px-3 py-2 text-xs vb-surface" />
+                    </div>
+                  </div>
+                  <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="saveReceiverAddress()" class="vb-btn-primary px-4 py-2 text-xs">
+                      Save &amp; Confirm Receiver Address
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Shipping Speed Selector -->
+                <div class="pt-4 vb-border-t space-y-2.5">
+                  <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-secondary);">Select Shipping Speed</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="vb-surface p-3 flex items-center justify-between cursor-pointer">
+                      <div class="flex items-center gap-2.5">
+                        <input type="radio" name="shipping_speed" value="standard" checked onchange="setShippingSpeed('standard')" />
+                        <div class="text-xs">
+                          <div class="font-semibold" style="color: var(--text-primary);">Standard Tracked Delivery</div>
+                          <div class="text-[11px]" style="color: var(--text-muted);">Est. 3–5 business days</div>
+                        </div>
+                      </div>
+                      <span class="text-xs font-semibold" id="std-ship-price-label" style="color: var(--accent-sage);">FREE</span>
+                    </label>
+                    <label class="vb-surface p-3 flex items-center justify-between cursor-pointer">
+                      <div class="flex items-center gap-2.5">
+                        <input type="radio" name="shipping_speed" value="express" onchange="setShippingSpeed('express')" />
+                        <div class="text-xs">
+                          <div class="font-semibold" style="color: var(--text-primary);">Priority Express Air</div>
+                          <div class="text-[11px]" style="color: var(--text-muted);">Est. 1–2 business days</div>
+                        </div>
+                      </div>
+                      <span class="text-xs font-semibold" style="color: var(--text-primary);">$14.99</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Compact Item Verification List before Finalizing -->
+                <div class="pt-4 vb-border-t space-y-2">
+                  <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-secondary);">Items Shipping to This Receiver</div>
+                  <div id="step2-items-preview" class="space-y-2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT 4 COLUMNS: ORDER SUMMARY + PROMO TOGGLE (FIX #3) + STEP-AWARE CTA (FIX #2) -->
+          <div class="lg:col-span-4">
+            <div class="vb-surface p-6 space-y-5 sticky top-28">
+              <h2 class="font-editorial text-2xl font-semibold pb-3 vb-border-b" style="color: var(--text-primary);">
+                Order Summary
+              </h2>
+
+              <!-- FIX #3: Promo Code Input where button toggles between "Apply Code" and "Remove Code" -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <label for="promo-input" class="font-medium" style="color: var(--text-secondary);">Promotional Code</label>
+                  <span class="text-[11px]" style="color: var(--text-muted);">Try <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('BLOOM15')">BLOOM15</strong> (15% off)</span>
+                </div>
+                <div class="flex gap-2">
+                  <input
+                    id="promo-input"
+                    type="text"
+                    value="BLOOM15"
+                    placeholder="Enter code (e.g. BLOOM15)"
+                    class="flex-1 px-3 py-2 text-xs font-mono-code uppercase vb-surface focus:outline-none"
+                    style="color: var(--text-primary);"
+                  />
+                  <button
+                    id="promo-action-btn"
+                    onclick="handlePromoButtonClick()"
+                    class="px-4 py-2 text-xs font-semibold rounded transition"
+                  >
+                    Apply Code
+                  </button>
+                </div>
+                <div id="promo-feedback-msg" class="text-[11px] min-h-[16px]"></div>
+              </div>
+
+              <!-- Financial Totals Breakdown -->
+              <div class="space-y-2.5 pt-3 vb-border-t text-xs">
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Subtotal</span>
+                  <span id="summary-subtotal" class="font-medium" style="color: var(--text-primary);">$0.00</span>
+                </div>
+                <div id="summary-discount-row" class="hidden flex justify-between" style="color: var(--accent-sage);">
+                  <span id="summary-discount-label">Promo Discount (BLOOM15 -15%)</span>
+                  <span id="summary-discount-amount" class="font-semibold">-$0.00</span>
+                </div>
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Tracked Shipping</span>
+                  <span id="summary-shipping" class="font-medium" style="color: var(--text-primary);">FREE</span>
+                </div>
+                <div class="flex justify-between" style="color: var(--text-secondary);">
+                  <span>Estimated Tax (US/EU Auto-Calculated)</span>
+                  <span id="summary-tax" class="font-medium" style="color: var(--text-primary);">$0.00</span>
+                </div>
+                <div class="flex justify-between pt-3 vb-border-t text-base font-semibold" style="color: var(--text-primary);">
+                  <span>Total</span>
+                  <span id="summary-total">$0.00</span>
                 </div>
               </div>
 
-              <!-- 1. Choose Color Swatch -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-extrabold uppercase tracking-wider block">1. Select Color: <span id="selected-color-name">Soft Peach</span></label>
-                <div class="flex flex-wrap items-center gap-2.5">
-                  <button onclick="setGarmentColor('#FFCCCB', 'Soft Peach')" class="px-3 py-1.5 rounded-full border-2 text-xs font-bold flex items-center gap-1.5" style="background-color: #FFCCCB; color: #001F3F; border-color: #001F3F;">
-                    <span class="w-3 h-3 rounded-full bg-[#FFCCCB] border border-black/30"></span> Soft Peach
-                  </button>
-                  <button onclick="setGarmentColor('#001F3F', 'True Navy')" class="px-3 py-1.5 rounded-full border-2 text-xs font-bold flex items-center gap-1.5" style="background-color: #001F3F; color: #FFFDFB; border-color: #FFFDFB;">
-                    <span class="w-3 h-3 rounded-full bg-[#001F3F] border border-white/40"></span> True Navy
-                  </button>
-                  <button onclick="setGarmentColor('#FFFDFB', 'Petal White')" class="px-3 py-1.5 rounded-full border-2 text-xs font-bold flex items-center gap-1.5" style="background-color: #FFFDFB; color: #001F3F; border-color: #001F3F;">
-                    <span class="w-3 h-3 rounded-full bg-[#FFFDFB] border border-black/30"></span> Petal White
-                  </button>
-                  <button onclick="setGarmentColor('#E6E6FA', 'Lavender Haze')" class="px-3 py-1.5 rounded-full border-2 text-xs font-bold flex items-center gap-1.5" style="background-color: #E6E6FA; color: #001F3F; border-color: #001F3F;">
-                    <span class="w-3 h-3 rounded-full bg-[#E6E6FA] border border-black/30"></span> Lavender
-                  </button>
-                  <button onclick="setGarmentColor('#98FB98', 'Mint Flash')" class="px-3 py-1.5 rounded-full border-2 text-xs font-bold flex items-center gap-1.5" style="background-color: #98FB98; color: #001F3F; border-color: #001F3F;">
-                    <span class="w-3 h-3 rounded-full bg-[#98FB98] border border-black/30"></span> Mint Flash
-                  </button>
-                </div>
-              </div>
-
-              <!-- 2. Choose Graphic Artwork -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-extrabold uppercase tracking-wider block">2. Choose Artwork Style</label>
-                <div class="grid grid-cols-3 gap-2">
-                  <button onclick="setPattern('🌸', 'Peony Sunburst')" class="p-2 rounded-xl border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">
-                    🌸 Peony Sunburst
-                  </button>
-                  <button onclick="setPattern('🌼', 'Golden Daisy Wave')" class="p-2 rounded-xl border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">
-                    🌼 Daisy Wave
-                  </button>
-                  <button onclick="setPattern('🦋', 'Pastel Flutter')" class="p-2 rounded-xl border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">
-                    🦋 Pastel Flutter
-                  </button>
-                </div>
-              </div>
-
-              <!-- 3. Select Inclusive Size -->
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <label class="text-xs font-extrabold uppercase tracking-wider">3. Size: <span id="selected-size-label">M (US 8-10)</span></label>
-                  <span class="text-xs underline cursor-pointer font-bold" onclick="alert('VibeBloom Size Guide:\nXS (US 2): Bust 32-33 in\nS (US 4-6): Bust 34-35 in\nM (US 8-10): Bust 36-37 in\nL (US 12-14): Bust 38-40 in\nXL (US 16-18): Bust 41-43 in\n2XL (US 20): Bust 44-46 in')">📏 View Size Guide</span>
-                </div>
-                <div class="flex flex-wrap gap-2" id="size-pills">
-                  <button onclick="selectSize('XS (US 2)')" class="px-3 py-1.5 rounded-lg border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">XS (2)</button>
-                  <button onclick="selectSize('S (US 4-6)')" class="px-3 py-1.5 rounded-lg border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">S (4-6)</button>
-                  <button onclick="selectSize('M (US 8-10)')" class="px-3 py-1.5 rounded-lg border text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">M (8-10)</button>
-                  <button onclick="selectSize('L (US 12-14)')" class="px-3 py-1.5 rounded-lg border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">L (12-14)</button>
-                  <button onclick="selectSize('XL (US 16-18)')" class="px-3 py-1.5 rounded-lg border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">XL (16-18)</button>
-                  <button onclick="selectSize('2XL (US 20)')" class="px-3 py-1.5 rounded-lg border text-xs font-bold" style="background-color: #FFFFFF; color: #001F3F;">2XL (20)</button>
-                </div>
-              </div>
-
-              <!-- 4. Etsy-Style "Add Your Personalization" Box -->
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <label for="hem-slogan-input" class="text-xs font-extrabold uppercase tracking-wider">4. Add Your Personalization (Optional — Free)</label>
-                  <span class="text-xs font-bold" id="slogan-char-counter">21 / 32 chars</span>
-                </div>
-                <input
-                  id="hem-slogan-input"
-                  type="text"
-                  maxlength="32"
-                  value="Bloom Where You Are ✨"
-                  oninput="updateHemSlogan(this.value)"
-                  class="w-full px-3.5 py-2.5 rounded-xl border text-sm font-bold"
-                  style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;"
-                  placeholder="Enter custom name, date, or 2-inch hem slogan..."
-                />
-              </div>
-
-              <!-- Frequently Bought Together Bundle (+15% Off) -->
-              <div class="p-3.5 rounded-2xl border flex items-center justify-between gap-3" style="background-color: #FFF0EF; color: #001F3F; border-color: #FF8C00;">
-                <div>
-                  <span class="text-xs font-extrabold px-2 py-0.5 rounded" style="background-color: #FF8C00; color: #FFFDFB;">FREQUENTLY BOUGHT TOGETHER • SAVE 15%</span>
-                  <p class="text-xs font-bold mt-1">Add Matching Linen Tote + 20oz Tumbler (+$29.99 Bundle)</p>
-                </div>
-                <input type="checkbox" id="bundle-checkbox" checked class="w-5 h-5 accent-[#001F3F] cursor-pointer" />
-              </div>
-
-              <!-- Add to Cart & Save to Wishlist Buttons -->
-              <div class="flex flex-wrap gap-3 pt-1">
-                <button onclick="addSelectedToCart()" class="flex-1 py-3.5 px-6 rounded-full text-sm font-extrabold shadow-md transition-transform hover:-translate-y-0.5" style="background-color: #001F3F; color: #FFFDFB;">
-                  🛒 Add to Cart — Buy Now
+              <!-- STEP 1 ACTION BUTTONS: Proceeds to Step 2 (Address Confirmation) instead of placing order blindly -->
+              <div id="step-1-cta-group" class="space-y-2.5 pt-2">
+                <button
+                  onclick="startCheckoutWithMethod('PayPal Express')"
+                  class="w-full py-3 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 transition shadow-sm"
+                  style="background-color: #FFC439; color: #111827;"
+                >
+                  <span>Checkout with <strong>PayPal</strong> Express</span>
+                  <span class="text-[11px] opacity-80">&rarr; Confirm Address</span>
                 </button>
-                <button onclick="addSelectedToWishlist()" class="px-4 py-3.5 rounded-full text-xs font-extrabold border" style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;">
-                  ❤️ Save
+
+                <button
+                  onclick="startCheckoutWithMethod('PayPal Pay in 4 (Interest-Free)')"
+                  class="w-full py-2.5 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 vb-btn-outline"
+                >
+                  <span>Pay in 4 Interest-Free Payments</span>
                 </button>
+
+                <button
+                  onclick="startCheckoutWithMethod('Credit / Debit Card (Stripe / WooPay)')"
+                  class="w-full py-3 px-4 text-xs uppercase tracking-wider vb-btn-primary"
+                >
+                  Proceed to Receiver Address Review &rarr;
+                </button>
+              </div>
+
+              <!-- STEP 2 ACTION BUTTONS: Finalize Order AFTER Receiver Address is Verified -->
+              <div id="step-2-cta-group" class="hidden space-y-2.5 pt-2">
+                <div class="p-2.5 rounded text-[11px] vb-subtle" style="color: var(--text-secondary);">
+                  Shipping to: <strong id="cta-receiver-summary" style="color: var(--text-primary);">Sophia Reynolds — Austin, TX 78701</strong>
+                </div>
+                <button
+                  onclick="confirmAndPlaceFinalOrder()"
+                  class="w-full py-3.5 px-4 text-xs uppercase tracking-wider vb-btn-primary shadow-md"
+                >
+                  Confirm Receiver Address &amp; Place Order (<span id="final-place-order-amount">$0.00</span>)
+                </button>
+                <button
+                  onclick="setCheckoutStep(1)"
+                  class="w-full py-2 text-xs vb-btn-outline"
+                >
+                  &larr; Edit Items in Bag
+                </button>
+              </div>
+
+              <!-- Buyer Protection Trust Footer -->
+              <div class="pt-3 vb-border-t space-y-1.5 text-[11px]" style="color: var(--text-muted);">
+                <div class="flex items-center gap-2">
+                  <span>&#10003;</span>
+                  <span>PayPal Buyer Protection &amp; 256-Bit TLS Checkout</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span>&#10003;</span>
+                  <span>Free 1-Hour Self-Service Cancellation Window</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Amazon / Etsy Style Verified Customer Reviews Section -->
-      <section class="pt-6 border-t space-y-4" style="border-color: #E2D9E8;">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+      <!-- ========================================================================
+           VIEW D: CUSTOMER ORDERS, TRACKING & SELF-SERVICE RETURNS
+           ======================================================================== -->
+      <section id="view-orders" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-6 vb-border-b">
           <div>
-            <h3 class="text-xl font-extrabold">Customer Reviews &amp; Photos (★ 4.9 out of 5)</h3>
-            <p class="text-xs opacity-75">96% of buyers recommend VibeBloom • 94% say items fit true to size</p>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">Customer Care Portal</span>
+            <h1 class="font-editorial text-3xl sm:text-4xl font-semibold mt-1" style="color: var(--text-primary);">My Orders &amp; Tracking</h1>
           </div>
-          <span class="text-xs font-extrabold px-3 py-1 rounded-full" style="background-color: #98FB98; color: #001F3F;">
-            ✓ 100% Verified Purchasers
-          </span>
+          <button onclick="switchTab('catalog')" class="vb-btn-outline px-4 py-2 text-xs">
+            &larr; Back to Shop
+          </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="p-4 rounded-2xl border space-y-2" style="background-color: #FAF8F6; color: #001F3F; border-color: #E2D9E8;">
-            <div class="flex items-center justify-between text-xs font-bold">
-              <span>★★★★★ &quot;So soft &amp; vibrant!&quot;</span>
-              <span class="opacity-60">Oct 2, 2026</span>
-            </div>
-            <p class="text-xs leading-relaxed">
-              &quot;Ordered the Peony Breeze Wrap Dress in Soft Peach with my custom slogan on the hem. Arrived in 4 days in Austin, TX and the print is super crisp!&quot;
-            </p>
-            <span class="text-xs font-bold block opacity-75">— Hannah M. (US • Purchased Size M)</span>
-          </div>
-
-          <div class="p-4 rounded-2xl border space-y-2" style="background-color: #FAF8F6; color: #001F3F; border-color: #E2D9E8;">
-            <div class="flex items-center justify-between text-xs font-bold">
-              <span>★★★★★ &quot;Zero customs fees in Germany!&quot;</span>
-              <span class="opacity-60">Sep 28, 2026</span>
-            </div>
-            <p class="text-xs leading-relaxed">
-              &quot;Loved that it shipped locally from within the EU via DHL. The Lavender Haze hoodie is my new favorite weekend piece.&quot;
-            </p>
-            <span class="text-xs font-bold block opacity-75">— Lena K. (Berlin, DE • Purchased Size L)</span>
-          </div>
-
-          <div class="p-4 rounded-2xl border space-y-2" style="background-color: #FAF8F6; color: #001F3F; border-color: #E2D9E8;">
-            <div class="flex items-center justify-between text-xs font-bold">
-              <span>★★★★★ &quot;2-Hour size edit saved me!&quot;</span>
-              <span class="opacity-60">Sep 21, 2026</span>
-            </div>
-            <p class="text-xs leading-relaxed">
-              &quot;I accidentally picked Size S at checkout, clicked &apos;Change Size&apos; in My Orders 20 minutes later, and switched to Size M for free before it printed!&quot;
-            </p>
-            <span class="text-xs font-bold block opacity-75">— Chloe R. (London, UK • Purchased Size M)</span>
-          </div>
+        <div id="orders-list-container" class="space-y-4 pt-6">
+          <!-- Populated by JS -->
         </div>
       </section>
+
     </main>
 
-    <!-- ===================================================================
-         VIEW 2: SAVED WISHLIST (FAVORITES)
-         =================================================================== -->
-    <main id="view-wishlist" class="hidden max-w-5xl mx-auto px-6 py-8 space-y-6">
-      <div class="p-6 rounded-3xl border shadow-sm space-y-5" style="background-color: #FFFFFF; color: #001F3F; border-color: #E2D9E8;">
-        <div class="flex items-center justify-between border-b pb-4" style="border-color: #E2D9E8;">
+    <!-- ==========================================================================
+         4. PERSONALIZATION STUDIO MODAL (LIVE GARMENT MONOGRAM / EMBROIDERY)
+         ========================================================================== -->
+    <div id="personalizer-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color: rgba(12, 13, 16, 0.72); backdrop-filter: blur(4px);">
+      <div class="vb-surface max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6">
+        <div class="flex items-start justify-between gap-4 pb-4 vb-border-b">
           <div>
-            <h2 class="text-2xl font-extrabold">❤️ Your Saved Wishlist</h2>
-            <p class="text-xs opacity-75">Items saved for later — move any piece to your cart in 1 click.</p>
+            <span class="text-[11px] uppercase tracking-widest font-semibold" style="color: var(--accent-brand);">VibeBloom Custom Atelier</span>
+            <h3 id="modal-product-title" class="font-editorial text-3xl font-semibold mt-0.5" style="color: var(--text-primary);">Personalize Garment</h3>
           </div>
-          <button onclick="switchShopView('shop')" class="px-4 py-2 rounded-full text-xs font-bold border" style="border-color: #001F3F;">
-            ← Continue Shopping
-          </button>
-        </div>
-        <div id="wishlist-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-      </div>
-    </main>
-
-    <!-- ===================================================================
-         VIEW 3: SHOPPING CART & 1-CLICK PAYPAL / VENMO / CARD CHECKOUT
-         =================================================================== -->
-    <main id="view-cart" class="hidden max-w-5xl mx-auto px-6 py-8 space-y-6">
-      <div class="p-6 rounded-3xl border shadow-sm space-y-6" style="background-color: #FFFFFF; color: #001F3F; border-color: #E2D9E8;">
-        <!-- Free Shipping Progress Bar -->
-        <div class="p-4 rounded-2xl border" style="background-color: #FFF0EF; border-color: #E2D9E8;">
-          <div class="flex items-center justify-between text-xs font-extrabold mb-1.5">
-            <span id="shipping-bar-text">🎉 You unlocked FREE Local Standard Shipping!</span>
-            <span>Threshold: $75.00</span>
-          </div>
-          <div class="w-full h-2.5 rounded-full bg-black/10 overflow-hidden">
-            <div id="shipping-progress-fill" class="h-full rounded-full transition-all" style="width: 100%; background-color: #16A34A;"></div>
-          </div>
+          <button onclick="closePersonalizerModal()" class="text-sm px-2.5 py-1 vb-btn-outline">&times; Close</button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <!-- Cart Line Items -->
-          <div class="lg:col-span-7 space-y-4">
-            <h2 class="text-xl font-extrabold">Your Shopping Cart</h2>
-            <div id="cart-items-list" class="space-y-3"></div>
-
-            <!-- Promo Code Input -->
-            <div class="pt-2 flex gap-2">
-              <input id="promo-input" type="text" value="BLOOM15" placeholder="Promo code (e.g. BLOOM15)" class="flex-1 px-3.5 py-2 rounded-xl border text-xs font-bold" style="border-color: #001F3F;" />
-              <button onclick="applyPromoCode()" class="px-4 py-2 rounded-xl text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-                Apply Code
-              </button>
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+          <div class="sm:col-span-5">
+            <div class="vb-aspect-3-4 rounded overflow-hidden vb-border relative">
+              <img id="modal-product-img" src="" alt="Preview" class="w-full h-full object-cover" />
+              <div id="modal-live-badge" class="monogram-preview-pill">Sophia R.</div>
             </div>
-            <p id="promo-feedback" class="text-xs font-bold text-green-700">✓ Code BLOOM15 ready (15% off eligible items)</p>
           </div>
-
-          <!-- Order Summary & Express Checkout Box -->
-          <div class="lg:col-span-5 p-5 rounded-2xl border space-y-4" style="background-color: #FAF8F6; border-color: #E2D9E8;">
-            <h3 class="text-lg font-extrabold border-b pb-2" style="border-color: #E2D9E8;">Order Summary</h3>
-            <div class="space-y-2 text-xs">
-              <div class="flex justify-between">
-                <span>Merchandise Subtotal</span>
-                <strong id="summary-subtotal">$84.98</strong>
-              </div>
-              <div class="flex justify-between text-green-700">
-                <span>Bundle &amp; Promo Savings</span>
-                <strong id="summary-discount">-$5.00</strong>
-              </div>
-              <div class="flex justify-between">
-                <span>Local US/EU Shipping</span>
-                <strong id="summary-shipping" class="text-green-700">FREE</strong>
-              </div>
-              <div class="flex justify-between border-t pt-2 text-sm font-extrabold" style="border-color: #E2D9E8;">
-                <span>Estimated Total</span>
-                <span id="summary-total">$79.98</span>
-              </div>
-            </div>
-
-            <!-- Payment Buttons -->
-            <div class="space-y-2 pt-2">
-              <button onclick="completeCustomerOrder('PAYPAL')" class="w-full py-3 px-4 rounded-xl text-xs font-extrabold shadow-sm" style="background-color: #FFC439; color: #001F3F;">
-                🅿️ Checkout with PayPal Express
-              </button>
-              <button onclick="completeCustomerOrder('PAY_IN_4')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold border" style="background-color: #FFF0EF; color: #001F3F; border-color: #001F3F;">
-                ✨ Pay in 4 Interest-Free Payments of $20.00
-              </button>
-              <button onclick="completeCustomerOrder('CARD')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-                💳 Pay with Debit or Credit Card
-              </button>
-              <button onclick="completeCustomerOrder('DECLINE_TEST')" class="w-full py-2 px-3 rounded-xl text-xs font-bold border" style="background-color: #FFFFFF; color: #991B1B; border-color: #FCA5A5;">
-                Test Card Decline Recovery (Keeps Cart &amp; Promo Safe)
-              </button>
-            </div>
-
-            <div id="checkout-feedback-banner" class="hidden p-3 rounded-xl text-xs font-bold border"></div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- ===================================================================
-         VIEW 4: CUSTOMER "MY ORDERS, 2-HOUR EDIT & EASY RETURNS" (AMAZON STYLE)
-         =================================================================== -->
-    <main id="view-orders" class="hidden max-w-5xl mx-auto px-6 py-8 space-y-6">
-      <div class="p-6 rounded-3xl border shadow-sm space-y-6" style="background-color: #FFFFFF; color: #001F3F; border-color: #E2D9E8;">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b pb-4" style="border-color: #E2D9E8;">
-          <div>
-            <h2 class="text-2xl font-extrabold">📦 Your Orders, Tracking &amp; Easy Returns</h2>
-            <p class="text-xs opacity-75">Edit size or address for free within 2 hours of ordering, track packages, or request an instant replacement.</p>
-          </div>
-          <button onclick="switchShopView('shop')" class="px-4 py-2 rounded-full text-xs font-bold border" style="border-color: #001F3F;">
-            ← Back to Shop
-          </button>
-        </div>
-
-        <!-- ORDER 1: Active Order Inside 2-Hour Free Modification Window -->
-        <div class="p-5 rounded-2xl border-2 space-y-4" style="background-color: #FFF0EF; border-color: #FF8C00;">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="sm:col-span-7 space-y-4">
             <div>
-              <span class="text-xs font-extrabold px-2.5 py-1 rounded-full" style="background-color: #98FB98; color: #001F3F;">
-                ⏱️ FREE 2-HOUR EDIT WINDOW ACTIVE (1h 46m remaining)
-              </span>
-              <h3 class="text-base font-extrabold mt-2">Order #VB-2026-10042 • Placed Today • Total: $80.00</h3>
-              <p class="text-xs opacity-80">Items: 1x Peony Breeze Wrap Midi Dress ($55.00) + 1x Botanical Weekender Tote ($25.00)</p>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">Select Size</label>
+              <div id="modal-size-pills" class="flex flex-wrap gap-2"></div>
             </div>
-            <span id="order-10042-status-pill" class="text-xs font-extrabold px-3 py-1 rounded-lg" style="background-color: #FFFFFF; color: #001F3F;">
-              Status: Pre-Print Quality Hold
-            </span>
-          </div>
 
-          <div class="flex flex-wrap gap-2.5">
-            <button onclick="customerOrderAction('EDIT_SIZE')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold border" style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;">
-              📏 Change Dress Size (Free)
-            </button>
-            <button onclick="customerOrderAction('EDIT_ADDRESS')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold border" style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;">
-              📍 Update Shipping Address
-            </button>
-            <button onclick="customerOrderAction('CANCEL_TOTE_ONLY')" class="px-3.5 py-2 rounded-xl text-xs font-bold border" style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;">
-              Cancel Only $25 Tote (Recalculates Free Shipping)
-            </button>
-            <button onclick="customerOrderAction('CANCEL_FULL_2H')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-              ✕ Cancel Entire Order for Instant 100% Refund
-            </button>
-          </div>
-        </div>
-
-        <!-- ORDER 2: Delivered Order — Customer Return / Replacement Options -->
-        <div class="p-5 rounded-2xl border space-y-4" style="background-color: #FAF8F6; border-color: #E2D9E8;">
-          <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span class="text-xs font-extrabold px-2.5 py-1 rounded-full" style="background-color: #E6E6FA; color: #001F3F;">
-                ✓ DELIVERED OCT 4, 2026 VIA USPS
-              </span>
-              <h3 class="text-base font-extrabold mt-2">Order #VB-2026-09814 • Total: $54.99</h3>
-              <p class="text-xs opacity-80">Item: 1x Sunburst Tiered Maxi Dress (Custom Hem Slogan: &quot;Sunny Days Ahead&quot;)</p>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text-secondary);">
+                Custom Embroidery / Floral Script (Complimentary)
+              </label>
+              <input
+                id="modal-custom-text"
+                type="text"
+                maxlength="24"
+                oninput="updateModalPreviewText(this.value)"
+                placeholder="Leave blank or enter name/monogram..."
+                class="w-full px-3.5 py-2.5 text-xs vb-surface focus:outline-none"
+                style="color: var(--text-primary);"
+              />
+              <p class="text-[11px] mt-1" style="color: var(--text-muted);">
+                Stitched in botanical metallic-silk thread or printed with OEKO-TEX&reg; eco ink.
+              </p>
             </div>
-            <span class="text-xs font-bold opacity-75">30-Day Quality Guarantee Eligible</span>
-          </div>
 
-          <div class="flex flex-wrap gap-2.5">
-            <button onclick="customerOrderAction('DEFECT_FREE_REPLACEMENT')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-              📸 Report Print Defect → Get Free Replacement ($0, No Return Needed)
-            </button>
-            <button onclick="customerOrderAction('DEFECT_CASH_REFUND')" class="px-3.5 py-2 rounded-xl text-xs font-bold border" style="background-color: #FFFFFF; color: #001F3F; border-color: #001F3F;">
-              💵 Report Damaged Item → Request Full Refund
-            </button>
-            <button onclick="customerOrderAction('WRONG_SIZE_VOUCHER')" class="px-3.5 py-2 rounded-xl text-xs font-bold border" style="background-color: #FFF0EF; color: #001F3F; border-color: #FF8C00;">
-              🔄 Ordered Wrong Size on Custom Item → Get 50% OFF Reorder Voucher
-            </button>
+            <div class="pt-2 flex items-center justify-between">
+              <div id="modal-product-price" class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">$64.00</div>
+              <button onclick="confirmModalAddToCart()" class="vb-btn-primary px-6 py-3 text-xs uppercase tracking-widest">
+                Add to Shopping Bag
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- Customer Action Confirmation Box -->
-        <div id="customer-order-feedback" class="p-4 rounded-2xl border text-xs leading-relaxed" style="background-color: #E6E6FA; color: #001F3F; border-color: #001F3F;">
-          <strong>Need help with an order?</strong> Click any button above to modify your active order for free during the 2-hour window, or claim our No-Return Quality Guarantee on delivered items.
         </div>
       </div>
-    </main>
+    </div>
 
-    <!-- Storefront Footer with Mandatory Legal Policies -->
-    <footer class="mt-12 border-t px-6 py-8 text-xs" style="border-color: #E2D9E8;">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <strong>© 2026 VibeBloom</strong> • Printed Locally in US, EU, UK &amp; AU • 100% Secure PayPal Commerce Checkout
+    <!-- ==========================================================================
+         5. FIX #5: STICKY EDITORIAL FOOTER (PINNED TO BOTTOM VIA margin-top: auto)
+         ========================================================================== -->
+    <footer id="site-footer" class="vb-border-t" style="background-color: var(--bg-surface);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 vb-border-b text-xs">
+          <div class="space-y-3">
+            <div class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">VibeBloom Atelier</div>
+            <p class="leading-relaxed" style="color: var(--text-secondary);">
+              Contemporary botanical apparel, linen dresses, and personalized floral accessories crafted to order in the US &amp; European Union.
+            </p>
+            <div class="text-[11px]" style="color: var(--text-muted);">
+              OEKO-TEX&reg; Standard 100 &bull; GDPR &amp; CCPA Compliant
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">Collections</div>
+            <ul class="space-y-1.5 list-none p-0 m-0" style="color: var(--text-secondary);">
+              <li><button onclick="filterCategory('Dresses')" class="hover:underline">Botanical Linen Midi Dresses</button></li>
+              <li><button onclick="filterCategory('Knitwear & Hoodies')" class="hover:underline">Embroidered Atelier Sweaters</button></li>
+              <li><button onclick="filterCategory('Totes & Bags')" class="hover:underline">Heavyweight Organic Canvas Totes</button></li>
+              <li><button onclick="filterCategory('Drinkware')" class="hover:underline">Engraved Insulated Tumblers</button></li>
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">Customer Care &amp; Policies</div>
+            <ul class="space-y-1.5 list-none p-0 m-0" style="color: var(--text-secondary);">
+              <li><button onclick="switchTab('orders')" class="hover:underline">Track Order &amp; 1-Hour Free Cancel</button></li>
+              <li><button onclick="switchTab('orders')" class="hover:underline">30-Day Defective Print Replacement</button></li>
+              <li><span>US Sales Tax &amp; EU IOSS VAT Included</span></li>
+              <li><span>PayPal Express Buyer Protection</span></li>
+            </ul>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-semibold uppercase tracking-wider text-[11px]" style="color: var(--text-primary);">WooCommerce Architecture</div>
+            <p class="leading-relaxed" style="color: var(--text-secondary);">
+              Powered by WooCommerce + Bootstrap 5 (`bootScore` / `Botiga` / `Blocksy` starter tokens). Switch presets in the top bar anytime.
+            </p>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-4 font-bold">
-          <button onclick="switchShopView('orders')" class="underline">Returns &amp; 2-Hr Cancellation Policy</button>
-          <button onclick="alert('Local Production & Shipping:\n• US: 3-5 business days\n• EU & UK: 3-6 business days\n• AU: 4-7 business days\nFree shipping over $75 USD / €70 EUR.')" class="underline">Shipping Policy</button>
-          <button onclick="alert('GDPR & Privacy:\nWe never store raw card numbers. Personalization photos are used strictly to print your order.')" class="underline">Privacy &amp; GDPR</button>
-          <button onclick="alert('You have been unsubscribed from promotional marketing emails (RFC 8058 1-Click Unsubscribe). You will still receive order receipts.')" class="underline">1-Click Unsubscribe</button>
+
+        <div class="pt-6 flex flex-wrap items-center justify-between gap-4 text-[11px]" style="color: var(--text-muted);">
+          <div>&copy; 2026 VibeBloom Atelier LLC. All rights reserved.</div>
+          <div class="flex items-center gap-4">
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>Cookie Preferences (GDPR/CCPA)</span>
+          </div>
         </div>
       </div>
     </footer>
   </div>
 
+  <!-- ============================================================================
+       STOREFRONT INTERACTIVE STATE ENGINE
+       ============================================================================ -->
   <script>
-    const CATALOG = [
-      { id: 'p1', title: 'Peony Breeze Wrap Midi Dress', category: 'DRESSES', priceUsd: 54.99, rating: 4.9, reviews: 214, icon: '👗', badge: '#1 Bestseller', color: '#FFCCCB' },
-      { id: 'p2', title: 'Sunburst Tiered Boho Maxi Dress', category: 'DRESSES', priceUsd: 59.99, rating: 4.8, reviews: 142, icon: '🌺', badge: '60% Floral Pattern', color: '#FFF0EF' },
-      { id: 'p3', title: 'Lavender Haze Oversized Hoodie', category: 'TOPS', priceUsd: 48.99, rating: 4.9, reviews: 319, icon: '🧥', badge: 'Top Gift', color: '#E6E6FA' },
-      { id: 'p4', title: 'True Navy Botanical Cropped Tee', category: 'TOPS', priceUsd: 28.99, rating: 4.7, reviews: 89, icon: '👕', badge: 'Organic Cotton', color: '#E2E8F0' },
-      { id: 'p5', title: 'Petal White Linen Weekender Tote', category: 'BAGS', priceUsd: 26.99, rating: 4.9, reviews: 412, icon: '👜', badge: 'Custom Monogram', color: '#FFFDFB' },
-      { id: 'p6', title: 'Dopamine Bloom 20oz Insulated Tumbler', category: 'DRINKWARE', priceUsd: 24.99, rating: 4.8, reviews: 176, icon: '🥤', badge: 'Custom Engraving', color: '#98FB98' },
-      { id: 'p7', title: 'Pressed Peony MagSafe Phone Case', category: 'ACCESSORIES', priceUsd: 22.99, rating: 4.9, reviews: 95, icon: '📱', badge: 'Shockproof', color: '#FFCCCB' },
-      { id: 'p8', title: 'Morning Joy Ceramic Mug (15oz)', category: 'DRINKWARE', priceUsd: 18.99, rating: 4.8, reviews: 264, icon: '☕', badge: 'Dishwasher Safe', color: '#E6E6FA' }
-    ];
-
-    let activeCategory = 'ALL';
-    let currentCurrency = 'USD';
-    let isDarkMode = false;
-    let selectedProduct = CATALOG[0];
-    let selectedSize = 'M (US 8-10)';
-    let selectedColorName = 'Soft Peach';
-    let refundAlreadyClickedOnce = false;
-
-    const currencyMap = {
-      USD: { symbol: '$', rate: 1.0, freeShip: '$75' },
-      EUR: { symbol: '€', rate: 0.92, freeShip: '€70' },
-      GBP: { symbol: '£', rate: 0.79, freeShip: '£60' },
-      AUD: { symbol: 'A$', rate: 1.52, freeShip: 'A$110' }
+    // Reliable SVG Fallback Generator if an external photo fails to load
+    window.getFallbackSvg = function(title, bgHex) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+        <rect width="600" height="800" fill="${bgHex || '#F3EFEA'}"/>
+        <circle cx="300" cy="340" r="140" fill="#FFFFFF" fill-opacity="0.65"/>
+        <path d="M300 220 C330 270, 380 290, 300 390 C220 290, 270 270, 300 220 Z" fill="#9E4758" fill-opacity="0.35"/>
+        <text x="300" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#18181B">${title}</text>
+        <text x="300" y="595" text-anchor="middle" font-family="sans-serif" font-size="13" letter-spacing="3" fill="#71717A">VIBEBLOOM ATELIER</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
     };
 
-    let wishlistItems = [CATALOG[0], CATALOG[2]];
-    let cartItems = [
-      { title: 'Peony Breeze Wrap Midi Dress', size: 'M (US 8-10)', slogan: 'Bloom Where You Are ✨', priceUsd: 54.99, qty: 1, icon: '👗' },
-      { title: 'Matching Peony Tote & Tumbler Bundle', size: 'One Size', slogan: '15% Bundle Discount Applied', priceUsd: 29.99, qty: 1, icon: '👜' }
+    const PRODUCTS = [
+      {
+        id: 1,
+        title: "Peony Breeze Linen Wrap Midi Dress",
+        category: "Dresses",
+        price: 64.00,
+        rating: 4.9,
+        reviews: 142,
+        badge: "Bestseller",
+        swatch: "Ivory Botanical",
+        sizes: ["XS", "S", "M", "L", "XL"],
+        image: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 2,
+        title: "Wildflower Embroidered Crewneck Sweater",
+        category: "Knitwear & Hoodies",
+        price: 58.00,
+        rating: 4.9,
+        reviews: 98,
+        badge: "Custom Embroidery",
+        swatch: "Oatmeal Heather",
+        sizes: ["S", "M", "L", "XL", "2XL"],
+        image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 3,
+        title: "Sunlit Meadow Smocked Botanical Sundress",
+        category: "Dresses",
+        price: 68.00,
+        rating: 4.8,
+        reviews: 76,
+        badge: "Organic Linen",
+        swatch: "Blush Rose",
+        sizes: ["XS", "S", "M", "L"],
+        image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 4,
+        title: "Pressed Botanical Heavyweight Market Tote",
+        category: "Totes & Bags",
+        price: 32.00,
+        rating: 4.9,
+        reviews: 215,
+        badge: "16oz Organic Canvas",
+        swatch: "Natural Ecru",
+        sizes: ["One Size (18x15\")"],
+        image: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 5,
+        title: "Midnight Garden Satin Slip Midi Dress",
+        category: "Dresses",
+        price: 72.00,
+        rating: 4.9,
+        reviews: 64,
+        badge: "Evening Edit",
+        swatch: "Champagne Rose",
+        sizes: ["XS", "S", "M", "L", "XL"],
+        image: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 6,
+        title: "Sage Blossom Oversized Fleece Hoodie",
+        category: "Knitwear & Hoodies",
+        price: 54.00,
+        rating: 4.8,
+        reviews: 119,
+        badge: "Heavyweight 400gsm",
+        swatch: "Sage Leaf",
+        sizes: ["S", "M", "L", "XL"],
+        image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 7,
+        title: "Engraved Flora 40oz Insulated Travel Tumbler",
+        category: "Drinkware",
+        price: 38.00,
+        rating: 4.9,
+        reviews: 184,
+        badge: "Laser Engraved",
+        swatch: "Matte Petal Cream",
+        sizes: ["40 oz with Straw"],
+        image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=900&q=85"
+      },
+      {
+        id: 8,
+        title: "Atelier Monogram Weekender Canvas Carryall",
+        category: "Totes & Bags",
+        price: 46.00,
+        rating: 4.8,
+        reviews: 53,
+        badge: "Monogram Ready",
+        swatch: "Warm Sand",
+        sizes: ["Weekender XL"],
+        image: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=900&q=85"
+      }
     ];
 
-    function formatPrice(usd) {
-      const c = currencyMap[currentCurrency];
-      const val = Math.floor(usd * c.rate) + 0.99;
-      return c.symbol + val.toFixed(2);
+    let state = {
+      activeTab: 'catalog',
+      category: 'All',
+      search: '',
+      sort: 'featured',
+      globalMonogram: '',
+      wishlist: [1, 4],
+      cart: [
+        {
+          cartItemId: 'ci-1',
+          productId: 1,
+          size: 'M',
+          customText: 'Sophia R.',
+          qty: 1
+        },
+        {
+          cartItemId: 'ci-2',
+          productId: 4,
+          size: 'One Size (18x15")',
+          customText: 'VibeBloom Atelier',
+          qty: 1
+        }
+      ],
+      // FIX #1: Holds recently removed items so user can click "Removed it by mistake? Add it back"
+      recentlyRemoved: [],
+      // FIX #3: Promo state — toggles button between "Apply Code" and "Remove Code"
+      promoApplied: true,
+      promoCode: 'BLOOM15',
+      promoDiscountRate: 0.15,
+      // FIX #2: 2-Step Checkout State (1 = Bag, 2 = Confirm Receiver Address)
+      checkoutStep: 1,
+      selectedPaymentMethod: 'PayPal Express',
+      shippingSpeed: 'standard',
+      editingAddress: false,
+      receiverAddress: {
+        name: 'Sophia Reynolds',
+        phone: '(512) 555-0194',
+        street: '742 Evergreen Terrace, Apt 4B',
+        city: 'Austin',
+        state: 'TX',
+        zip: '78701',
+        country: 'United States',
+        note: 'Leave with front desk concierge'
+      },
+      orders: [
+        {
+          id: 'VB-90482',
+          date: 'Oct 10, 2026',
+          status: 'In Botanical Print Production (US-Austin Hub)',
+          canCancelFree: true,
+          paymentMethod: 'PayPal Express',
+          receiver: 'Sophia Reynolds — 742 Evergreen Terrace, Apt 4B, Austin, TX 78701',
+          total: 81.60,
+          items: [
+            { title: 'Peony Breeze Linen Wrap Midi Dress', size: 'M', customText: 'Sophia R.', qty: 1, price: 64.00 },
+            { title: 'Pressed Botanical Heavyweight Market Tote', size: 'One Size', customText: 'Sophia', qty: 1, price: 32.00 }
+          ]
+        }
+      ],
+      modalProductId: 1,
+      modalSelectedSize: 'M',
+      modalCustomText: ''
+    };
+
+    // Theme & Preset Controls
+    function changeThemePreset(preset) {
+      document.documentElement.setAttribute('data-preset', preset);
     }
 
-    function renderCatalog() {
-      const q = (document.getElementById('shop-search-input').value || '').toLowerCase().trim();
-      const sortBy = document.getElementById('sort-select').value;
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('theme-icon').textContent = next === 'dark' ? '☀' : '☾';
+      document.getElementById('theme-label').textContent = next === 'dark' ? 'Light Atelier' : 'Midnight Mode';
+    }
 
-      let filtered = CATALOG.filter(item => {
-        const matchCat = activeCategory === 'ALL' || item.category === activeCategory;
-        const matchQ = !q || item.title.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
-        return matchCat && matchQ;
+    // Navigation
+    function switchTab(tab) {
+      state.activeTab = tab;
+      ['catalog', 'wishlist', 'cart', 'orders'].forEach(t => {
+        const el = document.getElementById(`view-${t}`);
+        if (el) el.classList.toggle('hidden', t !== tab);
       });
-
-      if (sortBy === 'price-asc') filtered.sort((a, b) => a.priceUsd - b.priceUsd);
-      if (sortBy === 'price-desc') filtered.sort((a, b) => b.priceUsd - a.priceUsd);
-      if (sortBy === 'rating') filtered.sort((a, b) => b.rating - a.rating);
-
-      document.getElementById('catalog-count-label').textContent = `Showing ${filtered.length} items`;
-
-      const grid = document.getElementById('catalog-grid');
-      grid.innerHTML = filtered.map(item => `
-        <div class="rounded-2xl border p-4 flex flex-col justify-between gap-3 shadow-sm hover:shadow-md transition-all" style="background-color: #FAF8F6; color: #001F3F; border-color: #E2D9E8;">
-          <div>
-            <div class="h-36 rounded-xl flex items-center justify-center text-5xl relative border" style="background-color: ${item.color}; border-color: rgba(0,31,63,0.1);">
-              <span>${item.icon}</span>
-              <span class="absolute top-2 left-2 text-xs font-extrabold px-2 py-0.5 rounded-full" style="background-color: #001F3F; color: #FFFDFB;">${item.badge}</span>
-            </div>
-            <div class="mt-3 space-y-1">
-              <div class="text-xs font-bold text-amber-600">★★★★★ ${item.rating} (${item.reviews})</div>
-              <h3 class="text-sm font-extrabold leading-snug">${item.title}</h3>
-              <div class="text-base font-extrabold">${formatPrice(item.priceUsd)}</div>
-            </div>
-          </div>
-          <div class="flex gap-2 pt-1">
-            <button onclick="loadProductIntoStudio('${item.id}')" class="flex-1 py-2 px-3 rounded-full text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-              ✨ Customize &amp; Buy
-            </button>
-          </div>
-        </div>
-      `).join('');
+      if (tab === 'catalog') renderCatalog();
+      if (tab === 'wishlist') renderWishlist();
+      if (tab === 'cart') renderCartAndCheckout();
+      if (tab === 'orders') renderOrders();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function setCategory(cat) {
-      activeCategory = cat;
-      ['ALL', 'DRESSES', 'TOPS', 'BAGS', 'DRINKWARE', 'ACCESSORIES'].forEach(c => {
-        const btn = document.getElementById('cat-' + c);
-        if (c === cat) {
-          btn.style.backgroundColor = isDarkMode ? '#FFCCCB' : '#001F3F';
-          btn.style.color = isDarkMode ? '#001F3F' : '#FFFDFB';
-        } else {
-          btn.style.backgroundColor = 'transparent';
-          btn.style.color = isDarkMode ? '#FFFDFB' : '#001F3F';
+    function filterCategory(cat) {
+      state.category = cat;
+      ['All', 'Dresses', 'Knitwear & Hoodies', 'Totes & Bags', 'Drinkware'].forEach(c => {
+        const btn = document.getElementById(`nav-cat-${c}`);
+        if (btn) {
+          if (c === cat) {
+            btn.classList.add('border-current', 'font-semibold');
+            btn.classList.remove('border-transparent');
+          } else {
+            btn.classList.remove('border-current', 'font-semibold');
+            btn.classList.add('border-transparent');
+          }
         }
       });
-      switchShopView('shop');
-      renderCatalog();
-    }
-
-    function filterCatalog() {
-      renderCatalog();
-    }
-
-    function loadProductIntoStudio(id) {
-      const found = CATALOG.find(p => p.id === id);
-      if (!found) return;
-      selectedProduct = found;
-      document.getElementById('pdp-title').textContent = found.title;
-      const priceEl = document.getElementById('pdp-price');
-      priceEl.setAttribute('data-usd', found.priceUsd);
-      priceEl.textContent = formatPrice(found.priceUsd);
-      document.getElementById('pdp-rating-text').textContent = `★★★★★ ${found.rating} (${found.reviews} Verified Reviews)`;
-      document.getElementById('svg-pattern-icon').textContent = found.icon;
-      document.getElementById('svg-pattern-title').textContent = found.title.split(' ').slice(0, 2).join(' ');
-      document.getElementById('product-studio-section').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function setGarmentColor(hex, label) {
-      selectedColorName = label;
-      document.getElementById('selected-color-name').textContent = label;
-      document.getElementById('garment-body').setAttribute('fill', hex);
-      const sloganText = document.getElementById('svg-hem-slogan');
-      const alertBox = document.getElementById('contrast-alert');
-      if (hex === '#001F3F') {
-        sloganText.setAttribute('fill', '#FFFDFB');
-        alertBox.classList.remove('hidden');
+      if (state.activeTab !== 'catalog') {
+        switchTab('catalog');
       } else {
-        sloganText.setAttribute('fill', '#001F3F');
-        alertBox.classList.add('hidden');
+        renderCatalog();
       }
     }
 
-    function setPattern(icon, title) {
-      document.getElementById('svg-pattern-icon').textContent = icon;
-      document.getElementById('svg-pattern-title').textContent = title;
+    function handleSearch(val) {
+      state.search = val.trim().toLowerCase();
+      if (state.activeTab !== 'catalog') switchTab('catalog');
+      else renderCatalog();
     }
 
-    function updateHemSlogan(val) {
-      document.getElementById('svg-hem-slogan').textContent = val.trim() || 'VibeBloom ✨';
-      document.getElementById('slogan-char-counter').textContent = val.length + ' / 32 chars';
+    function handleSort(val) {
+      state.sort = val;
+      renderCatalog();
     }
 
-    function selectSize(sz) {
-      selectedSize = sz;
-      document.getElementById('selected-size-label').textContent = sz;
-      document.querySelectorAll('#size-pills button').forEach(btn => {
-        if (btn.textContent.includes(sz.split(' ')[0])) {
-          btn.style.backgroundColor = '#001F3F';
-          btn.style.color = '#FFFDFB';
-        } else {
-          btn.style.backgroundColor = '#FFFFFF';
-          btn.style.color = '#001F3F';
-        }
+    function updateGlobalMonogram(val) {
+      state.globalMonogram = val;
+      const inp = document.getElementById('global-monogram-input');
+      if (inp && inp.value !== val) inp.value = val;
+      renderCatalog();
+    }
+
+    // Catalog Renderer (3:4 Fashion Cards)
+    function renderCatalog() {
+      let list = PRODUCTS.filter(p => {
+        const matchCat = state.category === 'All' || p.category === state.category;
+        const matchSearch = !state.search || p.title.toLowerCase().includes(state.search) || p.category.toLowerCase().includes(state.search);
+        return matchCat && matchSearch;
       });
-    }
 
-    function addSelectedToCart() {
-      const slogan = document.getElementById('hem-slogan-input').value.trim() || 'Standard Print';
-      cartItems.push({
-        title: `${selectedProduct.title} (${selectedColorName})`,
-        size: selectedSize,
-        slogan: `Personalization: "${slogan}"`,
-        priceUsd: selectedProduct.priceUsd,
-        qty: 1,
-        icon: selectedProduct.icon
-      });
-      updateCartUI();
-      switchShopView('cart');
-    }
+      if (state.sort === 'price-asc') list.sort((a, b) => a.price - b.price);
+      if (state.sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+      if (state.sort === 'rating') list.sort((a, b) => b.rating - a.rating);
 
-    function addSelectedToWishlist() {
-      if (!wishlistItems.some(w => w.id === selectedProduct.id)) {
-        wishlistItems.push(selectedProduct);
-      }
-      updateWishlistUI();
-      switchShopView('wishlist');
-    }
+      document.getElementById('catalog-count-label').textContent = list.length;
 
-    function updateWishlistUI() {
-      document.getElementById('wishlist-badge').textContent = wishlistItems.length;
-      const box = document.getElementById('wishlist-container');
-      box.innerHTML = wishlistItems.map(item => `
-        <div class="p-4 rounded-2xl border flex items-center justify-between gap-4" style="background-color: #FAF8F6; border-color: #E2D9E8;">
-          <div class="flex items-center gap-3">
-            <span class="text-3xl">${item.icon}</span>
-            <div>
-              <h4 class="text-sm font-extrabold">${item.title}</h4>
-              <span class="text-xs font-bold">${formatPrice(item.priceUsd)}</span>
-            </div>
-          </div>
-          <button onclick="loadProductIntoStudio('${item.id}'); switchShopView('shop');" class="px-3.5 py-1.5 rounded-full text-xs font-extrabold" style="background-color: #001F3F; color: #FFFDFB;">
-            Customize &amp; Buy
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function updateCartUI() {
-      document.getElementById('cart-badge').textContent = cartItems.length;
-      const list = document.getElementById('cart-items-list');
-      let subtotal = 0;
-      list.innerHTML = cartItems.map((c, idx) => {
-        subtotal += c.priceUsd * c.qty;
+      const grid = document.getElementById('product-grid-container');
+      grid.innerHTML = list.map(p => {
+        const wished = state.wishlist.includes(p.id);
+        const liveText = state.globalMonogram.trim();
         return `
-          <div class="p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3" style="background-color: #FAF8F6; border-color: #E2D9E8;">
-            <div class="flex items-center gap-3">
-              <span class="text-2xl">${c.icon}</span>
-              <div>
-                <h4 class="text-sm font-extrabold">${c.title} — ${c.size}</h4>
-                <p class="text-xs opacity-75">${c.slogan}</p>
+          <article class="vb-product-card flex flex-col justify-between">
+            <div>
+              <div class="vb-aspect-3-4">
+                <img
+                  src="${p.image}"
+                  alt="${p.title}"
+                  onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');"
+                />
+                <div class="absolute top-3 left-3 px-2.5 py-1 text-[10px] uppercase tracking-widest font-semibold rounded-sm" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                  ${p.badge}
+                </div>
+                <button
+                  onclick="toggleWishlist(${p.id})"
+                  class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition"
+                  style="background-color: var(--bg-surface); color: ${wished ? 'var(--accent-brand)' : 'var(--text-primary)'};"
+                  title="Save to Wishlist"
+                >
+                  ${wished ? '&#9829;' : '&#9825;'}
+                </button>
+                ${liveText ? `<div class="monogram-preview-pill">&ldquo;${liveText}&rdquo;</div>` : ''}
+                <div class="vb-quick-bar flex gap-2">
+                  <button onclick="quickAddToCart(${p.id})" class="flex-1 py-2 text-[11px] font-semibold uppercase tracking-wider rounded-sm" style="background-color: #FFFFFF; color: #18181B;">
+                    + Quick Add
+                  </button>
+                  <button onclick="openPersonalizerModal(${p.id})" class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider rounded-sm border border-white text-white">
+                    Personalize
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-4 space-y-1.5">
+                <div class="flex items-center justify-between text-[11px]" style="color: var(--text-muted);">
+                  <span>${p.category}</span>
+                  <span>&#9733; ${p.rating} (${p.reviews})</span>
+                </div>
+                <h3 class="font-editorial text-xl font-semibold leading-snug" style="color: var(--text-primary);">
+                  ${p.title}
+                </h3>
+                <div class="text-xs" style="color: var(--text-secondary);">
+                  Shade: <span class="font-medium">${p.swatch}</span>
+                </div>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <strong class="text-sm">${formatPrice(c.priceUsd)}</strong>
-              <button onclick="removeCartItem(${idx})" class="text-xs text-red-700 font-bold underline">Remove</button>
+
+            <div class="px-4 pb-4 pt-2 flex items-center justify-between vb-border-t">
+              <span class="font-semibold text-sm" style="color: var(--text-primary);">$${p.price.toFixed(2)}</span>
+              <button onclick="openPersonalizerModal(${p.id})" class="text-xs font-semibold underline" style="color: var(--accent-brand);">
+                Select Size &amp; Monogram &rarr;
+              </button>
             </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // Wishlist
+    function toggleWishlist(productId) {
+      const idx = state.wishlist.indexOf(productId);
+      if (idx >= 0) state.wishlist.splice(idx, 1);
+      else state.wishlist.push(productId);
+      updateHeaderBadges();
+      if (state.activeTab === 'catalog') renderCatalog();
+      if (state.activeTab === 'wishlist') renderWishlist();
+    }
+
+    function renderWishlist() {
+      const container = document.getElementById('wishlist-grid-container');
+      const items = PRODUCTS.filter(p => state.wishlist.includes(p.id));
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full vb-surface p-12 text-center space-y-3">
+            <div class="font-editorial text-2xl" style="color: var(--text-primary);">Your Saved Wardrobe is Empty</div>
+            <p class="text-xs max-w-md mx-auto" style="color: var(--text-secondary);">Tap the heart icon on any botanical dress, sweater, or tote to save it for later.</p>
+            <button onclick="switchTab('catalog')" class="vb-btn-primary px-5 py-2.5 text-xs uppercase tracking-widest">Explore Collection</button>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = items.map(p => `
+        <article class="vb-product-card flex flex-col justify-between">
+          <div class="vb-aspect-3-4">
+            <img src="${p.image}" alt="${p.title}" onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');" />
+          </div>
+          <div class="p-4 space-y-2">
+            <h3 class="font-editorial text-xl font-semibold" style="color: var(--text-primary);">${p.title}</h3>
+            <div class="text-sm font-semibold">$${p.price.toFixed(2)}</div>
+            <div class="flex gap-2 pt-2">
+              <button onclick="quickAddToCart(${p.id})" class="flex-1 vb-btn-primary py-2 text-xs">Move to Bag</button>
+              <button onclick="toggleWishlist(${p.id})" class="vb-btn-outline px-3 py-2 text-xs">Remove</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Personalizer Modal
+    function openPersonalizerModal(productId) {
+      const p = PRODUCTS.find(x => x.id === productId) || PRODUCTS[0];
+      state.modalProductId = p.id;
+      state.modalSelectedSize = p.sizes[Math.min(1, p.sizes.length - 1)];
+      state.modalCustomText = state.globalMonogram || 'Sophia R.';
+
+      document.getElementById('modal-product-title').textContent = p.title;
+      document.getElementById('modal-product-img').src = p.image;
+      document.getElementById('modal-product-price').textContent = `$${p.price.toFixed(2)}`;
+      document.getElementById('modal-custom-text').value = state.modalCustomText;
+      updateModalPreviewText(state.modalCustomText);
+      renderModalSizePills(p);
+      document.getElementById('personalizer-modal').classList.remove('hidden');
+    }
+
+    function renderModalSizePills(p) {
+      const container = document.getElementById('modal-size-pills');
+      container.innerHTML = p.sizes.map(sz => {
+        const active = sz === state.modalSelectedSize;
+        return `<button onclick="selectModalSize('${sz}')" class="px-3.5 py-1.5 text-xs rounded-sm font-medium transition ${active ? 'vb-btn-primary' : 'vb-btn-outline'}">${sz}</button>`;
+      }).join('');
+    }
+
+    function selectModalSize(sz) {
+      state.modalSelectedSize = sz;
+      const p = PRODUCTS.find(x => x.id === state.modalProductId);
+      if (p) renderModalSizePills(p);
+    }
+
+    function updateModalPreviewText(val) {
+      state.modalCustomText = val;
+      const badge = document.getElementById('modal-live-badge');
+      if (val.trim()) {
+        badge.textContent = `“${val.trim()}”`;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function closePersonalizerModal() {
+      document.getElementById('personalizer-modal').classList.add('hidden');
+    }
+
+    function confirmModalAddToCart() {
+      state.cart.push({
+        cartItemId: 'ci-' + Date.now(),
+        productId: state.modalProductId,
+        size: state.modalSelectedSize,
+        customText: state.modalCustomText.trim() || 'No Monogram (Standard Studio Piece)',
+        qty: 1
+      });
+      closePersonalizerModal();
+      updateHeaderBadges();
+      state.checkoutStep = 1;
+      switchTab('cart');
+    }
+
+    function quickAddToCart(productId) {
+      const p = PRODUCTS.find(x => x.id === productId);
+      if (!p) return;
+      state.cart.push({
+        cartItemId: 'ci-' + Date.now(),
+        productId: p.id,
+        size: p.sizes[0],
+        customText: state.globalMonogram.trim() || 'Standard Studio Edition',
+        qty: 1
+      });
+      updateHeaderBadges();
+      state.checkoutStep = 1;
+      switchTab('cart');
+    }
+
+    // ============================================================================
+    // FIX #1: CART REMOVE WITH "Removed it by mistake? Add it back" HYPERLINK
+    // ============================================================================
+    function removeCartItem(cartItemId) {
+      const index = state.cart.findIndex(item => item.cartItemId === cartItemId);
+      if (index === -1) return;
+      const removedItem = state.cart[index];
+      const product = PRODUCTS.find(p => p.id === removedItem.productId);
+
+      // Save to recentlyRemoved stack with original index so "Add it back" restores it cleanly
+      state.recentlyRemoved.unshift({
+        restoreId: 'undo-' + Date.now(),
+        originalIndex: index,
+        item: { ...removedItem },
+        productTitle: product ? product.title : 'Item'
+      });
+
+      state.cart.splice(index, 1);
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    function undoRemoveCartItem(restoreId) {
+      const rIdx = state.recentlyRemoved.findIndex(r => r.restoreId === restoreId);
+      if (rIdx === -1) return;
+      const entry = state.recentlyRemoved[rIdx];
+      const insertPos = Math.min(entry.originalIndex, state.cart.length);
+      state.cart.splice(insertPos, 0, entry.item);
+      state.recentlyRemoved.splice(rIdx, 1);
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    function dismissUndoBanner(restoreId) {
+      state.recentlyRemoved = state.recentlyRemoved.filter(r => r.restoreId !== restoreId);
+      renderCartAndCheckout();
+    }
+
+    function updateCartQty(cartItemId, delta) {
+      const item = state.cart.find(i => i.cartItemId === cartItemId);
+      if (!item) return;
+      const nextQty = item.qty + delta;
+      if (nextQty <= 0) {
+        removeCartItem(cartItemId);
+        return;
+      }
+      item.qty = nextQty;
+      updateHeaderBadges();
+      renderCartAndCheckout();
+    }
+
+    // ============================================================================
+    // FIX #3: PROMO CODE TOGGLE ("Apply Code" <-> "Remove Code")
+    // ============================================================================
+    function handlePromoButtonClick() {
+      if (state.promoApplied) {
+        // Currently applied -> Clicking "Remove Code" removes the promo code!
+        state.promoApplied = false;
+        state.promoDiscountRate = 0;
+        renderCartAndCheckout();
+        const msg = document.getElementById('promo-feedback-msg');
+        if (msg) {
+          msg.style.color = 'var(--text-muted)';
+          msg.textContent = 'Promo code removed. You can enter a new code anytime.';
+        }
+      } else {
+        // Currently not applied -> Clicking "Apply Code" validates and applies the promo code!
+        const inputEl = document.getElementById('promo-input');
+        const rawCode = (inputEl ? inputEl.value : '').trim().toUpperCase();
+        const msg = document.getElementById('promo-feedback-msg');
+        if (!rawCode) {
+          if (msg) {
+            msg.style.color = 'var(--accent-brand)';
+            msg.textContent = 'Please enter a promo code (e.g. BLOOM15).';
+          }
+          return;
+        }
+        if (rawCode === 'BLOOM15' || rawCode === 'WELCOME15') {
+          state.promoApplied = true;
+          state.promoCode = rawCode;
+          state.promoDiscountRate = 0.15;
+          renderCartAndCheckout();
+        } else if (rawCode === 'WELCOME10') {
+          state.promoApplied = true;
+          state.promoCode = rawCode;
+          state.promoDiscountRate = 0.10;
+          renderCartAndCheckout();
+        } else {
+          if (msg) {
+            msg.style.color = 'var(--accent-brand)';
+            msg.textContent = `Code "${rawCode}" is invalid. Try BLOOM15 for 15% off.`;
+          }
+        }
+      }
+    }
+
+    function quickApplyPromo(code) {
+      state.promoApplied = true;
+      state.promoCode = code;
+      state.promoDiscountRate = 0.15;
+      const inp = document.getElementById('promo-input');
+      if (inp) inp.value = code;
+      switchTab('cart');
+    }
+
+    // ============================================================================
+    // FIX #2: 2-STEP PAYPAL EXPRESS CHECKOUT WITH RECEIVER ADDRESS CONFIRMATION
+    // ============================================================================
+    function startCheckoutWithMethod(methodName) {
+      if (state.cart.length === 0) return;
+      state.selectedPaymentMethod = methodName;
+      state.checkoutStep = 2;
+      renderCartAndCheckout();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setCheckoutStep(step) {
+      state.checkoutStep = step;
+      renderCartAndCheckout();
+    }
+
+    function attemptGoToStep2() {
+      if (state.cart.length === 0) return;
+      state.checkoutStep = 2;
+      renderCartAndCheckout();
+    }
+
+    function toggleAddressEditor() {
+      state.editingAddress = !state.editingAddress;
+      document.getElementById('address-edit-form').classList.toggle('hidden', !state.editingAddress);
+      document.getElementById('toggle-address-edit-btn').textContent = state.editingAddress ? 'Cancel Edit' : 'Edit Receiver Address';
+    }
+
+    function saveReceiverAddress() {
+      state.receiverAddress = {
+        name: document.getElementById('inp-receiver-name').value.trim() || 'Sophia Reynolds',
+        phone: document.getElementById('inp-receiver-phone').value.trim() || '(512) 555-0194',
+        street: document.getElementById('inp-receiver-street').value.trim() || '742 Evergreen Terrace, Apt 4B',
+        city: document.getElementById('inp-receiver-city').value.trim() || 'Austin',
+        state: document.getElementById('inp-receiver-state').value.trim() || 'TX',
+        zip: document.getElementById('inp-receiver-zip').value.trim() || '78701',
+        country: document.getElementById('inp-receiver-country').value,
+        note: document.getElementById('inp-receiver-note').value.trim() || 'Standard front door delivery'
+      };
+      state.editingAddress = false;
+      document.getElementById('address-edit-form').classList.add('hidden');
+      document.getElementById('toggle-address-edit-btn').textContent = 'Edit Receiver Address';
+      renderCartAndCheckout();
+    }
+
+    function setShippingSpeed(speed) {
+      state.shippingSpeed = speed;
+      renderCartAndCheckout();
+    }
+
+    function confirmAndPlaceFinalOrder() {
+      if (state.cart.length === 0) return;
+      const totals = computeTotals();
+      const addr = state.receiverAddress;
+      const newOrder = {
+        id: 'VB-' + Math.floor(10000 + Math.random() * 89999),
+        date: 'Just now (Oct 10, 2026)',
+        status: 'Receiver Address Verified • In 1-Hour Free Modification Window',
+        canCancelFree: true,
+        paymentMethod: state.selectedPaymentMethod,
+        receiver: `${addr.name} — ${addr.street}, ${addr.city}, ${addr.state} ${addr.zip}, ${addr.country}`,
+        total: totals.total,
+        items: state.cart.map(ci => {
+          const p = PRODUCTS.find(x => x.id === ci.productId);
+          return {
+            title: p ? p.title : 'VibeBloom Piece',
+            size: ci.size,
+            customText: ci.customText,
+            qty: ci.qty,
+            price: p ? p.price : 48.00
+          };
+        })
+      };
+      state.orders.unshift(newOrder);
+      state.cart = [];
+      state.recentlyRemoved = [];
+      state.checkoutStep = 1;
+      updateHeaderBadges();
+      switchTab('orders');
+    }
+
+    function computeTotals() {
+      const subtotal = state.cart.reduce((sum, ci) => {
+        const p = PRODUCTS.find(x => x.id === ci.productId);
+        return sum + (p ? p.price * ci.qty : 0);
+      }, 0);
+      const discount = state.promoApplied ? +(subtotal * state.promoDiscountRate).toFixed(2) : 0;
+      const afterDiscount = Math.max(0, subtotal - discount);
+      let shipping = 0;
+      if (state.cart.length > 0) {
+        if (state.shippingSpeed === 'express') shipping = 14.99;
+        else shipping = afterDiscount >= 75 ? 0 : 5.99;
+      }
+      const tax = +(afterDiscount * 0.0825).toFixed(2);
+      const total = +(afterDiscount + shipping + tax).toFixed(2);
+      return { subtotal, discount, shipping, tax, total };
+    }
+
+    function renderCartAndCheckout() {
+      const totalQty = state.cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('bag-header-count').textContent = totalQty;
+
+      // Toggle Step 1 vs Step 2 panels
+      const step1Panel = document.getElementById('checkout-step-1-panel');
+      const step2Panel = document.getElementById('checkout-step-2-panel');
+      const step1Cta = document.getElementById('step-1-cta-group');
+      const step2Cta = document.getElementById('step-2-cta-group');
+      const badge1 = document.getElementById('step-badge-1');
+      const badge2 = document.getElementById('step-badge-2');
+
+      if (state.checkoutStep === 2 && state.cart.length > 0) {
+        step1Panel.classList.add('hidden');
+        step2Panel.classList.remove('hidden');
+        step1Cta.classList.add('hidden');
+        step2Cta.classList.remove('hidden');
+        badge1.style.backgroundColor = 'var(--accent-sage)';
+        badge1.style.color = '#FFFFFF';
+        badge1.innerHTML = '&#10003;';
+        badge2.style.backgroundColor = 'var(--accent-primary)';
+        badge2.style.color = 'var(--accent-primary-text)';
+      } else {
+        state.checkoutStep = 1;
+        step1Panel.classList.remove('hidden');
+        step2Panel.classList.add('hidden');
+        step1Cta.classList.remove('hidden');
+        step2Cta.classList.add('hidden');
+        badge1.style.backgroundColor = 'var(--accent-primary)';
+        badge1.style.color = 'var(--accent-primary-text)';
+        badge1.textContent = '1';
+        badge2.style.backgroundColor = 'transparent';
+        badge2.style.color = 'var(--text-secondary)';
+      }
+
+      // 1. Render Undo Banners (FIX #1: "Removed it by mistake, Add it back")
+      const undoContainer = document.getElementById('cart-undo-container');
+      undoContainer.innerHTML = state.recentlyRemoved.map(r => `
+        <div class="vb-surface px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs border-l-4" style="border-left-color: var(--accent-brand); background-color: var(--accent-brand-soft);">
+          <div>
+            <span style="color: var(--text-secondary);">Removed <strong style="color: var(--text-primary);">${r.productTitle}</strong> from your bag.</span>
+            <a
+              href="javascript:void(0)"
+              onclick="undoRemoveCartItem('${r.restoreId}')"
+              class="ml-2 font-semibold underline"
+              style="color: var(--accent-brand);"
+            >
+              Removed it by mistake? Add it back
+            </a>
+          </div>
+          <button onclick="dismissUndoBanner('${r.restoreId}')" class="text-[11px] opacity-60 hover:opacity-100" style="color: var(--text-primary);">&times;</button>
+        </div>
+      `).join('');
+
+      // 2. Render Cart Items
+      const listEl = document.getElementById('cart-items-list');
+      if (state.cart.length === 0) {
+        listEl.innerHTML = `
+          <div class="vb-surface p-10 text-center space-y-3">
+            <div class="font-editorial text-2xl" style="color: var(--text-primary);">Your Shopping Bag is Empty</div>
+            <p class="text-xs max-w-md mx-auto" style="color: var(--text-secondary);">Explore our botanical linen dresses, embroidered sweaters, and custom totes.</p>
+            <button onclick="switchTab('catalog')" class="vb-btn-primary px-5 py-2.5 text-xs uppercase tracking-widest">Shop Collection</button>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = state.cart.map(ci => {
+          const p = PRODUCTS.find(x => x.id === ci.productId) || PRODUCTS[0];
+          return `
+            <div class="vb-surface p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div class="flex gap-4 items-center">
+                <img
+                  src="${p.image}"
+                  alt="${p.title}"
+                  onerror="this.onerror=null;this.src=window.getFallbackSvg('${p.title.replace(/'/g, '')}','#EFECE6');"
+                  class="w-20 h-24 object-cover rounded-sm vb-border"
+                />
+                <div class="space-y-1">
+                  <div class="text-[11px] uppercase tracking-wider" style="color: var(--text-muted);">${p.category}</div>
+                  <h3 class="font-editorial text-xl font-semibold" style="color: var(--text-primary);">${p.title}</h3>
+                  <div class="text-xs" style="color: var(--text-secondary);">
+                    Size: <strong>${ci.size}</strong> &bull; Custom Detail: <span class="italic" style="color: var(--accent-brand);">&ldquo;${ci.customText}&rdquo;</span>
+                  </div>
+                  <div class="pt-1">
+                    <button
+                      onclick="removeCartItem('${ci.cartItemId}')"
+                      class="text-[11px] underline hover:opacity-80"
+                      style="color: var(--text-muted);"
+                    >
+                      Remove item
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3">
+                <div class="font-semibold text-sm" style="color: var(--text-primary);">$${(p.price * ci.qty).toFixed(2)}</div>
+                <div class="flex items-center vb-border rounded-sm">
+                  <button onclick="updateCartQty('${ci.cartItemId}', -1)" class="px-2.5 py-1 text-xs hover:opacity-75">&minus;</button>
+                  <span class="px-3 py-1 text-xs font-mono-code">${ci.qty}</span>
+                  <button onclick="updateCartQty('${ci.cartItemId}', 1)" class="px-2.5 py-1 text-xs hover:opacity-75">+</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 3. Update Step 2 Receiver Address Display & Item Preview
+      const addr = state.receiverAddress;
+      document.getElementById('selected-payment-method-badge').textContent = `${state.selectedPaymentMethod} • Pre-Authorized`;
+      document.getElementById('disp-receiver-name').textContent = addr.name;
+      document.getElementById('disp-receiver-street').textContent = addr.street;
+      document.getElementById('disp-receiver-city').textContent = `${addr.city}, ${addr.state} ${addr.zip}, ${addr.country}`;
+      document.getElementById('disp-receiver-phone').textContent = addr.phone;
+      document.getElementById('disp-receiver-note').textContent = addr.note;
+      document.getElementById('cta-receiver-summary').textContent = `${addr.name} — ${addr.street}, ${addr.city}, ${addr.state} ${addr.zip}`;
+
+      const step2ItemsEl = document.getElementById('step2-items-preview');
+      step2ItemsEl.innerHTML = state.cart.map(ci => {
+        const p = PRODUCTS.find(x => x.id === ci.productId) || PRODUCTS[0];
+        return `
+          <div class="flex items-center justify-between text-xs py-1.5 vb-border-b">
+            <div>
+              <span class="font-semibold" style="color: var(--text-primary);">${ci.qty}&times; ${p.title}</span>
+              <span class="ml-2" style="color: var(--text-muted);">(${ci.size} &bull; &ldquo;${ci.customText}&rdquo;)</span>
+            </div>
+            <span class="font-medium" style="color: var(--text-primary);">$${(p.price * ci.qty).toFixed(2)}</span>
           </div>
         `;
       }).join('');
 
-      document.getElementById('summary-subtotal').textContent = formatPrice(subtotal);
-      const net = Math.max(0, subtotal - 5.0);
-      document.getElementById('summary-total').textContent = formatPrice(net);
-    }
+      // 4. Update Promo Code Button State (FIX #3: "Apply Code" vs "Remove Code")
+      const promoInput = document.getElementById('promo-input');
+      const promoBtn = document.getElementById('promo-action-btn');
+      const promoMsg = document.getElementById('promo-feedback-msg');
 
-    function removeCartItem(i) {
-      cartItems.splice(i, 1);
-      updateCartUI();
-    }
-
-    function applyPromoCode() {
-      document.getElementById('promo-feedback').textContent = '✓ Promo code BLOOM15 applied! Extra 15% savings unlocked.';
-    }
-
-    function completeCustomerOrder(method) {
-      const box = document.getElementById('checkout-feedback-banner');
-      box.classList.remove('hidden');
-      if (method === 'DECLINE_TEST') {
-        box.style.backgroundColor = '#FEF2F2';
-        box.style.color = '#991B1B';
-        box.style.borderColor = '#FCA5A5';
-        box.innerHTML = '⚠️ <strong>Card Declined by Issuing Bank:</strong> Don&apos;t worry—your custom design and BLOOM15 promo code are safely saved! Please try PayPal Express, Pay in 4, or another card above.';
+      if (state.promoApplied) {
+        promoInput.value = state.promoCode;
+        promoInput.readOnly = true;
+        promoInput.style.opacity = '0.75';
+        promoBtn.textContent = 'Remove Code';
+        promoBtn.style.backgroundColor = 'var(--accent-brand-soft)';
+        promoBtn.style.color = 'var(--accent-brand)';
+        promoBtn.style.border = '1px solid var(--accent-brand)';
+        promoMsg.style.color = 'var(--accent-sage)';
+        promoMsg.innerHTML = `&#10003; Code <strong>${state.promoCode}</strong> (${Math.round(state.promoDiscountRate * 100)}% off) applied to your bag.`;
       } else {
-        box.style.backgroundColor = '#F0FDF4';
-        box.style.color = '#166534';
-        box.style.borderColor = '#86EFAC';
-        box.innerHTML = `🎉 <strong>Order Confirmed via ${method}!</strong> Order <code>#VB-2026-10042</code> is now in your <strong>2-Hour Free Modification Window</strong>. Redirecting to <em>My Orders</em>...`;
-        setTimeout(() => switchShopView('orders'), 1400);
+        promoInput.readOnly = false;
+        promoInput.style.opacity = '1';
+        promoBtn.textContent = 'Apply Code';
+        promoBtn.style.backgroundColor = 'var(--accent-primary)';
+        promoBtn.style.color = 'var(--accent-primary-text)';
+        promoBtn.style.border = '1px solid transparent';
       }
-    }
 
-    function customerOrderAction(action) {
-      const out = document.getElementById('customer-order-feedback');
-      const pill = document.getElementById('order-10042-status-pill');
-      if (action === 'EDIT_SIZE') {
-        out.innerHTML = '✅ <strong>Size Updated for Free!</strong> Your Peony Breeze Wrap Dress on Order <code>#VB-2026-10042</code> has been updated from <strong>Size M</strong> to <strong>Size L</strong> before printing started.';
-      } else if (action === 'EDIT_ADDRESS') {
-        out.innerHTML = '✅ <strong>Delivery Address Updated!</strong> Your shipping address has been updated in our pre-print queue at $0 cost.';
-      } else if (action === 'CANCEL_TOTE_ONLY') {
-        out.innerHTML = '✅ <strong>Partial Item Cancellation Complete:</strong> The $25.00 Tote was cancelled. Because your remaining order ($55.00) is now below the $75.00 Free Shipping threshold, standard shipping ($8.99) was adjusted and <strong>$16.01</strong> has been refunded to your PayPal account.';
-      } else if (action === 'CANCEL_FULL_2H') {
-        pill.textContent = 'Status: Cancelled & 100% Refunded';
-        out.innerHTML = '✅ <strong>Order Cancelled Inside 2-Hour Window:</strong> A full <strong>100% refund ($80.00)</strong> has been sent back to your original PayPal payment method!';
-      } else if (action === 'DEFECT_FREE_REPLACEMENT') {
-        out.innerHTML = '🎉 <strong>Free Replacement Dispatched ($0.00)!</strong> Replacement Order <code>#REPRINT-VB-09814</code> is on its way. You do <strong>not</strong> need to mail back the damaged item—please keep or donate it!';
-      } else if (action === 'DEFECT_CASH_REFUND') {
-        if (refundAlreadyClickedOnce) {
-          out.innerHTML = 'ℹ️ <strong>Duplicate Click Protected:</strong> Your refund of <strong>$54.99</strong> for Order <code>#VB-2026-09814</code> is already approved and processing back to your PayPal account—no need to submit twice!';
-        } else {
-          refundAlreadyClickedOnce = true;
-          out.innerHTML = '✅ <strong>Full Refund Approved ($54.99):</strong> We verified your photo and issued a 100% refund to your original PayPal payment method. No physical return is required!';
-        }
-      } else if (action === 'WRONG_SIZE_VOUCHER') {
-        out.innerHTML = '🎁 <strong>Instant 50% OFF Size-Swap Voucher Generated:</strong> Because personalized items are custom-printed for you, use code <code>VIBE-SWAP50</code> at checkout to reorder your new size at 50% off while keeping your original dress!';
-      }
-    }
-
-    function changeCurrency(curr) {
-      currentCurrency = curr;
-      document.getElementById('top-free-ship-amt').textContent = currencyMap[curr].freeShip;
-      const priceEl = document.getElementById('pdp-price');
-      priceEl.textContent = formatPrice(parseFloat(priceEl.getAttribute('data-usd') || '54.99'));
-      renderCatalog();
-      updateCartUI();
-      updateWishlistUI();
-    }
-
-    function switchShopView(view) {
-      ['shop', 'wishlist', 'cart', 'orders'].forEach(v => {
-        document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
-      });
-    }
-
-    function toggleKadenceTheme() {
-      isDarkMode = !isDarkMode;
-      const shell = document.getElementById('app-shell');
-      const header = document.getElementById('main-header');
-      const hero = document.getElementById('hero-banner');
-      const pdp = document.getElementById('pdp-buy-card');
-      const icon = document.getElementById('theme-icon');
-      const label = document.getElementById('theme-label');
-
-      if (isDarkMode) {
-        shell.style.backgroundColor = '#071120';
-        shell.style.color = '#FFFDFB';
-        header.style.backgroundColor = 'rgba(7, 17, 32, 0.96)';
-        header.style.borderColor = '#1D3557';
-        hero.style.backgroundColor = '#0F223D';
-        hero.style.borderColor = '#1D3557';
-        pdp.style.backgroundColor = '#162D4E';
-        pdp.style.color = '#FFFDFB';
-        pdp.style.borderColor = '#1D3557';
-        icon.textContent = '☀️';
-        label.textContent = 'Daylight';
+      // 5. Compute & Render Totals
+      const totals = computeTotals();
+      document.getElementById('summary-subtotal').textContent = `$${totals.subtotal.toFixed(2)}`;
+      const discRow = document.getElementById('summary-discount-row');
+      if (state.promoApplied && totals.discount > 0) {
+        discRow.classList.remove('hidden');
+        document.getElementById('summary-discount-label').textContent = `Promo (${state.promoCode} -${Math.round(state.promoDiscountRate * 100)}%)`;
+        document.getElementById('summary-discount-amount').textContent = `-$${totals.discount.toFixed(2)}`;
       } else {
-        shell.style.backgroundColor = '#FFFDFB';
-        shell.style.color = '#001F3F';
-        header.style.backgroundColor = 'rgba(255, 253, 251, 0.96)';
-        header.style.borderColor = '#E2D9E8';
-        hero.style.backgroundColor = '#FFF0EF';
-        hero.style.borderColor = '#E2D9E8';
-        pdp.style.backgroundColor = '#E6E6FA';
-        pdp.style.color = '#001F3F';
-        pdp.style.borderColor = '#D4C5E2';
-        icon.textContent = '🌙';
-        label.textContent = 'Midnight';
+        discRow.classList.add('hidden');
       }
-      setCategory(activeCategory);
+      document.getElementById('summary-shipping').textContent = totals.shipping === 0 ? 'FREE' : `$${totals.shipping.toFixed(2)}`;
+      document.getElementById('summary-tax').textContent = `$${totals.tax.toFixed(2)}`;
+      document.getElementById('summary-total').textContent = `$${totals.total.toFixed(2)}`;
+      document.getElementById('final-place-order-amount').textContent = `$${totals.total.toFixed(2)}`;
     }
 
-    // Initialize Catalog, Wishlist & Cart on Load
+    // Orders & Self-Service Returns
+    function renderOrders() {
+      const container = document.getElementById('orders-list-container');
+      container.innerHTML = state.orders.map(o => `
+        <div class="vb-surface p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 vb-border-b">
+            <div>
+              <div class="text-xs font-mono-code font-semibold" style="color: var(--text-primary);">Order #${o.id} &bull; ${o.date}</div>
+              <div class="text-xs mt-0.5" style="color: var(--text-secondary);">
+                Confirmed Receiver: <strong style="color: var(--text-primary);">${o.receiver}</strong>
+              </div>
+            </div>
+            <span class="px-3 py-1 text-xs font-semibold rounded" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+              ${o.status}
+            </span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            ${o.items.map(it => `
+              <div class="flex justify-between">
+                <span><strong>${it.qty}&times; ${it.title}</strong> (${it.size} &bull; &ldquo;${it.customText}&rdquo;)</span>
+                <span>$${(it.price * it.qty).toFixed(2)}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="pt-3 vb-border-t flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div>
+              Paid via <strong>${o.paymentMethod}</strong> &bull; Total: <strong>$${o.total.toFixed(2)}</strong>
+            </div>
+            <div class="flex gap-2">
+              ${o.canCancelFree ? `<button onclick="cancelOrderWithinWindow('${o.id}')" class="vb-btn-outline px-3 py-1.5 text-xs">Cancel Order (Free 1-Hr Window)</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function cancelOrderWithinWindow(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (!ord) return;
+      ord.status = 'Cancelled & Full Refund Issued via ' + ord.paymentMethod;
+      ord.canCancelFree = false;
+      renderOrders();
+    }
+
+    function updateHeaderBadges() {
+      const cartQty = state.cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('cart-count-badge').textContent = cartQty;
+      document.getElementById('wishlist-count-badge').textContent = state.wishlist.length;
+    }
+
+    // Initialize on load
     renderCatalog();
-    updateWishlistUI();
-    updateCartUI();
+    updateHeaderBadges();
   </script>
 </body>
 </html>
