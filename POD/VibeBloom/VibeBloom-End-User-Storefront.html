@@ -572,19 +572,37 @@
 
               <!-- Cart Items List -->
               <div id="cart-items-list" class="space-y-4"></div>
+
+              <!-- REMARKETING CACHE DRAWER: Persisted in localStorage ('vibebloom_removed_cart_cache') with 15% OFF COMEBACK15 Incentive -->
+              <div id="removed-remarketing-cache-box" class="hidden vb-surface p-5 space-y-3 border-l-4" style="border-left-color: var(--accent-gold);">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span class="text-[10px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded" style="background-color: var(--bg-subtle); color: var(--accent-gold);">
+                      Cached for Remarketing &bull; Browser &amp; Edge Cache (vibebloom_removed_cart_cache)
+                    </span>
+                    <h3 class="font-editorial text-xl font-semibold mt-1" style="color: var(--text-primary);">
+                      Still Thinking About These Removed Pieces? Take 15% Off (`COMEBACK15`)
+                    </h3>
+                  </div>
+                  <button onclick="clearRemovedRemarketingCache()" class="text-[11px] underline" style="color: var(--text-muted);">
+                    Clear Cache
+                  </button>
+                </div>
+                <div id="removed-remarketing-items-list" class="space-y-2"></div>
+              </div>
             </div>
 
-            <!-- STEP 2 PANEL: FIX #2 — PAYPAL EXPRESS / CHECKOUT RECEIVER ADDRESS CONFIRMATION -->
+            <!-- STEP 2 PANEL: UNIVERSAL RECEIVER ADDRESS VERIFICATION (MANDATORY FOR ALL PAYMENT METHODS) -->
             <div id="checkout-step-2-panel" class="hidden space-y-6">
-              <!-- Pre-Authorized Payment Method Banner (Order NOT placed yet!) -->
+              <!-- Universal Pre-Checkout Banner: Applies to Credit/Debit Card, Apple/Google Pay, PayPal Express, and Pay in 4 -->
               <div class="vb-surface p-5 border-l-4" style="border-left-color: var(--accent-sage);">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <span class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
-                      Step 2 of 2 &bull; Final Review Required
+                      Step 2 of 2 &bull; Universal Address Verification Gate
                     </span>
                     <span id="selected-payment-method-badge" class="text-xs font-semibold" style="color: var(--text-primary);">
-                      PayPal Express Authenticated (banerjee.sumanto08@gmail.com)
+                      Credit / Debit Card (Stripe / WooPay)
                     </span>
                   </div>
                   <button onclick="setCheckoutStep(1)" class="text-xs underline font-medium" style="color: var(--text-secondary);">
@@ -592,19 +610,44 @@
                   </button>
                 </div>
                 <p class="text-xs mt-2 mb-0" style="color: var(--text-secondary);">
-                  <strong>Your card/PayPal has NOT been charged yet.</strong> Please confirm or edit the receiver's delivery address below before placing your order.
+                  <strong>Universal Protection Across All Payment Methods:</strong> No matter which payment method you choose (Card, Apple/Google Pay, PayPal Express, or Pay in 4), your payment is <strong>never</strong> captured until you verify the receiver's delivery address below.
                 </p>
+
+                <!-- Payment Method Selector Tabs inside Step 2 (All 4 Require Receiver Address Verification) -->
+                <div class="pt-4 mt-3 vb-border-t">
+                  <div class="text-[11px] font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">
+                    Active Payment Method (Switch Anytime — Address Verification Required for All):
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <button onclick="selectStep2PaymentMethod('Credit / Debit Card (Stripe / WooPay)')" id="pm-btn-card" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Credit / Debit Card</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Visa, MC, Amex</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('Apple Pay / Google Pay Express')" id="pm-btn-wallet" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Apple / Google Pay</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Biometric Token</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('PayPal Express')" id="pm-btn-paypal" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">PayPal Express</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">Pre-Authorized</div>
+                    </button>
+                    <button onclick="selectStep2PaymentMethod('PayPal Pay in 4 (Interest-Free)')" id="pm-btn-bnpl" class="p-2 rounded text-left vb-border transition">
+                      <div class="font-semibold">Pay in 4 BNPL</div>
+                      <div class="text-[10px]" style="color: var(--text-muted);">4x Interest-Free</div>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <!-- Receiver's Shipping Address Confirmation & Inline Editor -->
+              <!-- Receiver's Shipping Address Confirmation & Live Carrier Validator (ALL Payment Methods) -->
               <div class="vb-surface p-6 space-y-5">
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-4 vb-border-b">
                   <div>
                     <h2 class="font-editorial text-2xl font-semibold" style="color: var(--text-primary);">
-                      Confirm Receiver's Shipping Address
+                      Verify Receiver's Shipping Address (Mandatory for All Orders)
                     </h2>
                     <p class="text-xs mt-0.5 mb-0" style="color: var(--text-muted);">
-                      Sending a personalized gift or shipping to yourself? Verify the recipient's exact address below.
+                      Whether shipping to yourself or sending a custom gift, verify the recipient's exact postal address below.
                     </p>
                   </div>
                   <button onclick="toggleAddressEditor()" id="toggle-address-edit-btn" class="vb-btn-outline px-3.5 py-1.5 text-xs">
@@ -617,7 +660,9 @@
                   <div class="space-y-1 text-xs">
                     <div class="flex items-center gap-2">
                       <span class="font-semibold text-sm" id="disp-receiver-name" style="color: var(--text-primary);">Sophia Reynolds</span>
-                      <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded font-semibold" style="background-color: var(--accent-brand-soft); color: var(--accent-brand);">Verified Destination</span>
+                      <span id="disp-address-status-pill" class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded font-semibold" style="background-color: var(--accent-sage-soft); color: var(--accent-sage);">
+                        USPS / UPS / DHL Verified
+                      </span>
                     </div>
                     <div id="disp-receiver-street" style="color: var(--text-secondary);">742 Evergreen Terrace, Apt 4B</div>
                     <div id="disp-receiver-city" style="color: var(--text-secondary);">Austin, TX 78701, United States</div>
@@ -625,11 +670,11 @@
                       Carrier SMS Notifications: <span id="disp-receiver-phone">(512) 555-0194</span> &bull; Note: <span id="disp-receiver-note">Leave with front desk concierge</span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 text-xs font-medium" style="color: var(--accent-sage);">
+                  <div id="disp-carrier-check" class="flex items-center gap-2 text-xs font-medium" style="color: var(--accent-sage);">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
-                    <span>USPS / UPS Address Deliverable</span>
+                    <span>Postal Format &amp; Print Hub Route Verified</span>
                   </div>
                 </div>
 
@@ -676,11 +721,26 @@
                       <input id="inp-receiver-note" type="text" value="Leave with front desk concierge" class="w-full px-3 py-2 text-xs vb-surface" />
                     </div>
                   </div>
+                  <div id="address-validation-error" class="hidden text-xs font-medium" style="color: var(--accent-brand);"></div>
                   <div class="flex justify-end gap-2 pt-2">
                     <button onclick="saveReceiverAddress()" class="vb-btn-primary px-4 py-2 text-xs">
-                      Save &amp; Confirm Receiver Address
+                      Verify &amp; Save Receiver Address
                     </button>
                   </div>
+                </div>
+
+                <!-- Mandatory Universal Receiver Address Confirmation Checkbox -->
+                <div class="p-3.5 rounded vb-surface flex items-start gap-3" style="border-color: var(--border-strong);">
+                  <input
+                    id="chk-universal-address-verified"
+                    type="checkbox"
+                    checked
+                    onchange="toggleAddressVerifiedCheckbox(this.checked)"
+                    class="mt-0.5 cursor-pointer"
+                  />
+                  <label for="chk-universal-address-verified" class="text-xs cursor-pointer leading-relaxed" style="color: var(--text-primary);">
+                    <strong>Mandatory Address Verification:</strong> I confirm that the <strong>Receiver's Name</strong> and <strong>Shipping Address</strong> above are accurate for this order (required across Credit/Debit Card, Apple/Google Pay, and PayPal checkouts).
+                  </label>
                 </div>
 
                 <!-- Shipping Speed Selector -->
@@ -730,7 +790,7 @@
               <div class="space-y-2">
                 <div class="flex items-center justify-between text-xs">
                   <label for="promo-input" class="font-medium" style="color: var(--text-secondary);">Promotional Code</label>
-                  <span class="text-[11px]" style="color: var(--text-muted);">Try <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('BLOOM15')">BLOOM15</strong> (15% off)</span>
+                  <span class="text-[11px]" style="color: var(--text-muted);">Try <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('BLOOM15')">BLOOM15</strong> or <strong class="font-mono-code cursor-pointer underline" onclick="quickApplyPromo('COMEBACK15')">COMEBACK15</strong></span>
                 </div>
                 <div class="flex gap-2">
                   <input
@@ -776,42 +836,60 @@
                 </div>
               </div>
 
-              <!-- STEP 1 ACTION BUTTONS: Proceeds to Step 2 (Address Confirmation) instead of placing order blindly -->
+              <!-- STEP 1 ACTION BUTTONS: EVERY payment method routes to Step 2 (Mandatory Receiver Address Verification) -->
               <div id="step-1-cta-group" class="space-y-2.5 pt-2">
+                <div class="text-[11px] font-medium text-center pb-1" style="color: var(--text-muted);">
+                  All checkout methods verify Receiver Address in Step 2 before charging:
+                </div>
+
+                <button
+                  onclick="startCheckoutWithMethod('Credit / Debit Card (Stripe / WooPay)')"
+                  class="w-full py-3 px-4 text-xs uppercase tracking-wider vb-btn-primary flex items-center justify-center gap-2"
+                >
+                  <span>Checkout with Card</span>
+                  <span class="text-[10px] opacity-80">&rarr; Verify Address</span>
+                </button>
+
+                <button
+                  onclick="startCheckoutWithMethod('Apple Pay / Google Pay Express')"
+                  class="w-full py-2.5 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 vb-btn-outline"
+                >
+                  <span>Apple Pay / Google Pay</span>
+                  <span class="text-[10px] opacity-75">&rarr; Verify Address</span>
+                </button>
+
                 <button
                   onclick="startCheckoutWithMethod('PayPal Express')"
                   class="w-full py-3 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 transition shadow-sm"
                   style="background-color: #FFC439; color: #111827;"
                 >
                   <span>Checkout with <strong>PayPal</strong> Express</span>
-                  <span class="text-[11px] opacity-80">&rarr; Confirm Address</span>
+                  <span class="text-[11px] opacity-80">&rarr; Verify Address</span>
                 </button>
 
                 <button
                   onclick="startCheckoutWithMethod('PayPal Pay in 4 (Interest-Free)')"
                   class="w-full py-2.5 px-4 rounded font-semibold text-xs flex items-center justify-center gap-2 vb-btn-outline"
                 >
-                  <span>Pay in 4 Interest-Free Payments</span>
-                </button>
-
-                <button
-                  onclick="startCheckoutWithMethod('Credit / Debit Card (Stripe / WooPay)')"
-                  class="w-full py-3 px-4 text-xs uppercase tracking-wider vb-btn-primary"
-                >
-                  Proceed to Receiver Address Review &rarr;
+                  <span>Pay in 4 Interest-Free</span>
+                  <span class="text-[10px] opacity-75">&rarr; Verify Address</span>
                 </button>
               </div>
 
-              <!-- STEP 2 ACTION BUTTONS: Finalize Order AFTER Receiver Address is Verified -->
+              <!-- STEP 2 ACTION BUTTONS: Finalize Order ONLY AFTER Receiver Address is Verified -->
               <div id="step-2-cta-group" class="hidden space-y-2.5 pt-2">
                 <div class="p-2.5 rounded text-[11px] vb-subtle" style="color: var(--text-secondary);">
-                  Shipping to: <strong id="cta-receiver-summary" style="color: var(--text-primary);">Sophia Reynolds — Austin, TX 78701</strong>
+                  Verified Receiver: <strong id="cta-receiver-summary" style="color: var(--text-primary);">Sophia Reynolds — Austin, TX 78701</strong>
+                </div>
+                <div id="step2-unverified-warning" class="hidden text-[11px] font-medium p-2 rounded" style="background-color: var(--accent-brand-soft); color: var(--accent-brand);">
+                  Please save your address edits and check the Receiver Address Confirmation box to place your order.
                 </div>
                 <button
+                  id="final-place-order-btn"
                   onclick="confirmAndPlaceFinalOrder()"
                   class="w-full py-3.5 px-4 text-xs uppercase tracking-wider vb-btn-primary shadow-md"
                 >
-                  Confirm Receiver Address &amp; Place Order (<span id="final-place-order-amount">$0.00</span>)
+                  Confirm Verified Address &amp; Place Order (<span id="final-place-order-amount">$0.00</span>)
                 </button>
                 <button
                   onclick="setCheckoutStep(1)"
@@ -825,7 +903,7 @@
               <div class="pt-3 vb-border-t space-y-1.5 text-[11px]" style="color: var(--text-muted);">
                 <div class="flex items-center gap-2">
                   <span>&#10003;</span>
-                  <span>PayPal Buyer Protection &amp; 256-Bit TLS Checkout</span>
+                  <span>Universal Receiver Address Verification (Card, Apple/Google Pay &amp; PayPal)</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span>&#10003;</span>
@@ -945,7 +1023,7 @@
               <li><button onclick="switchTab('orders')" class="hover:underline">Track Order &amp; 1-Hour Free Cancel</button></li>
               <li><button onclick="switchTab('orders')" class="hover:underline">30-Day Defective Print Replacement</button></li>
               <li><span>US Sales Tax &amp; EU IOSS VAT Included</span></li>
-              <li><span>PayPal Express Buyer Protection</span></li>
+              <li><span>Universal Address Verification &amp; Buyer Protection</span></li>
             </ul>
           </div>
 
@@ -973,6 +1051,8 @@
        STOREFRONT INTERACTIVE STATE ENGINE
        ============================================================================ -->
   <script>
+    const REMOVED_CART_CACHE_KEY = 'vibebloom_removed_cart_cache';
+
     // Reliable SVG Fallback Generator if an external photo fails to load
     window.getFallbackSvg = function(title, bgHex) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
@@ -1084,6 +1164,23 @@
       }
     ];
 
+    function loadRemovedRemarketingCache() {
+      try {
+        const raw = localStorage.getItem(REMOVED_CART_CACHE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function persistRemovedRemarketingCache(entries) {
+      try {
+        localStorage.setItem(REMOVED_CART_CACHE_KEY, JSON.stringify(entries.slice(0, 10)));
+      } catch (e) {}
+    }
+
     let state = {
       activeTab: 'catalog',
       category: 'All',
@@ -1107,17 +1204,18 @@
           qty: 1
         }
       ],
-      // FIX #1: Holds recently removed items so user can click "Removed it by mistake? Add it back"
-      recentlyRemoved: [],
+      // FIX #1: Immediate Undo stack + Persistent Remarketing Cache ('vibebloom_removed_cart_cache')
+      recentlyRemoved: loadRemovedRemarketingCache(),
       // FIX #3: Promo state — toggles button between "Apply Code" and "Remove Code"
       promoApplied: true,
       promoCode: 'BLOOM15',
       promoDiscountRate: 0.15,
-      // FIX #2: 2-Step Checkout State (1 = Bag, 2 = Confirm Receiver Address)
+      // FIX #2: Universal 2-Step Checkout State (1 = Bag, 2 = Mandatory Receiver Address Verification for ALL payment methods)
       checkoutStep: 1,
-      selectedPaymentMethod: 'PayPal Express',
+      selectedPaymentMethod: 'Credit / Debit Card (Stripe / WooPay)',
       shippingSpeed: 'standard',
       editingAddress: false,
+      universalAddressConfirmed: true,
       receiverAddress: {
         name: 'Sophia Reynolds',
         phone: '(512) 555-0194',
@@ -1403,7 +1501,7 @@
     }
 
     // ============================================================================
-    // FIX #1: CART REMOVE WITH "Removed it by mistake? Add it back" HYPERLINK
+    // FIX #1 + REMARKETING CACHE: CART REMOVE WITH INLINE UNDO + PERSISTENT CACHE
     // ============================================================================
     function removeCartItem(cartItemId) {
       const index = state.cart.findIndex(item => item.cartItemId === cartItemId);
@@ -1411,32 +1509,56 @@
       const removedItem = state.cart[index];
       const product = PRODUCTS.find(p => p.id === removedItem.productId);
 
-      // Save to recentlyRemoved stack with original index so "Add it back" restores it cleanly
+      // Save to recentlyRemoved stack AND persist to localStorage ('vibebloom_removed_cart_cache') for remarketing/promo incentives
       state.recentlyRemoved.unshift({
         restoreId: 'undo-' + Date.now(),
         originalIndex: index,
         item: { ...removedItem },
-        productTitle: product ? product.title : 'Item'
+        productTitle: product ? product.title : 'Item',
+        unitPrice: product ? product.price : 48.00,
+        incentivePromoCode: 'COMEBACK15',
+        removedAtIso: new Date().toISOString()
       });
+      persistRemovedRemarketingCache(state.recentlyRemoved);
 
       state.cart.splice(index, 1);
       updateHeaderBadges();
       renderCartAndCheckout();
     }
 
-    function undoRemoveCartItem(restoreId) {
+    function undoRemoveCartItem(restoreId, applyComebackIncentive = false) {
       const rIdx = state.recentlyRemoved.findIndex(r => r.restoreId === restoreId);
       if (rIdx === -1) return;
       const entry = state.recentlyRemoved[rIdx];
-      const insertPos = Math.min(entry.originalIndex, state.cart.length);
+      const insertPos = Math.min(entry.originalIndex ?? state.cart.length, state.cart.length);
       state.cart.splice(insertPos, 0, entry.item);
       state.recentlyRemoved.splice(rIdx, 1);
+      persistRemovedRemarketingCache(state.recentlyRemoved);
+
+      if (applyComebackIncentive) {
+        state.promoApplied = true;
+        state.promoCode = 'COMEBACK15';
+        state.promoDiscountRate = 0.15;
+      }
       updateHeaderBadges();
       renderCartAndCheckout();
     }
 
     function dismissUndoBanner(restoreId) {
-      state.recentlyRemoved = state.recentlyRemoved.filter(r => r.restoreId !== restoreId);
+      // Dismisses the inline top banner, or removes from cache if clicked in cache drawer
+      const entry = state.recentlyRemoved.find(r => r.restoreId === restoreId);
+      if (entry && !entry.dismissedInline) {
+        entry.dismissedInline = true;
+      } else {
+        state.recentlyRemoved = state.recentlyRemoved.filter(r => r.restoreId !== restoreId);
+      }
+      persistRemovedRemarketingCache(state.recentlyRemoved);
+      renderCartAndCheckout();
+    }
+
+    function clearRemovedRemarketingCache() {
+      state.recentlyRemoved = [];
+      persistRemovedRemarketingCache([]);
       renderCartAndCheckout();
     }
 
@@ -1475,11 +1597,11 @@
         if (!rawCode) {
           if (msg) {
             msg.style.color = 'var(--accent-brand)';
-            msg.textContent = 'Please enter a promo code (e.g. BLOOM15).';
+            msg.textContent = 'Please enter a promo code (e.g. BLOOM15 or COMEBACK15).';
           }
           return;
         }
-        if (rawCode === 'BLOOM15' || rawCode === 'WELCOME15') {
+        if (rawCode === 'BLOOM15' || rawCode === 'WELCOME15' || rawCode === 'COMEBACK15') {
           state.promoApplied = true;
           state.promoCode = rawCode;
           state.promoDiscountRate = 0.15;
@@ -1492,7 +1614,7 @@
         } else {
           if (msg) {
             msg.style.color = 'var(--accent-brand)';
-            msg.textContent = `Code "${rawCode}" is invalid. Try BLOOM15 for 15% off.`;
+            msg.textContent = `Code "${rawCode}" is invalid. Try BLOOM15 or COMEBACK15 for 15% off.`;
           }
         }
       }
@@ -1508,7 +1630,7 @@
     }
 
     // ============================================================================
-    // FIX #2: 2-STEP PAYPAL EXPRESS CHECKOUT WITH RECEIVER ADDRESS CONFIRMATION
+    // FIX #2: UNIVERSAL 2-STEP CHECKOUT WITH RECEIVER ADDRESS VERIFICATION (ALL PAYMENT METHODS)
     // ============================================================================
     function startCheckoutWithMethod(methodName) {
       if (state.cart.length === 0) return;
@@ -1516,6 +1638,11 @@
       state.checkoutStep = 2;
       renderCartAndCheckout();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectStep2PaymentMethod(methodName) {
+      state.selectedPaymentMethod = methodName;
+      renderCartAndCheckout();
     }
 
     function setCheckoutStep(step) {
@@ -1533,20 +1660,39 @@
       state.editingAddress = !state.editingAddress;
       document.getElementById('address-edit-form').classList.toggle('hidden', !state.editingAddress);
       document.getElementById('toggle-address-edit-btn').textContent = state.editingAddress ? 'Cancel Edit' : 'Edit Receiver Address';
+      renderCartAndCheckout();
+    }
+
+    function toggleAddressVerifiedCheckbox(checked) {
+      state.universalAddressConfirmed = checked;
+      renderCartAndCheckout();
     }
 
     function saveReceiverAddress() {
-      state.receiverAddress = {
-        name: document.getElementById('inp-receiver-name').value.trim() || 'Sophia Reynolds',
-        phone: document.getElementById('inp-receiver-phone').value.trim() || '(512) 555-0194',
-        street: document.getElementById('inp-receiver-street').value.trim() || '742 Evergreen Terrace, Apt 4B',
-        city: document.getElementById('inp-receiver-city').value.trim() || 'Austin',
-        state: document.getElementById('inp-receiver-state').value.trim() || 'TX',
-        zip: document.getElementById('inp-receiver-zip').value.trim() || '78701',
-        country: document.getElementById('inp-receiver-country').value,
-        note: document.getElementById('inp-receiver-note').value.trim() || 'Standard front door delivery'
-      };
+      const name = document.getElementById('inp-receiver-name').value.trim();
+      const phone = document.getElementById('inp-receiver-phone').value.trim();
+      const street = document.getElementById('inp-receiver-street').value.trim();
+      const city = document.getElementById('inp-receiver-city').value.trim();
+      const stateVal = document.getElementById('inp-receiver-state').value.trim();
+      const zip = document.getElementById('inp-receiver-zip').value.trim();
+      const country = document.getElementById('inp-receiver-country').value;
+      const note = document.getElementById('inp-receiver-note').value.trim() || 'Standard front door delivery';
+
+      const errEl = document.getElementById('address-validation-error');
+      if (!name || street.length < 5 || !city || !stateVal || zip.length < 3) {
+        if (errEl) {
+          errEl.textContent = 'Address Verification Failed: Please enter a complete street address, city, state/province, and valid postal/ZIP code.';
+          errEl.classList.remove('hidden');
+        }
+        return;
+      }
+      if (errEl) errEl.classList.add('hidden');
+
+      state.receiverAddress = { name, phone: phone || '(512) 555-0194', street, city, state: stateVal, zip, country, note };
       state.editingAddress = false;
+      state.universalAddressConfirmed = true;
+      const chk = document.getElementById('chk-universal-address-verified');
+      if (chk) chk.checked = true;
       document.getElementById('address-edit-form').classList.add('hidden');
       document.getElementById('toggle-address-edit-btn').textContent = 'Edit Receiver Address';
       renderCartAndCheckout();
@@ -1559,6 +1705,13 @@
 
     function confirmAndPlaceFinalOrder() {
       if (state.cart.length === 0) return;
+      const warnEl = document.getElementById('step2-unverified-warning');
+      if (state.editingAddress || !state.universalAddressConfirmed) {
+        if (warnEl) warnEl.classList.remove('hidden');
+        return;
+      }
+      if (warnEl) warnEl.classList.add('hidden');
+
       const totals = computeTotals();
       const addr = state.receiverAddress;
       const newOrder = {
@@ -1582,7 +1735,6 @@
       };
       state.orders.unshift(newOrder);
       state.cart = [];
-      state.recentlyRemoved = [];
       state.checkoutStep = 1;
       updateHeaderBadges();
       switchTab('orders');
@@ -1640,15 +1792,36 @@
         badge2.style.color = 'var(--text-secondary)';
       }
 
-      // 1. Render Undo Banners (FIX #1: "Removed it by mistake, Add it back")
+      // Highlight active payment method tab in Step 2
+      const pmMap = {
+        'Credit / Debit Card (Stripe / WooPay)': 'pm-btn-card',
+        'Apple Pay / Google Pay Express': 'pm-btn-wallet',
+        'PayPal Express': 'pm-btn-paypal',
+        'PayPal Pay in 4 (Interest-Free)': 'pm-btn-bnpl'
+      };
+      Object.entries(pmMap).forEach(([name, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (el) {
+          if (state.selectedPaymentMethod === name) {
+            el.style.borderColor = 'var(--accent-brand)';
+            el.style.backgroundColor = 'var(--accent-brand-soft)';
+          } else {
+            el.style.borderColor = 'var(--border-hairline)';
+            el.style.backgroundColor = 'var(--bg-surface)';
+          }
+        }
+      });
+
+      // 1. Render Immediate Undo Banners (FIX #1: "Removed it by mistake? Add it back")
       const undoContainer = document.getElementById('cart-undo-container');
-      undoContainer.innerHTML = state.recentlyRemoved.map(r => `
+      const activeUndoBanners = state.recentlyRemoved.filter(r => !r.dismissedInline);
+      undoContainer.innerHTML = activeUndoBanners.map(r => `
         <div class="vb-surface px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs border-l-4" style="border-left-color: var(--accent-brand); background-color: var(--accent-brand-soft);">
           <div>
             <span style="color: var(--text-secondary);">Removed <strong style="color: var(--text-primary);">${r.productTitle}</strong> from your bag.</span>
             <a
               href="javascript:void(0)"
-              onclick="undoRemoveCartItem('${r.restoreId}')"
+              onclick="undoRemoveCartItem('${r.restoreId}', false)"
               class="ml-2 font-semibold underline"
               style="color: var(--accent-brand);"
             >
@@ -1658,6 +1831,31 @@
           <button onclick="dismissUndoBanner('${r.restoreId}')" class="text-[11px] opacity-60 hover:opacity-100" style="color: var(--text-primary);">&times;</button>
         </div>
       `).join('');
+
+      // 1B. Render Persistent Remarketing Cache Drawer ('vibebloom_removed_cart_cache' with 15% OFF COMEBACK15 Incentive)
+      const cacheBox = document.getElementById('removed-remarketing-cache-box');
+      const cacheList = document.getElementById('removed-remarketing-items-list');
+      if (state.recentlyRemoved.length > 0) {
+        cacheBox.classList.remove('hidden');
+        cacheList.innerHTML = state.recentlyRemoved.map(r => `
+          <div class="p-3 rounded vb-subtle flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div>
+              <span class="font-semibold" style="color: var(--text-primary);">${r.productTitle}</span>
+              <span class="ml-1.5" style="color: var(--text-muted);">(${r.item.size} &bull; &ldquo;${r.item.customText}&rdquo;)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                onclick="undoRemoveCartItem('${r.restoreId}', true)"
+                class="px-3 py-1.5 rounded text-[11px] font-semibold vb-btn-primary"
+              >
+                Restore + Apply 15% Off (COMEBACK15)
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        cacheBox.classList.add('hidden');
+      }
 
       // 2. Render Cart Items
       const listEl = document.getElementById('cart-items-list');
@@ -1714,7 +1912,7 @@
 
       // 3. Update Step 2 Receiver Address Display & Item Preview
       const addr = state.receiverAddress;
-      document.getElementById('selected-payment-method-badge').textContent = `${state.selectedPaymentMethod} • Pre-Authorized`;
+      document.getElementById('selected-payment-method-badge').textContent = `${state.selectedPaymentMethod} • Address Verification Active`;
       document.getElementById('disp-receiver-name').textContent = addr.name;
       document.getElementById('disp-receiver-street').textContent = addr.street;
       document.getElementById('disp-receiver-city').textContent = `${addr.city}, ${addr.state} ${addr.zip}, ${addr.country}`;
