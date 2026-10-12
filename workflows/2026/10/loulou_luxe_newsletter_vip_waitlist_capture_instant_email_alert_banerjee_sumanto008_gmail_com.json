@@ -1,0 +1,194 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "LouLou & Luxe — Newsletter & VIP Waitlist Capture + Instant Email Alert (banerjee.sumanto008@gmail.com)",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-12T10:17:36.528Z",
+  "updatedAt": "2026-10-12T10:17:36.528Z",
+  "isArchived": false,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "nl-note-1",
+      "name": "📖 Newsletter Capture & Instant Gmail Alert Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        40
+      ],
+      "parameters": {
+        "content": "## 💌 LouLou & Luxe — Newsletter & VIP Waitlist Capture (`Personal > POD > LouLou & Luxe`)\n- **Webhook Endpoint:** `POST /webhook/loulou-newsletter-signup`\n- **Database Table:** PostgreSQL `loulou_newsletter_subscribers`\n- **Instant Notification Email:** Sent via `Gmail 008 SMTP` to **`user@example.com`** whenever anyone signs up on `https://loulouandluxe.com` or `http://localhost:11434`.",
+        "height": 170,
+        "width": 820
+      }
+    },
+    {
+      "id": "nl-wh-signup",
+      "name": "1. Newsletter & VIP Waitlist Webhook (POST /webhook/loulou-newsletter-signup)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        260
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loulou-newsletter-signup",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "nl-code-norm",
+      "name": "2. Validate & Normalize Subscriber Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "jsCode": "\nconst reqItem = $input.first().json || {};\nconst body = reqItem.body || reqItem || {};\nconst headers = reqItem.headers || {};\n\nconst rawEmail = String(body.email || '').trim().toLowerCase();\nconst email = rawEmail && rawEmail.includes('@') ? rawEmail : 'user@example.com';\nconst role = String(body.role || 'Everyday Boutique').trim().replace(/'/g, \"''\");\nconst source = String(body.source || 'loulouandluxe.com').trim().replace(/'/g, \"''\");\nconst promoCode = String(body.promoCode || 'LULLUXE25').trim().replace(/'/g, \"''\");\nconst pageUrl = String(body.pageUrl || 'https://loulouandluxe.com').trim().replace(/'/g, \"''\");\nconst ip = String(headers['x-forwarded-for'] || headers['x-real-ip'] || 'direct').split(',')[0].trim().replace(/'/g, \"''\");\nconst ua = String(headers['user-agent'] || '').slice(0, 220).replace(/'/g, \"''\");\nconst signedUpAt = new Date().toISOString();\n\nreturn [{\n  json: {\n    email,\n    safeEmail: email.replace(/'/g, \"''\"),\n    role,\n    source,\n    promoCode,\n    pageUrl,\n    ip,\n    ua,\n    signedUpAt\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "nl-pg-save",
+      "name": "3. Postgres: Save Subscriber & Bind to LouLou & Luxe Folder",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        700,
+        260
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_newsletter_subscribers (\n  id SERIAL PRIMARY KEY,\n  email VARCHAR(320) NOT NULL UNIQUE,\n  shopper_role VARCHAR(120) DEFAULT 'Everyday Boutique',\n  source_page VARCHAR(255) DEFAULT 'loulouandluxe.com',\n  promo_code VARCHAR(64) DEFAULT 'LULLUXE25',\n  page_url TEXT DEFAULT '',\n  visitor_ip VARCHAR(120) DEFAULT '',\n  user_agent TEXT DEFAULT '',\n  signup_count INTEGER DEFAULT 1,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO loulou_newsletter_subscribers (\n  email, shopper_role, source_page, promo_code, page_url, visitor_ip, user_agent, signup_count, created_at, updated_at\n)\nVALUES (\n  '{{ $json.safeEmail }}',\n  '{{ $json.role }}',\n  '{{ $json.source }}',\n  '{{ $json.promoCode }}',\n  '{{ $json.pageUrl }}',\n  '{{ $json.ip }}',\n  '{{ $json.ua }}',\n  1,\n  NOW(),\n  NOW()\n)\nON CONFLICT (email) DO UPDATE SET\n  shopper_role = EXCLUDED.shopper_role,\n  source_page = EXCLUDED.source_page,\n  promo_code = EXCLUDED.promo_code,\n  page_url = EXCLUDED.page_url,\n  visitor_ip = EXCLUDED.visitor_ip,\n  user_agent = EXCLUDED.user_agent,\n  signup_count = loulou_newsletter_subscribers.signup_count + 1,\n  updated_at = NOW();\n\nUPDATE workflow_entity\nSET \"parentFolderId\" = 'vibeBloomSub0001'\nWHERE name LIKE 'LouLou & Luxe — Newsletter & VIP Waitlist Capture%'\n  AND (\"parentFolderId\" IS NULL OR \"parentFolderId\" <> 'vibeBloomSub0001');\n\nSELECT\n  '{{ $json.safeEmail }}' AS subscriber_email,\n  '{{ $json.role }}' AS shopper_role,\n  '{{ $json.source }}' AS source_page,\n  '{{ $json.promoCode }}' AS promo_code,\n  '{{ $json.pageUrl }}' AS page_url,\n  '{{ $json.ip }}' AS visitor_ip,\n  '{{ $json.signedUpAt }}' AS signed_up_at,\n  (SELECT COUNT(*) FROM loulou_newsletter_subscribers) AS total_subscribers;\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "nl-code-email",
+      "name": "4. Format Email Alert for banerjee.sumanto008@gmail.com",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        260
+      ],
+      "parameters": {
+        "jsCode": "\nconst row = $input.first().json || {};\nconst email = row.subscriber_email || 'user@example.com';\nconst role = row.shopper_role || 'Everyday Boutique';\nconst source = row.source_page || 'loulouandluxe.com';\nconst promoCode = row.promo_code || 'LULLUXE25';\nconst pageUrl = row.page_url || 'https://loulouandluxe.com';\nconst ip = row.visitor_ip || 'N/A';\nconst signedUpAt = row.signed_up_at || new Date().toISOString();\nconst totalSubscribers = row.total_subscribers || 1;\n\nconst subject = `🎀 [LouLou & Luxe] New VIP Newsletter Signup: ${email} (${role})`;\nconst text = [\n  `New LouLou & Luxe VIP Newsletter / Launch Waitlist Signup!`,\n  `===========================================================`,\n  `• Subscriber Email : ${email}`,\n  `• Shopper Interest : ${role}`,\n  `• Reserved Code    : ${promoCode} (25% OFF)`,\n  `• Source Page      : ${source}`,\n  `• Page URL         : ${pageUrl}`,\n  `• Visitor IP       : ${ip}`,\n  `• Timestamp (UTC)  : ${signedUpAt}`,\n  `• Total Subscribers: ${totalSubscribers} (stored in PostgreSQL table loulou_newsletter_subscribers)`,\n  ``,\n  `— LouLou & Luxe Automated Concierge (automations.sbanerjee.cloud)`\n].join('\\n');\n\nreturn [{\n  json: {\n    fromEmail: 'user@example.com',\n    toEmail: 'user@example.com',\n    subject,\n    text,\n    subscriberEmail: email,\n    role,\n    promoCode,\n    totalSubscribers,\n    notifiedEmail: 'user@example.com',\n    status: 'SUBSCRIBED_AND_EMAILED',\n    ok: true\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "nl-smtp-send",
+      "name": "5. Send Instant Email Alert (banerjee.sumanto008@gmail.com)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1220,
+        260
+      ],
+      "parameters": {
+        "fromEmail": "={{ $json.fromEmail }}",
+        "toEmail": "={{ $json.toEmail }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "smtp Credential"
+        }
+      },
+      "webhookId": "YOUR_WEBHOOK_UUID"
+    },
+    {
+      "id": "nl-resp",
+      "name": "6. Return Signup Confirmation Receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, status: \"SUBSCRIBED_AND_EMAILED\", notifiedEmail: \"user@example.com\" }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "1. Newsletter & VIP Waitlist Webhook (POST /webhook/loulou-newsletter-signup)": {
+      "main": [
+        [
+          {
+            "node": "2. Validate & Normalize Subscriber Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Validate & Normalize Subscriber Payload": {
+      "main": [
+        [
+          {
+            "node": "3. Postgres: Save Subscriber & Bind to LouLou & Luxe Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Postgres: Save Subscriber & Bind to LouLou & Luxe Folder": {
+      "main": [
+        [
+          {
+            "node": "4. Format Email Alert for banerjee.sumanto008@gmail.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Format Email Alert for banerjee.sumanto008@gmail.com": {
+      "main": [
+        [
+          {
+            "node": "5. Send Instant Email Alert (banerjee.sumanto008@gmail.com)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Send Instant Email Alert (banerjee.sumanto008@gmail.com)": {
+      "main": [
+        [
+          {
+            "node": "6. Return Signup Confirmation Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
