@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-12T10:17:36.528Z",
-  "updatedAt": "2026-10-12T10:17:36.528Z",
+  "updatedAt": "2026-10-13T10:28:09.532Z",
   "isArchived": false,
-  "versionCounter": 1,
+  "versionCounter": 6,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -65,7 +65,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nCREATE TABLE IF NOT EXISTS loulou_newsletter_subscribers (\n  id SERIAL PRIMARY KEY,\n  email VARCHAR(320) NOT NULL UNIQUE,\n  shopper_role VARCHAR(120) DEFAULT 'Everyday Boutique',\n  source_page VARCHAR(255) DEFAULT 'loulouandluxe.com',\n  promo_code VARCHAR(64) DEFAULT 'LULLUXE25',\n  page_url TEXT DEFAULT '',\n  visitor_ip VARCHAR(120) DEFAULT '',\n  user_agent TEXT DEFAULT '',\n  signup_count INTEGER DEFAULT 1,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO loulou_newsletter_subscribers (\n  email, shopper_role, source_page, promo_code, page_url, visitor_ip, user_agent, signup_count, created_at, updated_at\n)\nVALUES (\n  '{{ $json.safeEmail }}',\n  '{{ $json.role }}',\n  '{{ $json.source }}',\n  '{{ $json.promoCode }}',\n  '{{ $json.pageUrl }}',\n  '{{ $json.ip }}',\n  '{{ $json.ua }}',\n  1,\n  NOW(),\n  NOW()\n)\nON CONFLICT (email) DO UPDATE SET\n  shopper_role = EXCLUDED.shopper_role,\n  source_page = EXCLUDED.source_page,\n  promo_code = EXCLUDED.promo_code,\n  page_url = EXCLUDED.page_url,\n  visitor_ip = EXCLUDED.visitor_ip,\n  user_agent = EXCLUDED.user_agent,\n  signup_count = loulou_newsletter_subscribers.signup_count + 1,\n  updated_at = NOW();\n\nUPDATE workflow_entity\nSET \"parentFolderId\" = 'vibeBloomSub0001'\nWHERE name LIKE 'LouLou & Luxe — Newsletter & VIP Waitlist Capture%'\n  AND (\"parentFolderId\" IS NULL OR \"parentFolderId\" <> 'vibeBloomSub0001');\n\nSELECT\n  '{{ $json.safeEmail }}' AS subscriber_email,\n  '{{ $json.role }}' AS shopper_role,\n  '{{ $json.source }}' AS source_page,\n  '{{ $json.promoCode }}' AS promo_code,\n  '{{ $json.pageUrl }}' AS page_url,\n  '{{ $json.ip }}' AS visitor_ip,\n  '{{ $json.signedUpAt }}' AS signed_up_at,\n  (SELECT COUNT(*) FROM loulou_newsletter_subscribers) AS total_subscribers;\n"
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_newsletter_subscribers (\n  id SERIAL PRIMARY KEY,\n  email VARCHAR(320) NOT NULL UNIQUE,\n  shopper_role VARCHAR(120) DEFAULT 'Everyday Boutique',\n  source_page VARCHAR(255) DEFAULT 'loulouandluxe.com',\n  promo_code VARCHAR(64) DEFAULT 'LULLUXE25',\n  page_url TEXT DEFAULT '',\n  visitor_ip VARCHAR(120) DEFAULT '',\n  user_agent TEXT DEFAULT '',\n  signup_count INTEGER DEFAULT 1,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO loulou_newsletter_subscribers (\n  email, shopper_role, source_page, promo_code, page_url, visitor_ip, user_agent, signup_count, created_at, updated_at\n)\nVALUES (\n  '{{ $json.safeEmail }}',\n  '{{ $json.role }}',\n  '{{ $json.source }}',\n  '{{ $json.promoCode }}',\n  '{{ $json.pageUrl }}',\n  '{{ $json.ip }}',\n  '{{ $json.ua }}',\n  1,\n  NOW(),\n  NOW()\n)\nON CONFLICT (email) DO UPDATE SET\n  shopper_role = EXCLUDED.shopper_role,\n  source_page = EXCLUDED.source_page,\n  promo_code = EXCLUDED.promo_code,\n  page_url = EXCLUDED.page_url,\n  visitor_ip = EXCLUDED.visitor_ip,\n  user_agent = EXCLUDED.user_agent,\n  signup_count = loulou_newsletter_subscribers.signup_count + 1,\n  updated_at = NOW();\n\nUPDATE workflow_entity\nSET \"parentFolderId\" = 'loulouLuxeSub001'\nWHERE name LIKE 'LouLou & Luxe — Newsletter & VIP Waitlist Capture%'\n  AND (\"parentFolderId\" IS NULL OR \"parentFolderId\" <> 'loulouLuxeSub001');\n\nSELECT\n  '{{ $json.safeEmail }}' AS subscriber_email,\n  '{{ $json.role }}' AS shopper_role,\n  '{{ $json.source }}' AS source_page,\n  '{{ $json.promoCode }}' AS promo_code,\n  '{{ $json.pageUrl }}' AS page_url,\n  '{{ $json.ip }}' AS visitor_ip,\n  '{{ $json.signedUpAt }}' AS signed_up_at,\n  (SELECT COUNT(*) FROM loulou_newsletter_subscribers) AS total_subscribers;\n"
       },
       "credentials": {
         "postgres": {
@@ -188,7 +188,9 @@
   "nodeGroups": [],
   "settings": {
     "saveManualExecutions": true,
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
   },
   "meta": null
 }
