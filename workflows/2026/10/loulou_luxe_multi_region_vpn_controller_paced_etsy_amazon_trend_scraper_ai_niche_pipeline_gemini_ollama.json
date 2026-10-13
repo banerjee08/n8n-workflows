@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-10T12:41:57.205Z",
-  "updatedAt": "2026-10-12T07:17:48.910Z",
+  "updatedAt": "2026-10-12T13:00:33.473Z",
   "isArchived": false,
-  "versionCounter": 11,
+  "versionCounter": 12,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -317,6 +317,19 @@
         "responseBody": "={{ $json }}",
         "options": {}
       }
+    },
+    {
+      "id": "ondemand-tg-trigger-ZbUOt4Lg",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        800
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
     }
   ],
   "connections": {
@@ -468,6 +481,17 @@
         [
           {
             "node": "Respond VPN Status JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Paced Etsy & Amazon Scraper (US/UK/AU) + Ollama/Gemini Synthesizer",
             "type": "main",
             "index": 0
           }
