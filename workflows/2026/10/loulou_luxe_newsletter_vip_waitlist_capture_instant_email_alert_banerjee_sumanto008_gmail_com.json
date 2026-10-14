@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-12T10:17:36.528Z",
-  "updatedAt": "2026-10-13T10:28:09.532Z",
+  "updatedAt": "2026-10-14T10:50:13.496Z",
   "isArchived": false,
-  "versionCounter": 6,
+  "versionCounter": 9,
   "sourceWorkflowId": null,
   "nodes": [
     {
