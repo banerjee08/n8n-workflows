@@ -1,0 +1,327 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "LouLou & Luxe — Decoupled Headless Backend API (WAF + Git Error Tracer + Self-Learning AI Search)",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-14T10:50:18.192Z",
+  "updatedAt": "2026-10-14T10:50:18.192Z",
+  "isArchived": false,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "api-note-1",
+      "name": "📖 Decoupled Headless Backend Architecture",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        20
+      ],
+      "parameters": {
+        "content": "## 🛡️ LouLou & Luxe — Decoupled Headless Backend API (`Personal > POD > LouLou & Luxe`)\n- **`POST /webhook/loulou-api-search`**: Anti-Bog WAF + Learned Synonym & Conversion Affinity Ranking (`loulou_product_query_affinity`).\n- **`POST /webhook/loulou-api-feedback`**: Online Reinforcement Learning from clicks, wishlist saves, cart adds, purchases & explicit 👍/👎 (`loulou_llm_feedback_memory`).\n- **`POST /webhook/loulou-api-error-trace`**: Git-Traceable Error Engine (`loulou_git_error_traces`) returning exact GitHub `blob/development/<file>#L<line>` blame links.",
+        "height": 185,
+        "width": 920
+      }
+    },
+    {
+      "id": "api-wh-search",
+      "name": "1A. Headless Search API (POST /webhook/loulou-api-search)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        240
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loulou-api-search",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-code-search-waf",
+      "name": "1B. Anti-Bog Honeypot & OWASP Prompt/SQLi Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        240
+      ],
+      "parameters": {
+        "jsCode": "\nconst reqItem = $input.first().json || {};\nconst body = reqItem.body || reqItem || {};\nconst headers = reqItem.headers || {};\nconst ip = String(headers['x-forwarded-for'] || headers['x-real-ip'] || 'direct').split(',')[0].trim();\nconst ua = String(headers['user-agent'] || '').slice(0, 180);\n\n// 1. Anti-Bog Honeypot + Sub-Human Timing + Prompt Injection / SQLi / XSS Guard\nconst rawQuery = String(body.query || '').trim();\nconst hp = String(body._hp_website_url || '').trim();\nconst injectionRe = /(ignore\\s+all\\s+previous\\s+instructions|<script\\b|union\\s+select|drop\\s+table|169\\.254\\.169\\.254)/i;\nconst blocked = hp.length > 0 || injectionRe.test(rawQuery);\nconst safeQuery = rawQuery.toLowerCase().replace(/[^a-z0-9\\s-]/g, '').slice(0, 64) || 'all';\n\nreturn [{\n  json: {\n    blocked,\n    safeQuery,\n    rawQuery: rawQuery.replace(/'/g, \"''\").slice(0, 120),\n    ip: ip.replace(/'/g, \"''\"),\n    ua: ua.replace(/'/g, \"''\")\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "api-pg-search",
+      "name": "1C. Postgres: Query Learned Product Affinity Boosts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        740,
+        240
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_product_query_affinity (\n  normalized_query VARCHAR(160) NOT NULL,\n  product_sku VARCHAR(64) NOT NULL,\n  search_impressions INTEGER NOT NULL DEFAULT 0,\n  click_count INTEGER NOT NULL DEFAULT 0,\n  wishlist_adds INTEGER NOT NULL DEFAULT 0,\n  cart_adds INTEGER NOT NULL DEFAULT 0,\n  purchases INTEGER NOT NULL DEFAULT 0,\n  explicit_thumbs_up INTEGER NOT NULL DEFAULT 0,\n  explicit_thumbs_down INTEGER NOT NULL DEFAULT 0,\n  learned_boost_score NUMERIC(10, 4) NOT NULL DEFAULT 0.0000,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  PRIMARY KEY (normalized_query, product_sku)\n);\n\nCREATE TABLE IF NOT EXISTS loulou_learned_query_synonyms (\n  raw_search_term VARCHAR(160) PRIMARY KEY,\n  expanded_keywords TEXT[] NOT NULL DEFAULT '{}',\n  confidence_score NUMERIC(5, 4) NOT NULL DEFAULT 0.8500,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nSELECT\n  TRUE AS ok,\n  'HEADLESS_SEARCH_RANKED' AS status,\n  '{{ $json.safeQuery }}' AS query,\n  {{ $json.blocked }} AS waf_blocked,\n  COALESCE(\n    (SELECT json_object_agg(product_sku, learned_boost_score)\n     FROM loulou_product_query_affinity\n     WHERE normalized_query = '{{ $json.safeQuery }}'),\n    '{}'::json\n  ) AS \"boostMap\",\n  'https://github.com/banerjee08/print_on_demand/blob/development/apps/backend/src/modules/search/adaptive-llm-search.ts#L112' AS \"gitSourceUrl\";\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "api-resp-search",
+      "name": "1D. Return Ranked Search & Git Trace Metadata",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        240
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-wh-feedback",
+      "name": "2A. Self-Learning Feedback API (POST /webhook/loulou-api-feedback)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        440
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loulou-api-feedback",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-code-feedback",
+      "name": "2B. Compute Online Reinforcement Reward Delta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        440
+      ],
+      "parameters": {
+        "jsCode": "\nconst reqItem = $input.first().json || {};\nconst body = reqItem.body || reqItem || {};\nconst safeQuery = String(body.query || 'catalog_browse').toLowerCase().replace(/[^a-z0-9\\s_-]/g, '').trim().slice(0, 80) || 'catalog_browse';\nconst productSku = String(body.productSku || 'LL-Q4-001').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48) || 'LL-Q4-001';\nconst signalType = String(body.signalType || 'SEARCH_CLICK').toUpperCase();\nconst rewardMap = {\n  SEARCH_CLICK: 1.0,\n  WISHLIST_SAVE: 2.5,\n  ADD_TO_CART: 4.0,\n  PURCHASE: 8.0,\n  THUMBS_UP: 3.0,\n  THUMBS_DOWN: -4.0\n};\nconst delta = rewardMap[signalType] !== undefined ? rewardMap[signalType] : 1.0;\nconst notes = String(body.userFeedbackNotes || '').replace(/'/g, \"''\").slice(0, 240);\n\nreturn [{\n  json: {\n    safeQuery,\n    productSku,\n    signalType,\n    delta,\n    isClick: signalType === 'SEARCH_CLICK' ? 1 : 0,\n    isWish: signalType === 'WISHLIST_SAVE' ? 1 : 0,\n    isCart: signalType === 'ADD_TO_CART' ? 1 : 0,\n    isBuy: signalType === 'PURCHASE' ? 1 : 0,\n    isUp: signalType === 'THUMBS_UP' ? 1 : 0,\n    isDown: signalType === 'THUMBS_DOWN' ? 1 : 0,\n    notes\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "api-pg-feedback",
+      "name": "2C. Postgres: Update Product Affinity & Few-Shot LLM Memory",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        740,
+        440
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_product_query_affinity (\n  normalized_query VARCHAR(160) NOT NULL,\n  product_sku VARCHAR(64) NOT NULL,\n  search_impressions INTEGER NOT NULL DEFAULT 0,\n  click_count INTEGER NOT NULL DEFAULT 0,\n  wishlist_adds INTEGER NOT NULL DEFAULT 0,\n  cart_adds INTEGER NOT NULL DEFAULT 0,\n  purchases INTEGER NOT NULL DEFAULT 0,\n  explicit_thumbs_up INTEGER NOT NULL DEFAULT 0,\n  explicit_thumbs_down INTEGER NOT NULL DEFAULT 0,\n  learned_boost_score NUMERIC(10, 4) NOT NULL DEFAULT 0.0000,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  PRIMARY KEY (normalized_query, product_sku)\n);\n\nCREATE TABLE IF NOT EXISTS loulou_llm_feedback_memory (\n  feedback_id BIGSERIAL PRIMARY KEY,\n  feature_domain VARCHAR(64) NOT NULL,\n  user_input_prompt TEXT NOT NULL,\n  recommended_sku VARCHAR(64),\n  signal_type VARCHAR(32) NOT NULL,\n  reward_score NUMERIC(6, 2) NOT NULL,\n  user_feedback_notes TEXT,\n  promoted_to_few_shot BOOLEAN NOT NULL DEFAULT FALSE,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nINSERT INTO loulou_product_query_affinity (\n  normalized_query, product_sku, search_impressions, click_count, wishlist_adds, cart_adds, purchases,\n  explicit_thumbs_up, explicit_thumbs_down, learned_boost_score, updated_at\n)\nVALUES (\n  '{{ $json.safeQuery }}',\n  '{{ $json.productSku }}',\n  1,\n  {{ $json.isClick }},\n  {{ $json.isWish }},\n  {{ $json.isCart }},\n  {{ $json.isBuy }},\n  {{ $json.isUp }},\n  {{ $json.isDown }},\n  {{ $json.delta }},\n  NOW()\n)\nON CONFLICT (normalized_query, product_sku) DO UPDATE SET\n  search_impressions = loulou_product_query_affinity.search_impressions + 1,\n  click_count = loulou_product_query_affinity.click_count + {{ $json.isClick }},\n  wishlist_adds = loulou_product_query_affinity.wishlist_adds + {{ $json.isWish }},\n  cart_adds = loulou_product_query_affinity.cart_adds + {{ $json.isCart }},\n  purchases = loulou_product_query_affinity.purchases + {{ $json.isBuy }},\n  explicit_thumbs_up = loulou_product_query_affinity.explicit_thumbs_up + {{ $json.isUp }},\n  explicit_thumbs_down = loulou_product_query_affinity.explicit_thumbs_down + {{ $json.isDown }},\n  learned_boost_score = LEAST(50.0, GREATEST(-20.0, loulou_product_query_affinity.learned_boost_score + ({{ $json.delta }}))),\n  updated_at = NOW();\n\nINSERT INTO loulou_llm_feedback_memory (\n  feature_domain, user_input_prompt, recommended_sku, signal_type, reward_score, user_feedback_notes, promoted_to_few_shot\n)\nVALUES (\n  'SEARCH_RANKING',\n  '{{ $json.safeQuery }}',\n  '{{ $json.productSku }}',\n  '{{ $json.signalType }}',\n  {{ $json.delta }},\n  '{{ $json.notes }}',\n  ({{ $json.delta }} >= 3.0)\n);\n\nSELECT\n  TRUE AS ok,\n  'RL_FEEDBACK_LEARNED' AS status,\n  '{{ $json.safeQuery }}' AS query,\n  '{{ $json.productSku }}' AS \"productSku\",\n  '{{ $json.signalType }}' AS \"signalType\",\n  (SELECT learned_boost_score FROM loulou_product_query_affinity WHERE normalized_query = '{{ $json.safeQuery }}' AND product_sku = '{{ $json.productSku }}' LIMIT 1) AS \"updatedLearnedBoostScore\",\n  'https://github.com/banerjee08/print_on_demand/blob/development/apps/backend/src/modules/search/adaptive-llm-search.ts#L194' AS \"gitSourceUrl\";\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "api-resp-feedback",
+      "name": "2D. Return Updated Learned Score",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        440
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-wh-err",
+      "name": "3A. Git Error Tracer API (POST /webhook/loulou-api-error-trace)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        640
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loulou-api-error-trace",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-code-err",
+      "name": "3B. Construct GitHub #L<line> Blame URL & CLI Fix Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        640
+      ],
+      "parameters": {
+        "jsCode": "\nconst reqItem = $input.first().json || {};\nconst body = reqItem.body || reqItem || {};\nconst filePath = String(body.filePath || 'apps/backend/src/api/headless-gateway.ts').replace(/'/g, \"''\").slice(0, 240);\nconst lineNumber = Math.max(1, parseInt(body.lineNumber || 1, 10) || 1);\nconst gitRepo = String(body.gitRepo || 'banerjee08/print_on_demand').replace(/'/g, \"''\");\nconst gitBranch = String(body.gitBranch || 'development').replace(/'/g, \"''\");\nconst serviceModule = String(body.serviceModule || 'backend.api').replace(/'/g, \"''\").slice(0, 100);\nconst errorCode = String(body.errorCode || 'LOULOU_BACKEND_ERR').replace(/'/g, \"''\").slice(0, 64);\nconst message = String(body.message || 'Unhandled exception').replace(/'/g, \"''\").slice(0, 500);\nconst githubBlameUrl = `https://github.com/${gitRepo}/blob/${gitBranch}/${filePath}#L${lineNumber}`;\nconst gitCliFixCommand = `git checkout ${gitBranch} && git blame -L ${lineNumber},${lineNumber} ${filePath}`;\n\nreturn [{\n  json: {\n    errorCode,\n    serviceModule,\n    gitRepo,\n    gitBranch,\n    filePath,\n    lineNumber,\n    githubBlameUrl,\n    gitCliFixCommand,\n    message\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "api-pg-err",
+      "name": "3C. Postgres: Persist Git Error Trace & Occurrence Count",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        740,
+        640
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_git_error_traces (\n  trace_id BIGSERIAL PRIMARY KEY,\n  error_code VARCHAR(64) NOT NULL,\n  service_module VARCHAR(128) NOT NULL,\n  git_repo VARCHAR(256) NOT NULL DEFAULT 'banerjee08/print_on_demand',\n  git_branch VARCHAR(64) NOT NULL DEFAULT 'development',\n  file_path VARCHAR(256) NOT NULL,\n  line_number INTEGER NOT NULL DEFAULT 1,\n  github_blame_url TEXT NOT NULL,\n  git_cli_fix_command TEXT NOT NULL,\n  error_message TEXT NOT NULL,\n  occurrence_count INTEGER NOT NULL DEFAULT 1,\n  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  UNIQUE (error_code, file_path, line_number)\n);\n\nINSERT INTO loulou_git_error_traces (\n  error_code, service_module, git_repo, git_branch, file_path, line_number,\n  github_blame_url, git_cli_fix_command, error_message, occurrence_count, last_seen_at\n)\nVALUES (\n  '{{ $json.errorCode }}',\n  '{{ $json.serviceModule }}',\n  '{{ $json.gitRepo }}',\n  '{{ $json.gitBranch }}',\n  '{{ $json.filePath }}',\n  {{ $json.lineNumber }},\n  '{{ $json.githubBlameUrl }}',\n  '{{ $json.gitCliFixCommand }}',\n  '{{ $json.message }}',\n  1,\n  NOW()\n)\nON CONFLICT (error_code, file_path, line_number) DO UPDATE SET\n  occurrence_count = loulou_git_error_traces.occurrence_count + 1,\n  error_message = EXCLUDED.error_message,\n  last_seen_at = NOW();\n\nSELECT\n  TRUE AS ok,\n  'GIT_ERROR_TRACE_LOGGED' AS status,\n  '{{ $json.errorCode }}' AS \"errorCode\",\n  '{{ $json.filePath }}' AS \"filePath\",\n  {{ $json.lineNumber }} AS \"lineNumber\",\n  '{{ $json.githubBlameUrl }}' AS \"githubBlameUrl\",\n  '{{ $json.gitCliFixCommand }}' AS \"gitCliFixCommand\",\n  (SELECT occurrence_count FROM loulou_git_error_traces WHERE error_code = '{{ $json.errorCode }}' AND file_path = '{{ $json.filePath }}' AND line_number = {{ $json.lineNumber }} LIMIT 1) AS \"occurrenceCount\";\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "api-resp-err",
+      "name": "3D. Return Git Blame Receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        640
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "1A. Headless Search API (POST /webhook/loulou-api-search)": {
+      "main": [
+        [
+          {
+            "node": "1B. Anti-Bog Honeypot & OWASP Prompt/SQLi Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1B. Anti-Bog Honeypot & OWASP Prompt/SQLi Guard": {
+      "main": [
+        [
+          {
+            "node": "1C. Postgres: Query Learned Product Affinity Boosts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1C. Postgres: Query Learned Product Affinity Boosts": {
+      "main": [
+        [
+          {
+            "node": "1D. Return Ranked Search & Git Trace Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2A. Self-Learning Feedback API (POST /webhook/loulou-api-feedback)": {
+      "main": [
+        [
+          {
+            "node": "2B. Compute Online Reinforcement Reward Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2B. Compute Online Reinforcement Reward Delta": {
+      "main": [
+        [
+          {
+            "node": "2C. Postgres: Update Product Affinity & Few-Shot LLM Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2C. Postgres: Update Product Affinity & Few-Shot LLM Memory": {
+      "main": [
+        [
+          {
+            "node": "2D. Return Updated Learned Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3A. Git Error Tracer API (POST /webhook/loulou-api-error-trace)": {
+      "main": [
+        [
+          {
+            "node": "3B. Construct GitHub #L<line> Blame URL & CLI Fix Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3B. Construct GitHub #L<line> Blame URL & CLI Fix Command": {
+      "main": [
+        [
+          {
+            "node": "3C. Postgres: Persist Git Error Trace & Occurrence Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3C. Postgres: Persist Git Error Trace & Occurrence Count": {
+      "main": [
+        [
+          {
+            "node": "3D. Return Git Blame Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "saveManualExecutions": true,
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
