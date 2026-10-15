@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-10T12:41:57.205Z",
-  "updatedAt": "2026-10-12T13:00:33.473Z",
+  "updatedAt": "2026-10-15T08:05:08.256Z",
   "isArchived": false,
-  "versionCounter": 12,
+  "versionCounter": 13,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -155,8 +155,8 @@
         "rule": {
           "interval": [
             {
-              "field": "hours",
-              "hoursInterval": 6
+              "field": "cronExpression",
+              "expression": "30 20 * * *"
             }
           ]
         }
