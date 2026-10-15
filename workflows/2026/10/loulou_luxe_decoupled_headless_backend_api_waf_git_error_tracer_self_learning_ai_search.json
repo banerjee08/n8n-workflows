@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-14T10:50:18.192Z",
-  "updatedAt": "2026-10-14T10:50:18.192Z",
+  "updatedAt": "2026-10-15T04:58:42.629Z",
   "isArchived": false,
-  "versionCounter": 1,
+  "versionCounter": 3,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -215,6 +215,70 @@
         "respondWith": "allIncomingItems",
         "options": {}
       }
+    },
+    {
+      "id": "api-wh-coupon",
+      "name": "4A. Backend Coupon Precedence & Checkout Levy API (POST /webhook/loulou-api-coupon-quote)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        840
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loulou-api-coupon-quote",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "api-code-coupon",
+      "name": "4B. Resolve Highest Winning Coupon (25% vs 10%)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        840
+      ],
+      "parameters": {
+        "jsCode": "\nconst reqItem = $input.first().json || {};\nconst body = reqItem.body || reqItem || {};\nconst headers = reqItem.headers || {};\nconst ip = String(headers['x-forwarded-for'] || headers['x-real-ip'] || 'direct').split(',')[0].trim().replace(/'/g, \"''\");\n\nconst couponMap = {\n  LULLUXE25: { code: 'LULLUXE25', percent: 25, defaultCatKey: 'ALL', defaultCatLabel: 'Autumn & Holiday Sitewide Collection' },\n  BRIDAL10:  { code: 'BRIDAL10',  percent: 10, defaultCatKey: 'BRIDAL', defaultCatLabel: 'Bridal & Engagement Suite' }\n};\n\nconst categoryLabels = {\n  ALL: 'Autumn & Holiday Sitewide Collection',\n  CLUB_FLEECE: 'Heavyweight Crewnecks & Social Club Fleece',\n  OUTERWEAR: 'Quarter-Zips, Sherpa & Cozy Outerwear',\n  DRESSES: 'Autumn, Holiday & Wedding Guest Dresses',\n  BRIDAL: 'Bridal & Engagement Suite',\n  MONOGRAM_GIFTS: 'Custom Monogram Holiday Gifts',\n  GRAPHICS: 'Game Day & Everyday Graphic Tees'\n};\n\nconst rawCandidates = Array.isArray(body.candidateCoupons) ? body.candidateCoupons : [];\nif (body.clickedCouponCode) rawCandidates.push(body.clickedCouponCode);\n\nconst validCandidates = Array.from(new Set(\n  rawCandidates.map(c => String(c || '').trim().toUpperCase()).filter(c => couponMap[c])\n)).sort((a, b) => couponMap[b].percent - couponMap[a].percent);\n\nconst winningCoupon = validCandidates.length > 0 ? validCandidates[0] : 'NONE';\nconst winningDiscountPercent = winningCoupon !== 'NONE' ? couponMap[winningCoupon].percent : 0;\nconst supersededCoupons = validCandidates.slice(1);\n\nconst catKey = String(body.categoryKey || (winningCoupon !== 'NONE' ? couponMap[winningCoupon].defaultCatKey : 'ALL')).toUpperCase().replace(/'/g, \"''\");\nconst catLabel = (categoryLabels[catKey] || String(body.categoryLabel || 'Autumn & Holiday Sitewide Collection')).replace(/'/g, \"''\");\n\nconst grossSubtotalCents = Math.max(0, parseInt(body.grossSubtotalCents || 0, 10) || 0);\nconst discountLevyCents = winningDiscountPercent > 0 ? Math.round((grossSubtotalCents * winningDiscountPercent) / 100) : 0;\nconst netCheckoutCents = grossSubtotalCents - discountLevyCents;\nconst actionType = String(body.actionType || 'CHECKOUT_LEVY_EVALUATED').replace(/'/g, \"''\");\n\nreturn [{\n  json: {\n    actionType,\n    catKey,\n    catLabel,\n    candidatesCsv: validCandidates.join(','),\n    winningCoupon,\n    winningDiscountPercent,\n    supersededCsv: supersededCoupons.join(','),\n    grossSubtotalCents,\n    discountLevyCents,\n    netCheckoutCents,\n    ip\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "api-pg-coupon",
+      "name": "4C. Postgres: Audit Coupon Unlock & Checkout Levy",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        740,
+        840
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nCREATE TABLE IF NOT EXISTS loulou_discount_coupons (\n  coupon_code VARCHAR(32) PRIMARY KEY,\n  discount_percent INTEGER NOT NULL,\n  title VARCHAR(160) NOT NULL,\n  associated_category_key VARCHAR(64) NOT NULL DEFAULT 'ALL',\n  associated_category_label VARCHAR(160) NOT NULL,\n  stackable BOOLEAN NOT NULL DEFAULT FALSE,\n  active BOOLEAN NOT NULL DEFAULT TRUE,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nINSERT INTO loulou_discount_coupons (\n  coupon_code, discount_percent, title, associated_category_key, associated_category_label, stackable, active\n) VALUES\n  ('LULLUXE25', 25, '25% OFF Autumn & Holiday Launch Edit', 'ALL', 'Autumn & Holiday Sitewide Collection', FALSE, TRUE),\n  ('BRIDAL10', 10, '10% OFF Bridal & Engagement Concierge', 'BRIDAL', 'Bridal & Engagement Suite', FALSE, TRUE)\nON CONFLICT (coupon_code) DO NOTHING;\n\nCREATE TABLE IF NOT EXISTS loulou_checkout_coupon_audit (\n  audit_id BIGSERIAL PRIMARY KEY,\n  action_type VARCHAR(32) NOT NULL,\n  associated_category_key VARCHAR(64) NOT NULL DEFAULT 'ALL',\n  associated_category_label VARCHAR(160) NOT NULL,\n  candidate_coupons TEXT NOT NULL DEFAULT '',\n  winning_coupon VARCHAR(32),\n  winning_discount_percent INTEGER NOT NULL DEFAULT 0,\n  superseded_coupons TEXT NOT NULL DEFAULT '',\n  gross_subtotal_cents INTEGER NOT NULL DEFAULT 0,\n  discount_levy_cents INTEGER NOT NULL DEFAULT 0,\n  net_checkout_cents INTEGER NOT NULL DEFAULT 0,\n  visitor_ip VARCHAR(120),\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nINSERT INTO loulou_checkout_coupon_audit (\n  action_type, associated_category_key, associated_category_label, candidate_coupons,\n  winning_coupon, winning_discount_percent, superseded_coupons,\n  gross_subtotal_cents, discount_levy_cents, net_checkout_cents, visitor_ip\n) VALUES (\n  '{{ $json.actionType }}',\n  '{{ $json.catKey }}',\n  '{{ $json.catLabel }}',\n  '{{ $json.candidatesCsv }}',\n  '{{ $json.winningCoupon }}',\n  {{ $json.winningDiscountPercent }},\n  '{{ $json.supersededCsv }}',\n  {{ $json.grossSubtotalCents }},\n  {{ $json.discountLevyCents }},\n  {{ $json.netCheckoutCents }},\n  '{{ $json.ip }}'\n);\n\nSELECT\n  TRUE AS ok,\n  'BACKEND_SINGLE_WINNER_COUPON_RESOLVED' AS status,\n  'HIGHEST_SINGLE_COUPON_WINS' AS \"nonStackingPolicy\",\n  1 AS \"maxCouponsApplied\",\n  '{{ $json.catKey }}' AS \"associatedCategoryKey\",\n  '{{ $json.catLabel }}' AS \"associatedCategoryLabel\",\n  '{{ $json.candidatesCsv }}' AS \"candidateCoupons\",\n  '{{ $json.winningCoupon }}' AS \"winningCoupon\",\n  {{ $json.winningDiscountPercent }} AS \"winningDiscountPercent\",\n  '{{ $json.supersededCsv }}' AS \"supersededCoupons\",\n  {{ $json.grossSubtotalCents }} AS \"grossSubtotalCents\",\n  {{ $json.discountLevyCents }} AS \"discountLevyCents\",\n  {{ $json.netCheckoutCents }} AS \"netCheckoutCents\",\n  ARRAY['#9E4758', '#883647', '#C8A97E', '#B4833E', '#2D5A43', '#F9EFF1', '#FAF8F5'] AS \"brandConfettiPaletteHex\",\n  'https://github.com/banerjee08/print_on_demand/blob/development/apps/backend/src/modules/discounts/coupon-precedence-engine.ts#L196' AS \"gitSourceUrl\";\n"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "postgres Credential"
+        }
+      }
+    },
+    {
+      "id": "api-resp-coupon",
+      "name": "4D. Return Authoritative Backend Coupon Quote",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        840
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -316,12 +380,47 @@
           }
         ]
       ]
+    },
+    "4A. Backend Coupon Precedence & Checkout Levy API (POST /webhook/loulou-api-coupon-quote)": {
+      "main": [
+        [
+          {
+            "node": "4B. Resolve Highest Winning Coupon (25% vs 10%)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4B. Resolve Highest Winning Coupon (25% vs 10%)": {
+      "main": [
+        [
+          {
+            "node": "4C. Postgres: Audit Coupon Unlock & Checkout Levy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4C. Postgres: Audit Coupon Unlock & Checkout Levy": {
+      "main": [
+        [
+          {
+            "node": "4D. Return Authoritative Backend Coupon Quote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "nodeGroups": [],
   "settings": {
     "saveManualExecutions": true,
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
   },
   "meta": null
 }
