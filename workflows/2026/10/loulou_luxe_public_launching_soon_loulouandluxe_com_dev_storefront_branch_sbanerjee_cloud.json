@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-10T06:33:16.019Z",
-  "updatedAt": "2026-10-16T05:34:39.069Z",
+  "updatedAt": "2026-10-16T13:00:21.817Z",
   "isArchived": false,
-  "versionCounter": 34,
+  "versionCounter": 35,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -366,6 +366,19 @@
         "respondWith": "allIncomingItems",
         "options": {}
       }
+    },
+    {
+      "id": "ondemand-tg-trigger-nxxMmMP5",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        900
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
     }
   ],
   "connections": {
@@ -539,6 +552,17 @@
         [
           {
             "node": "7. Return Sync Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "5. Bind to Personal > POD > LouLou & Luxe Folder",
             "type": "main",
             "index": 0
           }
