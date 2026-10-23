@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T15:39:16.030Z",
-  "updatedAt": "2026-10-07T17:41:51.347Z",
+  "updatedAt": "2026-10-23T10:32:11.846Z",
   "isArchived": false,
-  "versionCounter": 44,
+  "versionCounter": 45,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -119,7 +119,7 @@
       "executeOnce": true,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         700,
         420
@@ -154,7 +154,7 @@
       "executeOnce": true,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         920,
         420
@@ -189,7 +189,7 @@
       "executeOnce": true,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1140,
         420
@@ -279,7 +279,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1860,
         520
@@ -465,7 +465,7 @@
       "executeOnce": true,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1320,
         420
@@ -499,7 +499,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1120,
         300
@@ -547,7 +547,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1840,
         120
@@ -722,7 +722,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1840,
         260
@@ -825,7 +825,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1840,
         400
@@ -1014,7 +1014,7 @@
       "typeVersion": 4.5,
       "retryOnFail": true,
       "maxTries": 5,
-      "waitBetweenTries": 4000,
+      "waitBetweenTries": 5000,
       "position": [
         1840,
         540
