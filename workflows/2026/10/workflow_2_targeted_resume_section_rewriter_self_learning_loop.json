@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-24T05:50:08.337Z",
-  "updatedAt": "2026-10-07T10:26:21.665Z",
+  "updatedAt": "2026-10-23T10:32:03.193Z",
   "isArchived": false,
-  "versionCounter": 34,
+  "versionCounter": 35,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -73,6 +73,9 @@
       "name": "Get Rows Where Resume Status = Needs Rework",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         1792,
         1648
@@ -112,6 +115,9 @@
       "name": "Get Rows Where Resume Status = LGTM",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         1792,
         1968
@@ -536,6 +542,9 @@
       "name": "Google Sheets: Update Row with Revised PDF Link",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         5908,
         1600
@@ -678,6 +687,9 @@
       "name": "Google Sheets: Mark Resume Status = Approved & Learned",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         2544,
         1968
@@ -843,6 +855,34 @@
       ],
       "parameters": {
         "jsCode": "\nconst prev = $('Check PDF Page Count (1-Page Inspector)').last().json;\nconst nextAttempt = Number(prev.refitAttempt || 0) + 1;\nconst mode = prev.refitMode || 'CONDENSE';\n\nlet aiParsed = {};\ntry {\n  const rawText = $input.first()?.json?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  const cleanJson = String(rawText).replace(/```json|```/gi, '').trim();\n  aiParsed = JSON.parse(cleanJson);\n} catch (e) {\n  aiParsed = {};\n}\n\nconst fixAmpAndTitleCase = (html) => {\n  const acronyms = new Set(['SQL', 'ETL', 'BI', 'KPI', 'KPIS', 'UAT', 'CRM', 'API', 'AI', 'LLM', 'AWS', 'GCP', 'SOP', 'SLA', 'P&L', 'B2B', 'B2C', 'FP&A', 'HR', 'IT', 'QA', 'UI', 'UX', 'ROI', 'OKR', 'OKRS']);\n  const minor = new Set(['and', 'or', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by']);\n  const decoded = String(html || '').replace(/&amp;/gi, '&').replace(/&Amp;/g, '&');\n  return decoded.replace(/(>[^<]+<)/g, (segment) => {\n    const titled = segment.replace(/\\b([A-Za-z0-9/+-]+)\\b/g, (word, _, offset) => {\n      if (word.toLowerCase() === 'n8n') return 'n8n';\n      const upper = word.toUpperCase();\n      if (acronyms.has(upper)) return upper;\n      if (minor.has(word.toLowerCase()) && offset > 1) return word.toLowerCase();\n      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();\n    });\n    return titled.replace(/&(?!(?:amp|lt|gt|quot|nbsp|#\\d+);)/gi, '&amp;');\n  });\n};\n\nlet candidateSkillsHtml = (aiParsed.skills_html && String(aiParsed.skills_html).includes('<li'))\n  ? String(aiParsed.skills_html).replace(/```html|```/gi, '').trim()\n  : prev.skillsHtml;\ncandidateSkillsHtml = fixAmpAndTitleCase(candidateSkillsHtml);\n\nlet candidateExpHtml = (aiParsed.experience_html && String(aiParsed.experience_html).includes('job-block'))\n  ? String(aiParsed.experience_html).replace(/```html|```/gi, '').trim()\n  : prev.experienceHtml;\ncandidateExpHtml = String(candidateExpHtml).replace(/&Amp;/g, '&amp;');\n\nconst blockRegex = /<div\\s+class=[\"']job-block[\"'][^>]*>[\\s\\S]*?<\\/ul>\\s*<\\/div>/gi;\nlet blocks = candidateExpHtml.match(blockRegex) || [];\n\nif (mode === 'EXPAND') {\n  // Ensure Maerke Stratcomm (3rd role) is present if < 3 roles exist\n  const hasMaerke = blocks.some(b => /Maerke\\s+Stratcomm/i.test(b));\n  if (!hasMaerke) {\n    const maerkeBlock = `<div class=\"job-block\">\n  <div class=\"job-header\">\n    <span class=\"job-title\"><strong>Founder | Creative Director, Maerke Stratcomm – New Delhi, India</strong></span>\n    <span class=\"job-date\"><strong>June 2010 – July 2020</strong></span>\n  </div>\n  <ul>\n    <li>Delivered 15+ end-to-end <strong>client analytics</strong> and commercial growth initiatives, driving a 30% surge in customer acquisition across regional accounts.</li>\n    <li>Directed cross-functional execution of <strong>Tableau performance tracking</strong> and segmentation models, expanding HORECA and retail sales channels by 25%.</li>\n  </ul>\n</div>`;\n    blocks.push(maerkeBlock);\n  }\n  // Ensure Highspring has 4 bullets if total bullets < 9 and Marketing Projects is absent\n  const hasMp = Boolean(prev.marketingProjectsHtml && String(prev.marketingProjectsHtml).trim().length > 10);\n  if (!hasMp && blocks.length >= 1 && /Highspring/i.test(blocks[0])) {\n    const hsLis = [...blocks[0].matchAll(/<li[^>]*>[\\s\\S]*?<\\/li>/gi)].map(m => m[0]);\n    if (hsLis.length < 4) {\n      hsLis.push(`<li>Partnered with cross-functional engineering and business stakeholders to establish <strong>automated QA validation</strong> frameworks, maintaining 95% delivery accuracy across 15+ releases.</li>`);\n      blocks[0] = blocks[0].replace(/<ul>[\\s\\S]*?<\\/ul>/i, `<ul>\\n    ${hsLis.join('\\n    ')}\\n  </ul>`);\n    }\n  }\n  candidateExpHtml = blocks.slice(0, 3).join('\\n');\n} else {\n  // CONDENSE mode: keep strictly 3 roles (remove Customer Support Representative if 4 roles exist)\n  if (blocks.length > 3) {\n    const filtered = blocks.filter(b => !/Customer\\s+Support\\s+Representative/i.test(b));\n    blocks = filtered.length >= 3 ? filtered.slice(0, 3) : blocks.slice(0, 3);\n  }\n  const bulletBudgets = nextAttempt === 1 ? [3, 3, 2] : [3, 2, 2];\n  blocks = blocks.map((blk, idx) => {\n    const maxB = bulletBudgets[idx] || 2;\n    const liMatches = [...blk.matchAll(/<li[^>]*>[\\s\\S]*?<\\/li>/gi)].map(m => m[0]);\n    const keptLis = liMatches.slice(0, maxB);\n    return blk.replace(/<ul>[\\s\\S]*?<\\/ul>/i, `<ul>\\n    ${keptLis.join('\\n    ')}\\n  </ul>`);\n  });\n  candidateExpHtml = blocks.join('\\n');\n\n  const maxSkillsPerCategory = nextAttempt === 1 ? 7 : 6;\n  candidateSkillsHtml = candidateSkillsHtml.replace(/<li>([\\s\\S]*?)<\\/li>/gi, (fullLi, inner) => {\n    const strongMatch = inner.match(/^(<strong>[\\s\\S]*?<\\/strong>:?\\s*)([\\s\\S]*)$/i);\n    if (!strongMatch) return fullLi;\n    const prefix = strongMatch[1];\n    const rest = strongMatch[2];\n    const items = rest.split(',').map(s => s.trim()).filter(Boolean);\n    const trimmed = items.slice(0, maxSkillsPerCategory).join(', ');\n    return `<li>${prefix}${trimmed}</li>`;\n  });\n}\n\n// Ensure 3 Certifications when expanding without Marketing Projects\nlet candidateCertsHtml = prev.certificationsHtml || '';\nif (mode === 'EXPAND' && (candidateCertsHtml.match(/class=[\"']cert-row[\"']/gi) || []).length < 3) {\n  candidateCertsHtml = `<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Tableau Business Intelligence Analyst Professional Certificate</span><span class=\"cert-date\">May 2025</span></div>\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Advanced Data Analytics</span><span class=\"cert-date\">In Progress</span></div>\n<div class=\"cert-row\"><span class=\"cert-name\">Coursera - Google Project Management</span><span class=\"cert-date\">In Progress</span></div>`;\n}\n\nreturn [{\n  json: {\n    ...prev,\n    skillsHtml: candidateSkillsHtml,\n    experienceHtml: candidateExpHtml,\n    certificationsHtml: candidateCertsHtml,\n    refitAttempt: nextAttempt,\n    _isRefitPass: true\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "wf2-lgtm-cap-node",
+      "name": "KVM2 Paced LGTM Cap (Max 5/Tick)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().slice(0, 5);"
+      }
+    },
+    {
+      "id": "wf2-lgtm-wait-node",
+      "name": "Wait 3s (Sheets Quota Guard)",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        520
+      ],
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
       }
     }
   ],
@@ -1131,7 +1171,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Approved Rows (1 by 1)",
+            "node": "KVM2 Paced LGTM Cap (Max 5/Tick)",
             "type": "main",
             "index": 0
           }
@@ -1165,7 +1205,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Approved Rows (1 by 1)",
+            "node": "Wait 3s (Sheets Quota Guard)",
             "type": "main",
             "index": 0
           }
@@ -1233,6 +1273,28 @@
         [
           {
             "node": "Re-Compile HTML With Updated Section(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KVM2 Paced LGTM Cap (Max 5/Tick)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Approved Rows (1 by 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3s (Sheets Quota Guard)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Approved Rows (1 by 1)",
             "type": "main",
             "index": 0
           }
