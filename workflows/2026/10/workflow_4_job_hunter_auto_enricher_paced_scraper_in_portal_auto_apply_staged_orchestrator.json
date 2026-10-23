@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T09:50:14.997Z",
-  "updatedAt": "2026-10-09T10:36:15.559Z",
+  "updatedAt": "2026-10-23T10:32:06.255Z",
   "isArchived": false,
-  "versionCounter": 33,
+  "versionCounter": 34,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -118,7 +118,7 @@
       "typeVersion": 4.5,
       "executeOnce": true,
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 5,
       "waitBetweenTries": 5000,
       "position": [
         720,
@@ -153,7 +153,7 @@
       "typeVersion": 4.5,
       "executeOnce": true,
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 5,
       "waitBetweenTries": 5000,
       "position": [
         960,
@@ -239,7 +239,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 5,
       "waitBetweenTries": 5000,
       "position": [
         1740,
