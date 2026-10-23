@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-28T08:48:53.855Z",
-  "updatedAt": "2026-10-07T10:26:22.646Z",
+  "updatedAt": "2026-10-23T10:32:04.794Z",
   "isArchived": false,
-  "versionCounter": 17,
+  "versionCounter": 18,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -74,6 +74,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         7344,
         2736
@@ -114,6 +117,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         7344,
         3440
@@ -154,6 +160,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         7344,
         3888
@@ -442,6 +451,9 @@
       "name": "Google Sheets: Update Cover Letter Link & Status (No Upsert)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         9808,
         2400
@@ -845,6 +857,9 @@
       "name": "Google Sheets: Update Revised CL Link & Status = Ready for Review",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         10480,
         3024
@@ -949,6 +964,9 @@
       "name": "Google Sheets: Mark Cover Letter Status = Approved & Learned",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         8016,
         3744
@@ -1023,6 +1041,19 @@
       ],
       "parameters": {
         "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "wf3-lgtm-cap-node",
+      "name": "KVM2 Paced CL LGTM Cap (Max 5/Tick)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        620
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().slice(0, 5);"
       }
     }
   ],
@@ -1443,7 +1474,7 @@
       "main": [
         [
           {
-            "node": "Loop Over CL LGTM Rows (1 by 1)",
+            "node": "KVM2 Paced CL LGTM Cap (Max 5/Tick)",
             "type": "main",
             "index": 0
           }
@@ -1515,6 +1546,17 @@
           },
           {
             "node": "Get Rows Where Cover Letter Status = LGTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KVM2 Paced CL LGTM Cap (Max 5/Tick)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over CL LGTM Rows (1 by 1)",
             "type": "main",
             "index": 0
           }
