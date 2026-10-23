@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-22T08:00:29.498Z",
-  "updatedAt": "2026-10-07T10:26:20.479Z",
+  "updatedAt": "2026-10-23T10:32:00.391Z",
   "isArchived": false,
-  "versionCounter": 165,
+  "versionCounter": 166,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -51,6 +51,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         1200,
         1472
@@ -83,6 +86,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         1424,
         1472
@@ -115,6 +121,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         1648,
         1472
@@ -213,6 +222,9 @@
       "name": "Mark Row Blocked (Missing Title & JD)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         6576,
         1328
@@ -776,6 +788,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
       "position": [
         7008,
         480
