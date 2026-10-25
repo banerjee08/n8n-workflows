@@ -1,0 +1,550 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Google Drive — Auto-Claim Ownership & Clean Up Foreign Files (banerjee.sumanto08@gmail.com)",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-25T11:22:46.900Z",
+  "updatedAt": "2026-10-25T11:34:39.894Z",
+  "isArchived": false,
+  "versionCounter": 3,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "node-webhook",
+      "name": "Webhook: Claim Drive Ownership",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drive-claim-ownership",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        500
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "node-config",
+      "name": "1. Config (Entire Drive or Folder)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first() ? $input.first().json : {};\nconst body = input.body || input;\n// If rootFolderId is omitted or \"ALL\", scans the ENTIRE My Drive across all folders!\nconst rootFolderId = body.rootFolderId || 'ALL';\nconst dryRun = body.dryRun === true;\nconst targetOwnerEmail = (body.ownerEmail || 'user@example.com').toLowerCase().trim();\n\nconst ownedFoldersQ = encodeURIComponent(\"mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and trashed = false\");\nconst ownedFoldersFields = encodeURIComponent(\"files(id,name,parents)\");\nconst listOwnedFoldersUrl = `https://www.googleapis.com/drive/v3/files?q=${ownedFoldersQ}&fields=${ownedFoldersFields}&pageSize=1000`;\n\nconst unownedQ = encodeURIComponent(\"not 'me' in owners and trashed = false\");\nconst unownedFields = encodeURIComponent(\"files(id,name,mimeType,owners(emailAddress,me),parents,webViewLink,shortcutDetails)\");\nconst listUnownedUrl = `https://www.googleapis.com/drive/v3/files?q=${unownedQ}&fields=${unownedFields}&pageSize=1000`;\n\nreturn [{\n  json: {\n    rootFolderId,\n    dryRun,\n    targetOwnerEmail,\n    listOwnedFoldersUrl,\n    listUnownedUrl\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-get-root",
+      "name": "2. HTTP: Get My Drive Root ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        340
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files/root?fields=id,name",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-list-owned-folders",
+      "name": "3. HTTP: List All Owned Folders in Drive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        340
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('1. Config (Entire Drive or Folder)').first().json.listOwnedFoldersUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-list-unowned",
+      "name": "4. HTTP: List All Foreign-Owned Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        340
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('1. Config (Entire Drive or Folder)').first().json.listUnownedUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-plan-folders",
+      "name": "5. Code: Find Foreign Items Across Drive & Plan Subfolders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('1. Config (Entire Drive or Folder)').first().json;\nconst driveRoot = $('2. HTTP: Get My Drive Root ID').first().json;\nconst myDriveRootId = driveRoot.id;\nconst ownedFolders = ($('3. HTTP: List All Owned Folders in Drive').first().json.files || []);\nconst allUnowned = ($input.first().json.files || []);\n\n// Build set of owned folder IDs in scope\nconst ownedFolderMap = {};\nownedFolderMap[myDriveRootId] = { id: myDriveRootId, name: 'My Drive', parents: [] };\nfor (const f of ownedFolders) {\n  ownedFolderMap[f.id] = f;\n}\n\n// If a specific rootFolderId was requested, restrict ownedFoldersInScope to that folder and its descendants\nconst inScopeOwnedFolderIds = new Set();\nif (!cfg.rootFolderId || cfg.rootFolderId === 'ALL') {\n  inScopeOwnedFolderIds.add(myDriveRootId);\n  for (const f of ownedFolders) {\n    inScopeOwnedFolderIds.add(f.id);\n  }\n} else {\n  inScopeOwnedFolderIds.add(cfg.rootFolderId);\n  let added = true;\n  while (added) {\n    added = false;\n    for (const f of ownedFolders) {\n      if (!inScopeOwnedFolderIds.has(f.id) && (f.parents || []).some(p => inScopeOwnedFolderIds.has(p))) {\n        inScopeOwnedFolderIds.add(f.id);\n        added = true;\n      }\n    }\n  }\n}\n\n// Map all unowned folders and files that reside inside inScopeOwnedFolderIds (at any depth!)\nconst unownedById = {};\nfor (const item of allUnowned) {\n  unownedById[item.id] = item;\n}\n\n// Determine which unowned items have an ancestor in inScopeOwnedFolderIds\nconst inScopeUnownedIds = new Set();\nlet changed = true;\nwhile (changed) {\n  changed = false;\n  for (const item of allUnowned) {\n    if (inScopeUnownedIds.has(item.id)) continue;\n    const p = (item.parents && item.parents[0]) || '';\n    if (p && (inScopeOwnedFolderIds.has(p) || inScopeUnownedIds.has(p))) {\n      inScopeUnownedIds.add(item.id);\n      changed = true;\n    }\n  }\n}\n\nconst inScopeUnowned = allUnowned.filter(item => inScopeUnownedIds.has(item.id));\nconst unownedFolders = inScopeUnowned.filter(item => item.mimeType === 'application/vnd.google-apps.folder');\nconst unownedFiles = inScopeUnowned.filter(item => item.mimeType !== 'application/vnd.google-apps.folder' && item.mimeType !== 'application/vnd.google-apps.shortcut');\n\n// Check if an owned folder with the same name & parent already exists\nconst ownedFoldersByParentAndName = {};\nfor (const f of ownedFolders) {\n  const p = (f.parents && f.parents[0]) || myDriveRootId;\n  ownedFoldersByParentAndName[`${p}::${f.name}`] = f;\n}\n\nconst unownedFoldersToCreate = [];\nconst preExistingFolderMap = {};\n\n// Topologically sort unownedFolders from parent to child\nconst sortedUnownedFolders = [];\nconst visitedFolders = new Set();\nlet progress = true;\nwhile (progress && sortedUnownedFolders.length < unownedFolders.length) {\n  progress = false;\n  for (const f of unownedFolders) {\n    if (visitedFolders.has(f.id)) continue;\n    const p = (f.parents && f.parents[0]) || '';\n    if (inScopeOwnedFolderIds.has(p) || visitedFolders.has(p)) {\n      sortedUnownedFolders.push(f);\n      visitedFolders.add(f.id);\n      progress = true;\n    }\n  }\n}\nfor (const f of unownedFolders) {\n  if (!visitedFolders.has(f.id)) sortedUnownedFolders.push(f);\n}\n\nfor (const f of sortedUnownedFolders) {\n  const origParent = (f.parents && f.parents[0]) || myDriveRootId;\n  const existing = ownedFoldersByParentAndName[`${origParent}::${f.name}`];\n  if (existing) {\n    preExistingFolderMap[f.id] = existing.id;\n  } else {\n    unownedFoldersToCreate.push({\n      oldFolderId: f.id,\n      name: f.name,\n      origParent\n    });\n  }\n}\n\nif (cfg.dryRun || unownedFoldersToCreate.length === 0) {\n  return [{\n    json: {\n      hasFoldersToCreate: false,\n      dryRun: cfg.dryRun,\n      myDriveRootId,\n      oldFolderId: '',\n      name: '',\n      origParent: myDriveRootId,\n      preExistingFolderMap,\n      unownedFolders,\n      unownedFiles,\n      inScopeOwnedFolderIds: Array.from(inScopeOwnedFolderIds)\n    }\n  }];\n}\n\n// Note: for nested unowned folders where parent is also an unowned folder, parentId is resolved if top-level or falls back to origParent\nreturn unownedFoldersToCreate.map(f => ({\n  json: {\n    hasFoldersToCreate: true,\n    dryRun: cfg.dryRun,\n    myDriveRootId,\n    oldFolderId: f.oldFolderId,\n    name: f.name,\n    origParent: preExistingFolderMap[f.origParent] || f.origParent,\n    preExistingFolderMap,\n    unownedFolders,\n    unownedFiles,\n    inScopeOwnedFolderIds: Array.from(inScopeOwnedFolderIds)\n  }\n}));"
+      }
+    },
+    {
+      "id": "node-if-folders",
+      "name": "6. If Subfolders Need Creation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1640,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-folders",
+              "leftValue": "={{ $json.hasFoldersToCreate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-create-folders",
+      "name": "7. HTTP: Create Owned Subfolders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1880,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink,parents",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, mimeType: 'application/vnd.google-apps.folder', parents: [$json.origParent] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-plan-files",
+      "name": "8. Code: Plan File Copies Across Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2140,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const plannedItems = $('5. Code: Find Foreign Items Across Drive & Plan Subfolders').all().map(i => i.json);\nconst firstPlan = plannedItems[0] || {};\nconst unownedFolders = firstPlan.unownedFolders || [];\nconst unownedFiles = firstPlan.unownedFiles || [];\nconst folderIdMap = { ...(firstPlan.preExistingFolderMap || {}) };\nconst createdFolders = [];\n\nif (firstPlan.hasFoldersToCreate) {\n  const httpResponses = $input.all().map(i => i.json);\n  for (let idx = 0; idx < plannedItems.length; idx++) {\n    const oldId = plannedItems[idx].oldFolderId;\n    const created = httpResponses[idx] || {};\n    if (oldId && created.id) {\n      folderIdMap[oldId] = created.id;\n      createdFolders.push({\n        oldId,\n        newId: created.id,\n        name: created.name,\n        webViewLink: created.webViewLink\n      });\n    }\n  }\n}\n\nconst filesToCopy = unownedFiles.map(f => {\n  const origParent = (f.parents && f.parents[0]) || firstPlan.myDriveRootId;\n  const targetParent = folderIdMap[origParent] || origParent;\n  return {\n    oldFileId: f.id,\n    name: f.name,\n    mimeType: f.mimeType,\n    origParent,\n    targetParent,\n    owners: (f.owners || []).map(o => o.emailAddress)\n  };\n});\n\nif (firstPlan.dryRun || filesToCopy.length === 0) {\n  return [{\n    json: {\n      hasFilesToCopy: false,\n      dryRun: firstPlan.dryRun,\n      myDriveRootId: firstPlan.myDriveRootId,\n      oldFileId: '',\n      name: '',\n      mimeType: '',\n      origParent: '',\n      targetParent: firstPlan.myDriveRootId,\n      folderIdMap,\n      createdFolders,\n      unownedFolders,\n      unownedFiles,\n      plannedFileCopies: filesToCopy\n    }\n  }];\n}\n\nreturn filesToCopy.map(f => ({\n  json: {\n    hasFilesToCopy: true,\n    dryRun: firstPlan.dryRun,\n    myDriveRootId: firstPlan.myDriveRootId,\n    ...f,\n    folderIdMap,\n    createdFolders,\n    unownedFolders,\n    unownedFiles,\n    plannedFileCopies: filesToCopy\n  }\n}));"
+      }
+    },
+    {
+      "id": "node-if-files",
+      "name": "9. If Files Need Copying",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2380,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-files",
+              "leftValue": "={{ $json.hasFilesToCopy }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-copy-files",
+      "name": "10. HTTP: Copy Foreign Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        2620,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.oldFileId }}/copy?fields=id,name,mimeType,webViewLink,owners(emailAddress)",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, parents: [$json.targetParent] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-plan-cleanup",
+      "name": "11. Code: Plan Foreign Original Cleanup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const firstFolderPlan = $('5. Code: Find Foreign Items Across Drive & Plan Subfolders').first().json;\nconst plannedFiles = $('8. Code: Plan File Copies Across Drive').all().map(i => i.json);\nconst firstPlan = plannedFiles[0] || {};\nconst folderIdMap = firstPlan.folderIdMap || {};\nconst createdFolders = firstPlan.createdFolders || [];\nconst fileIdMap = {};\nconst copiedFiles = [];\n\nif (firstPlan.hasFilesToCopy) {\n  const httpResponses = $input.all().map(i => i.json);\n  for (let idx = 0; idx < plannedFiles.length; idx++) {\n    const plan = plannedFiles[idx];\n    const copied = httpResponses[idx] || {};\n    if (plan.oldFileId && copied.id) {\n      fileIdMap[plan.oldFileId] = copied.id;\n      copiedFiles.push({\n        oldId: plan.oldFileId,\n        newId: copied.id,\n        name: copied.name || plan.name,\n        mimeType: copied.mimeType || plan.mimeType,\n        targetParent: plan.targetParent,\n        webViewLink: copied.webViewLink\n      });\n    }\n  }\n}\n\n// Remove any foreign-owned item whose parent is an owned folder in scope (so it is cleanly unlinked from My Drive)\nconst ownedScopeSet = new Set(firstFolderPlan.inScopeOwnedFolderIds || []);\nconst allInScopeUnowned = [...(firstPlan.unownedFolders || []), ...(firstPlan.unownedFiles || [])];\nconst topLevelForeignItems = allInScopeUnowned.filter(item => {\n  const p = (item.parents && item.parents[0]) || '';\n  return ownedScopeSet.has(p);\n});\n\nif (firstPlan.dryRun || topLevelForeignItems.length === 0) {\n  return [{\n    json: {\n      hasRemovals: false,\n      dryRun: firstPlan.dryRun,\n      itemId: '',\n      name: '',\n      parentToRemove: '',\n      folderIdMap,\n      fileIdMap,\n      createdFolders,\n      copiedFiles,\n      plannedFileCopies: firstPlan.plannedFileCopies || [],\n      unownedFolders: firstPlan.unownedFolders || []\n    }\n  }];\n}\n\nreturn topLevelForeignItems.map(f => ({\n  json: {\n    hasRemovals: true,\n    dryRun: firstPlan.dryRun,\n    itemId: f.id,\n    name: f.name,\n    mimeType: f.mimeType,\n    parentToRemove: f.parents[0],\n    folderIdMap,\n    fileIdMap,\n    createdFolders,\n    copiedFiles,\n    plannedFileCopies: firstPlan.plannedFileCopies || [],\n    unownedFolders: firstPlan.unownedFolders || []\n  }\n}));"
+      }
+    },
+    {
+      "id": "node-if-cleanup",
+      "name": "12. If Originals Need Removal",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3120,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-cleanup",
+              "leftValue": "={{ $json.hasRemovals }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-remove-originals",
+      "name": "13. HTTP: Remove Foreign Originals from Folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        3360,
+        240
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.itemId }}?removeParents={{ $json.parentToRemove }}&fields=id,name,parents",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "node-summary",
+      "name": "14. Code: Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3620,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('1. Config (Entire Drive or Folder)').first().json;\nconst cleanupPlans = $('11. Code: Plan Foreign Original Cleanup').all().map(i => i.json);\nconst firstPlan = cleanupPlans[0] || {};\n\nconst removedOriginals = [];\nif (firstPlan.hasRemovals) {\n  const responses = $input.all().map(i => i.json);\n  for (let idx = 0; idx < cleanupPlans.length; idx++) {\n    removedOriginals.push({\n      id: cleanupPlans[idx].itemId,\n      name: cleanupPlans[idx].name,\n      mimeType: cleanupPlans[idx].mimeType,\n      removedFromParent: cleanupPlans[idx].parentToRemove,\n      status: 'removed_from_folder'\n    });\n  }\n}\n\nreturn [{\n  json: {\n    status: 'success',\n    scope: cfg.rootFolderId === 'ALL' ? 'ENTIRE_MY_DRIVE' : cfg.rootFolderId,\n    dryRun: cfg.dryRun,\n    targetOwnerEmail: cfg.targetOwnerEmail,\n    summary: {\n      detectedForeignFoldersInDrive: (firstPlan.unownedFolders || []).length,\n      detectedForeignFilesInDrive: (firstPlan.plannedFileCopies || []).length,\n      createdFoldersCount: (firstPlan.createdFolders || []).length,\n      copiedFilesCount: (firstPlan.copiedFiles || []).length,\n      removedOriginalsCount: removedOriginals.length\n    },\n    detectedForeignFolders: (firstPlan.unownedFolders || []).map(f => ({\n      id: f.id,\n      name: f.name,\n      parents: f.parents,\n      owners: (f.owners || []).map(o => o.emailAddress)\n    })),\n    detectedForeignFiles: firstPlan.plannedFileCopies || [],\n    createdFolders: firstPlan.createdFolders || [],\n    copiedFiles: firstPlan.copiedFiles || [],\n    folderIdMap: firstPlan.folderIdMap || {},\n    fileIdMap: firstPlan.fileIdMap || {},\n    removedOriginals\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: Claim Drive Ownership": {
+      "main": [
+        [
+          {
+            "node": "1. Config (Entire Drive or Folder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Config (Entire Drive or Folder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Config (Entire Drive or Folder)": {
+      "main": [
+        [
+          {
+            "node": "2. HTTP: Get My Drive Root ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. HTTP: Get My Drive Root ID": {
+      "main": [
+        [
+          {
+            "node": "3. HTTP: List All Owned Folders in Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. HTTP: List All Owned Folders in Drive": {
+      "main": [
+        [
+          {
+            "node": "4. HTTP: List All Foreign-Owned Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. HTTP: List All Foreign-Owned Items": {
+      "main": [
+        [
+          {
+            "node": "5. Code: Find Foreign Items Across Drive & Plan Subfolders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Code: Find Foreign Items Across Drive & Plan Subfolders": {
+      "main": [
+        [
+          {
+            "node": "6. If Subfolders Need Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. If Subfolders Need Creation": {
+      "main": [
+        [
+          {
+            "node": "7. HTTP: Create Owned Subfolders",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8. Code: Plan File Copies Across Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. HTTP: Create Owned Subfolders": {
+      "main": [
+        [
+          {
+            "node": "8. Code: Plan File Copies Across Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Code: Plan File Copies Across Drive": {
+      "main": [
+        [
+          {
+            "node": "9. If Files Need Copying",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. If Files Need Copying": {
+      "main": [
+        [
+          {
+            "node": "10. HTTP: Copy Foreign Files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11. Code: Plan Foreign Original Cleanup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. HTTP: Copy Foreign Files": {
+      "main": [
+        [
+          {
+            "node": "11. Code: Plan Foreign Original Cleanup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Code: Plan Foreign Original Cleanup": {
+      "main": [
+        [
+          {
+            "node": "12. If Originals Need Removal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. If Originals Need Removal": {
+      "main": [
+        [
+          {
+            "node": "13. HTTP: Remove Foreign Originals from Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "14. Code: Final Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13. HTTP: Remove Foreign Originals from Folder": {
+      "main": [
+        [
+          {
+            "node": "14. Code: Final Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null
+}
