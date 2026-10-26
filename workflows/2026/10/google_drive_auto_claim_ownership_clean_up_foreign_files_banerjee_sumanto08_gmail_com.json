@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-25T11:22:46.900Z",
-  "updatedAt": "2026-10-25T11:34:39.894Z",
+  "updatedAt": "2026-10-25T13:00:39.399Z",
   "isArchived": false,
-  "versionCounter": 3,
+  "versionCounter": 4,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -352,6 +352,19 @@
       "parameters": {
         "jsCode": "const cfg = $('1. Config (Entire Drive or Folder)').first().json;\nconst cleanupPlans = $('11. Code: Plan Foreign Original Cleanup').all().map(i => i.json);\nconst firstPlan = cleanupPlans[0] || {};\n\nconst removedOriginals = [];\nif (firstPlan.hasRemovals) {\n  const responses = $input.all().map(i => i.json);\n  for (let idx = 0; idx < cleanupPlans.length; idx++) {\n    removedOriginals.push({\n      id: cleanupPlans[idx].itemId,\n      name: cleanupPlans[idx].name,\n      mimeType: cleanupPlans[idx].mimeType,\n      removedFromParent: cleanupPlans[idx].parentToRemove,\n      status: 'removed_from_folder'\n    });\n  }\n}\n\nreturn [{\n  json: {\n    status: 'success',\n    scope: cfg.rootFolderId === 'ALL' ? 'ENTIRE_MY_DRIVE' : cfg.rootFolderId,\n    dryRun: cfg.dryRun,\n    targetOwnerEmail: cfg.targetOwnerEmail,\n    summary: {\n      detectedForeignFoldersInDrive: (firstPlan.unownedFolders || []).length,\n      detectedForeignFilesInDrive: (firstPlan.plannedFileCopies || []).length,\n      createdFoldersCount: (firstPlan.createdFolders || []).length,\n      copiedFilesCount: (firstPlan.copiedFiles || []).length,\n      removedOriginalsCount: removedOriginals.length\n    },\n    detectedForeignFolders: (firstPlan.unownedFolders || []).map(f => ({\n      id: f.id,\n      name: f.name,\n      parents: f.parents,\n      owners: (f.owners || []).map(o => o.emailAddress)\n    })),\n    detectedForeignFiles: firstPlan.plannedFileCopies || [],\n    createdFolders: firstPlan.createdFolders || [],\n    copiedFiles: firstPlan.copiedFiles || [],\n    folderIdMap: firstPlan.folderIdMap || {},\n    fileIdMap: firstPlan.fileIdMap || {},\n    removedOriginals\n  }\n}];"
       }
+    },
+    {
+      "id": "ondemand-tg-trigger-PUd0pPBc",
+      "name": "On-Demand Telegram Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        680
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
     }
   ],
   "connections": {
@@ -540,11 +553,24 @@
           }
         ]
       ]
+    },
+    "On-Demand Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Config (Entire Drive or Folder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "nodeGroups": [],
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
   },
   "meta": null
 }
