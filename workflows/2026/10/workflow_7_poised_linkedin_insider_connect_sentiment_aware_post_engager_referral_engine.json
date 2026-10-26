@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T15:39:16.030Z",
-  "updatedAt": "2026-10-23T10:32:11.846Z",
+  "updatedAt": "2026-10-25T14:30:31.671Z",
   "isArchived": false,
-  "versionCounter": 45,
+  "versionCounter": 46,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -39,7 +39,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 20 * * *"
+              "expression": "10 20 * * *"
             }
           ]
         }
@@ -59,7 +59,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 17 * * *"
+              "expression": "10 17 * * *"
             }
           ]
         }
