@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-09-28T08:48:53.855Z",
-  "updatedAt": "2026-10-23T10:32:04.794Z",
+  "updatedAt": "2026-10-29T09:55:15.754Z",
   "isArchived": false,
-  "versionCounter": 18,
+  "versionCounter": 19,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -28,6 +28,7 @@
     {
       "id": "dbdec60d-8778-4642-8f13-ed73d645590c",
       "name": "Every 15 Mins (Or Manual Run)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
