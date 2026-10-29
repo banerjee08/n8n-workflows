@@ -4,9 +4,9 @@
   "description": null,
   "active": false,
   "createdAt": "2026-10-01T09:50:14.997Z",
-  "updatedAt": "2026-10-23T10:32:06.255Z",
+  "updatedAt": "2026-10-29T09:55:17.398Z",
   "isArchived": false,
-  "versionCounter": 34,
+  "versionCounter": 35,
   "sourceWorkflowId": null,
   "nodes": [
     {
@@ -28,6 +28,7 @@
     {
       "id": "wf4-sched-15m",
       "name": "Every 15 Mins (Staggered :03,:18,:33,:48)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -48,6 +49,7 @@
     {
       "id": "wf4-sched-eod",
       "name": "EOD Summary Schedule (21:00 IST)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -602,6 +604,7 @@
     {
       "id": "sched-270534",
       "name": "Morning Batch Prep: Queue 25 Jobs (04:15 IST)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -622,6 +625,7 @@
     {
       "id": "sched-758513",
       "name": "Morning Batch Ready Digest (06:00 AM IST)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -642,6 +646,7 @@
     {
       "id": "sched-621241",
       "name": "Evening Batch Prep: Queue 25 Jobs (16:45 IST)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -662,6 +667,7 @@
     {
       "id": "sched-500398",
       "name": "Evening Batch Ready Digest (06:30 PM IST)",
+      "disabled": true,
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
