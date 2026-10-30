@@ -1,0 +1,629 @@
+{
+  "id": "TEMPLATE_WORKFLOW_ID",
+  "name": "Workflow 10 - Coursera Daily 5-Certificates Scraper & Scrapling Skills Sync (Active Until 2027-02-02)",
+  "description": null,
+  "active": false,
+  "createdAt": "2026-10-28T14:57:39.487Z",
+  "updatedAt": "2026-10-29T17:34:58.330Z",
+  "isArchived": false,
+  "versionCounter": 8,
+  "sourceWorkflowId": null,
+  "nodes": [
+    {
+      "id": "wh-trigger",
+      "name": "Webhook: Coursera Daily 5 & Skills Sync",
+      "webhookId": "YOUR_WEBHOOK_UUID",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        340
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "coursera-daily-5-and-skills-sync",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "code-router",
+      "name": "1. Parse Action & Active-Until-2027-02-02 Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        240
+      ],
+      "parameters": {
+        "jsCode": "\nconst raw = $input.first() ? $input.first().json : {};\nconst body = raw.body || raw;\nconst now = new Date();\nconst cutoff = new Date('2027-02-02T23:59:59+05:30');\nconst action = body.action || 'daily_sync';\nconst dailyCourseLimit = Number(body.dailyCourseLimit || 5);\n\nif (now > cutoff && action === 'daily_sync' && !body.force) {\n  return [{\n    json: {\n      action: 'expired',\n      activeUntil: '2027-02-02',\n      now: now.toISOString(),\n      message: 'Schedule reached end date 2027-02-02.'\n    }\n  }];\n}\n\nconst safeName = (body.name || '').replace(/'/g, \"\\\\'\");\nconst q = `name = '${safeName}' and '${body.parentId || 'root'}' in parents and mimeType = '${body.mimeType || 'application/vnd.google-apps.folder'}' and 'me' in owners and trashed = false`;\n\nreturn [{\n  json: {\n    action,\n    dailyCourseLimit,\n    activeUntil: '2027-02-02',\n    spreadsheetId: body.spreadsheetId || 'YOUR_GOOGLE_DOC_OR_SHEET_ID',\n    range: body.range || \"'2. Nightly Scrape Queue (4-5/Night)'!A1:I150\",\n    valueRenderOption: body.valueRenderOption || 'FORMULA',\n    clearRange: body.clearRange || '',\n    writeRange: body.writeRange || '',\n    values: body.values || [],\n    name: body.name || '',\n    parentId: body.parentId || '',\n    mimeType: body.mimeType || 'application/vnd.google-apps.folder',\n    driveSearchQ: q\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "switch-action",
+      "name": "2. Route Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        680,
+        240
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-get",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "sheets_get",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sheets_get"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-write",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "sheets_write",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sheets_write"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-append",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "sheets_append",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sheets_append"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-dcreate",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "drive_create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "drive_create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-sync",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "daily_sync",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "daily_sync"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "http-sheets-get",
+      "name": "HTTP: Sheets Get",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        60
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheetId }}/values/{{ encodeURIComponent($json.range) }}?valueRenderOption={{ $json.valueRenderOption }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-sheets-clear",
+      "name": "HTTP: Sheets Clear",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheetId }}/values/{{ encodeURIComponent($json.clearRange || $json.writeRange) }}:clear",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-sheets-put",
+      "name": "HTTP: Sheets Put",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        180
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.spreadsheetId }}/values/{{ encodeURIComponent($('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.writeRange) }}?valueInputOption=USER_ENTERED",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: $('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.values }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-sheets-append",
+      "name": "HTTP: Sheets Append",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheetId }}/values/{{ encodeURIComponent($json.writeRange || $json.range) }}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: $json.values }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-drive-search",
+      "name": "HTTP: Search Existing Owned Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        420
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files?q={{ encodeURIComponent($json.driveSearchQ) }}&fields=files(id,name,mimeType,webViewLink,owners)&pageSize=5",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "if-drive-exists",
+      "name": "If Item Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1180,
+        420
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-found",
+              "leftValue": "={{ ($json.files || []).length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code-existing-out",
+      "name": "Return Existing File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        360
+      ],
+      "parameters": {
+        "jsCode": "\nconst files = $('HTTP: Search Existing Owned Item').first().json.files || [];\nreturn [{ json: files[0] }];\n"
+      }
+    },
+    {
+      "id": "http-drive-create",
+      "name": "HTTP: Drive Create Native Owned",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink,owners",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.name, mimeType: $('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.mimeType, parents: [$('1. Parse Action & Active-Until-2027-02-02 Guard').first().json.parentId] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-drive-share",
+      "name": "HTTP: Grant Edit For GDocs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.id }}/permissions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"role\":\"writer\",\"type\":\"anyone\"}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "code-drive-out",
+      "name": "Return Created File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        480
+      ],
+      "parameters": {
+        "jsCode": "\nreturn [{ json: $('HTTP: Drive Create Native Owned').first().json }];\n"
+      }
+    },
+    {
+      "id": "http-read-queue",
+      "name": "3. Read Nightly Scrape Queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        620
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_DOC_OR_SHEET_ID/values/{{ encodeURIComponent(\"'2. Nightly Scrape Queue (4-5/Night)'!A1:I150\") }}?valueRenderOption=FORMULA",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "http-read-skills",
+      "name": "4. Read Master Resume Skills Tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        620
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_DOC_OR_SHEET_ID/values/{{ encodeURIComponent(\"Skills!A1:C200\") }}?valueRenderOption=FORMULA",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      }
+    },
+    {
+      "id": "code-daily-summary",
+      "name": "5. Summarize Daily 5 Queue & Deduplicated Skills",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        620
+      ],
+      "parameters": {
+        "jsCode": "\nconst queueValues = ($('3. Read Nightly Scrape Queue').first().json.values || []).slice(1);\nconst skillsValues = ($('4. Read Master Resume Skills Tab').first().json.values || []).slice(1);\nconst completedCourses = queueValues.filter(r => r && r.length >= 7 && (r[6] === 'Completed' || r[6] === 'Done'));\nconst next5Queued = queueValues.filter(r => r && r.length >= 7 && r[6] === 'Queued').slice(0, 5);\n\nreturn [{\n  json: {\n    status: 'active',\n    activeUntil: '2027-02-02',\n    dailyBatchSize: 5,\n    completedCoursesCount: completedCourses.length,\n    currentUniqueSkillsCount: skillsValues.filter(r => r && r[1]).length,\n    next5QueuedIds: next5Queued.map(r => r[0]),\n    next5QueuedNames: next5Queued.map(r => r[4])\n  }\n}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: Coursera Daily 5 & Skills Sync": {
+      "main": [
+        [
+          {
+            "node": "1. Parse Action & Active-Until-2027-02-02 Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Parse Action & Active-Until-2027-02-02 Guard": {
+      "main": [
+        [
+          {
+            "node": "2. Route Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Route Action": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Sheets Get",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Sheets Clear",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Sheets Append",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Search Existing Owned Item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "3. Read Nightly Scrape Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Sheets Clear": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Sheets Put",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Search Existing Owned Item": {
+      "main": [
+        [
+          {
+            "node": "If Item Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Item Exists": {
+      "main": [
+        [
+          {
+            "node": "Return Existing File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Drive Create Native Owned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Drive Create Native Owned": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Grant Edit For GDocs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Grant Edit For GDocs": {
+      "main": [
+        [
+          {
+            "node": "Return Created File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Read Nightly Scrape Queue": {
+      "main": [
+        [
+          {
+            "node": "4. Read Master Resume Skills Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Read Master Resume Skills Tab": {
+      "main": [
+        [
+          {
+            "node": "5. Summarize Daily 5 Queue & Deduplicated Skills",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "errorWorkflow": "YOUR_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "meta": null
+}
